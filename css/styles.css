@@ -39,7 +39,7 @@ main {
   padding: 50px 20px;
   margin: 30px auto;
   max-width: 900px;
-  background-color: rgba(255, 255, 255, 0.55);
+  background-color: rgba(255, 255, 255, 0.55) !important;
   border-radius: 20px;
 }
 
@@ -299,6 +299,9 @@ html {
   background-color: #4A3B35;
 }
 
+html {
+  color-scheme: light;
+}
 
 
 
