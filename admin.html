@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light only">
+    <title>Administración | Flamitas de Hécate</title>
+    <link rel="icon" type="image/png" href="./img/logo-flamitas-manos.png">
+
+    <link rel="stylesheet" href="./css/styles.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Montserrat:wght@300;400;500&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+<p style="text-align:center"><a href="migracion.html">Importar datos antiguos / Descargar respaldo / Consultas</a></p>
+
+    <!-- Menú superior para navegar entre inicio, tienda y panel admin. -->
+    <header class="menu">
+        <nav>
+            <!-- Logo de Flamitas en el menú; al tocarlo vuelve al inicio. -->
+            <a href="index.html" class="logo-menu" aria-label="Ir al inicio">
+                <img src="./img/logo-flamitas-manos.png" alt="Logo Flamitas de Hécate">
+            </a>
+
+            <ul class="menu-links admin-menu-principal">
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="tienda.html">Tienda</a></li>
+                <li><a href="admin.html">Admin</a></li>
+            </ul>
+
+            <!-- Acciones rápidas del administrador ubicadas a la derecha. -->
+            <div class="admin-menu-acciones">
+                <button type="button" class="bandeja-pedidos-admin" id="btnBandejaPedidos" aria-label="Ver pedidos nuevos y pendientes">
+                    <span class="bandeja-pedidos-icono"></span>
+                    <span class="contador-pedidos-admin" id="contadorPedidosAdmin">0</span>
+                </button>
+                <button class="btn-salir" id="btnCerrarSesion">Salir</button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Encabezado visual del panel administrador. -->
+    <section class="header tienda-header admin-header">
+        <h1>Panel Administrador</h1>
+        <p>Pedidos, stock y ventas de Flamitas</p>
+    </section>
+
+    <!-- Contenedor principal del panel con menú lateral y secciones internas. -->
+    <main class="admin-panel">
+        <!-- Menú lateral para cambiar entre pedidos, productos y venta manual. -->
+        <aside class="admin-menu-lateral">
+            <input type="button" value="Inicio admin" class="admin-menu-boton active" data-seccion="dashboard">
+            <input type="button" value="Pedidos" class="admin-menu-boton" data-seccion="pedidos">
+            <input type="button" value="Productos y stock" class="admin-menu-boton" data-seccion="productos">
+            <input type="button" value="Venta manual" class="admin-menu-boton" data-seccion="ventaManual">
+        </aside>
+
+        <!-- Sección inicial con resumen rápido del negocio. -->
+        <section class="admin-bloque admin-seccion active" id="seccionDashboard">
+            <div class="admin-titulo">
+                <h2>Inicio admin</h2>
+            </div>
+
+            <div class="dashboard-resumen-admin">
+                <article class="dashboard-card">
+                    <span>Vendido hoy</span>
+                    <strong id="dashboardVendidoHoy">$0</strong>
+                </article>
+
+                <article class="dashboard-card">
+                    <span>Ventas del mes</span>
+                    <strong id="dashboardVendidoMes">$0</strong>
+                </article>
+
+                <article class="dashboard-card">
+                    <span>Pedidos pendientes</span>
+                    <strong id="dashboardPedidosPendientes">0</strong>
+                </article>
+
+                <article class="dashboard-card">
+                    <span>Stock a revisar</span>
+                    <strong id="dashboardStockBajo">0</strong>
+                </article>
+            </div>
+
+            <div class="dashboard-grid-admin">
+                <section class="dashboard-panel">
+                    <div class="dashboard-panel-titulo">
+                        <h3>Pedidos pendientes</h3>
+                        <input type="button" value="Ver pedidos" class="btn-form-admin dashboard-atajo" data-ir-seccion="pedidos">
+                    </div>
+                    <div id="dashboardListaPedidos"></div>
+                </section>
+
+                <section class="dashboard-panel">
+                    <div class="dashboard-panel-titulo">
+                        <h3>Productos con poco stock</h3>
+                        <input type="button" value="Ver stock" class="btn-form-admin dashboard-atajo" data-ir-seccion="productos">
+                    </div>
+                    <div id="dashboardListaStock"></div>
+                </section>
+            </div>
+
+            <div class="dashboard-acciones-admin">
+                <input type="button" value="Cargar venta manual" class="btn-form-admin dashboard-atajo" data-ir-seccion="ventaManual">
+                <input type="button" value="Agregar producto" class="btn-form-admin dashboard-atajo" data-ir-seccion="productos">
+            </div>
+        </section>
+
+        <!-- Sección donde se revisan pedidos, filtros, totales y cierre de caja. -->
+        <section class="admin-bloque admin-seccion" id="seccionPedidos">
+            <div class="admin-titulo">
+                <h2>Historial de pedidos</h2>
+                <div class="admin-acciones-titulo">
+                    <input type="button" value="Exportar CSV" id="btnExportarPedidos" class="btn-form-admin">
+                    <input type="button" value="Vaciar historial" id="btnVaciarPedidos">
+                </div>
+            </div>
+
+            <div class="filtros-pedidos-admin">
+                <div>
+                    <label for="filtroFechaPedidos">Filtrar por día</label>
+                    <input type="date" id="filtroFechaPedidos">
+                </div>
+
+                <div>
+                    <label for="filtroMesPedidos">Filtrar por mes</label>
+                    <input type="month" id="filtroMesPedidos">
+                </div>
+
+                <input type="button" value="Limpiar filtros" id="btnLimpiarFiltrosPedidos" class="btn-form-admin">
+            </div>
+
+            <div class="resumen-ventas-admin">
+                <p id="totalVentasHoy">Vendido hoy: $0</p>
+                <p id="totalVentasFiltro" class="resumen-con-filtro">Total según filtro: $0</p>
+                <p id="totalEfectivoFiltro">Efectivo: $0</p>
+                <p id="totalTransferenciaFiltro">Transferencia: $0</p>
+                <p id="totalMercadoPagoFiltro">Mercado Pago: $0</p>
+                <p id="totalPagoPendienteFiltro">Pago pendiente: $0</p>
+                <p id="cantidadVentasFiltro">Cantidad de ventas: 0</p>
+            </div>
+
+            <div class="cierre-caja-admin">
+                <h3>Cierre de caja</h3>
+                <div id="productosVendidosFiltro"></div>
+            </div>
+
+            <div id="contenedorPedidos">
+            </div>
+        </section>
+
+        <!-- Sección para crear, editar o eliminar productos y controlar stock. -->
+        <section class="admin-bloque admin-seccion" id="seccionProductos">
+            <h2>Productos y stock</h2>
+            <p class="admin-ayuda">Cargá productos nuevos o editá los existentes. El cliente verá foto, nombre, detalle y precio; el stock queda solo para administración.</p>
+
+            <!-- Formulario para agregar productos nuevos al catálogo. -->
+            <form class="form-producto-admin" id="formProductoAdmin">
+                <label for="nombreProductoAdmin">Nombre</label>
+                <input type="text" id="nombreProductoAdmin" required>
+
+                <label for="detalleProductoAdmin">Detalle</label>
+                <textarea id="detalleProductoAdmin" rows="4" required></textarea>
+
+                <label for="fotoProductoAdmin">Foto</label>
+                <input type="file" id="fotoProductoAdmin" accept="image/*" required>
+
+                <label for="precioProductoAdmin">Precio</label>
+                <input type="text" id="precioProductoAdmin" placeholder="Ej: 350 o Consultar" required>
+
+                <label for="stockProductoAdminNuevo">Stock</label>
+                <input type="text" id="stockProductoAdminNuevo" placeholder="Ej: 5 o Consultar" required>
+
+                <input type="submit" value="Agregar producto">
+                <p class="mensaje-formulario" id="mensajeProductoAdmin"></p>
+            </form>
+
+            <div id="contenedorProductosAdmin">
+            </div>
+
+            <!-- Tablas para controlar el stock individual de esencias de latitas. -->
+            <div class="stock-esencias-admin">
+                <h3>Stock por esencia</h3>
+                <p class="admin-ayuda">Usá esta parte para controlar las latitas por aroma. Si una esencia queda en 0, en la tienda aparecerá como agotada.</p>
+                <div id="contenedorStockEsencias"></div>
+            </div>
+        </section>
+
+        <!-- Sección para cargar ventas tomadas fuera de la tienda web. -->
+        <section class="admin-bloque admin-seccion" id="seccionVentaManual">
+            <h2>Venta manual</h2>
+            <p class="admin-ayuda">Cargá pedidos tomados por WhatsApp, Instagram, feria o venta presencial. Al guardar, queda en el historial de pedidos y descuenta stock si corresponde.</p>
+
+            <!-- Formulario para registrar una venta manual y guardarla como pedido. -->
+            <form class="form-producto-admin" id="formVentaManual">
+                <label for="clienteVentaManual">Cliente</label>
+                <input type="text" id="clienteVentaManual" required>
+
+                <label for="telefonoVentaManual">Teléfono</label>
+                <input type="text" id="telefonoVentaManual">
+
+                <label for="origenVentaManual">Origen</label>
+                <select id="origenVentaManual">
+                    <option value="WhatsApp">WhatsApp</option>
+                    <option value="Instagram">Instagram</option>
+                    <option value="Feria">Feria</option>
+                    <option value="Presencial">Presencial</option>
+                </select>
+
+                <label for="medioPagoVentaManual">Medio de pago</label>
+                <select id="medioPagoVentaManual">
+                    <option value="">Sin definir</option>
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Transferencia bancaria">Transferencia bancaria</option>
+                    <option value="Mercado Pago">Mercado Pago</option>
+                </select>
+
+                <label for="estadoPagoVentaManual">Estado del pago</label>
+                <select id="estadoPagoVentaManual">
+                    <option value="Pendiente">Pago pendiente</option>
+                    <option value="Pagado">Pagado</option>
+                </select>
+
+                <label for="entregaVentaManual">Entrega</label>
+                <select id="entregaVentaManual">
+                    <option value="Retiro">Retiro</option>
+                    <option value="Envío">Envío</option>
+                </select>
+
+                <label for="departamentoVentaManual">Departamento</label>
+                <select id="departamentoVentaManual">
+                    <option value="">Solo si es envío</option>
+                    <option value="Artigas">Artigas</option>
+                    <option value="Canelones">Canelones</option>
+                    <option value="Cerro Largo">Cerro Largo</option>
+                    <option value="Colonia">Colonia</option>
+                    <option value="Durazno">Durazno</option>
+                    <option value="Flores">Flores</option>
+                    <option value="Florida">Florida</option>
+                    <option value="Lavalleja">Lavalleja</option>
+                    <option value="Maldonado">Maldonado</option>
+                    <option value="Montevideo">Montevideo</option>
+                    <option value="Paysandú">Paysandú</option>
+                    <option value="Río Negro">Río Negro</option>
+                    <option value="Rivera">Rivera</option>
+                    <option value="Rocha">Rocha</option>
+                    <option value="Salto">Salto</option>
+                    <option value="San José">San José</option>
+                    <option value="Soriano">Soriano</option>
+                    <option value="Tacuarembó">Tacuarembó</option>
+                    <option value="Treinta y Tres">Treinta y Tres</option>
+                </select>
+
+                <label for="direccionVentaManual">Dirección</label>
+                <input type="text" id="direccionVentaManual" placeholder="Solo si es envío">
+
+                <label for="ciudadVentaManual">Ciudad o barrio</label>
+                <input type="text" id="ciudadVentaManual" placeholder="Solo si es envío">
+
+                <label for="codigoPostalVentaManual">Código postal</label>
+                <input type="text" id="codigoPostalVentaManual" placeholder="Solo si es envío">
+
+                <label for="productoVentaManual">Producto</label>
+                <select id="productoVentaManual"></select>
+
+                <label for="precioVentaManual">Precio unitario</label>
+                <input type="number" min="0" id="precioVentaManual" required>
+
+                <label for="cantidadVentaManual">Cantidad</label>
+                <input type="number" min="1" value="1" id="cantidadVentaManual">
+
+                <input type="button" value="Agregar producto a la venta" id="btnAgregarVentaManual" class="btn-form-admin">
+                <div id="listaVentaManual"></div>
+                <h3 id="totalVentaManual">Total: $0</h3>
+                <input type="submit" value="Guardar venta manual">
+                <p class="mensaje-formulario" id="mensajeVentaManual"></p>
+            </form>
+        </section>
+    </main>
+
+    <!-- Modal para editar pedidos sin usar ventanas emergentes del navegador. -->
+    <section class="modal-latitas" id="modalEditarPedido">
+        <div class="modal-latitas-contenido modal-editar-pedido-contenido">
+            <button class="cerrar-modal" id="cerrarModalEditarPedido">X</button>
+
+            <h2>Editar pedido</h2>
+
+            <form id="formEditarPedido" class="form-producto-admin form-editar-pedido">
+                <label for="editarClientePedido">Cliente</label>
+                <input type="text" id="editarClientePedido" required>
+
+                <label for="editarTelefonoPedido">Teléfono</label>
+                <input type="text" id="editarTelefonoPedido">
+
+                <label for="editarOrigenPedido">Origen</label>
+                <select id="editarOrigenPedido">
+                    <option value="Web">Web</option>
+                    <option value="WhatsApp">WhatsApp</option>
+                    <option value="Instagram">Instagram</option>
+                    <option value="Feria">Feria</option>
+                    <option value="Presencial">Presencial</option>
+                </select>
+
+                <label for="editarEstadoPedido">Estado</label>
+                <select id="editarEstadoPedido">
+                    <option value="Nuevo">Nuevo</option>
+                    <option value="En preparación">En preparación</option>
+                    <option value="Listo para retirar/enviar">Listo para retirar/enviar</option>
+                    <option value="Entregado">Entregado</option>
+                    <option value="Cancelado">Cancelado</option>
+                </select>
+
+                <label for="editarMedioPagoPedido">Medio de pago</label>
+                <select id="editarMedioPagoPedido">
+                    <option value="">Sin definir</option>
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Transferencia bancaria">Transferencia bancaria</option>
+                    <option value="Mercado Pago">Mercado Pago</option>
+                </select>
+
+                <label for="editarEstadoPagoPedido">Estado del pago</label>
+                <select id="editarEstadoPagoPedido">
+                    <option value="Pendiente">Pago pendiente</option>
+                    <option value="Pagado">Pagado</option>
+                </select>
+
+                <label for="editarEntregaPedido">Entrega</label>
+                <select id="editarEntregaPedido">
+                    <option value="Retiro">Retiro</option>
+                    <option value="Envío">Envío</option>
+                </select>
+
+                <label for="editarDepartamentoPedido">Departamento</label>
+                <select id="editarDepartamentoPedido">
+                    <option value="">Sin departamento</option>
+                    <option value="Artigas">Artigas</option>
+                    <option value="Canelones">Canelones</option>
+                    <option value="Cerro Largo">Cerro Largo</option>
+                    <option value="Colonia">Colonia</option>
+                    <option value="Durazno">Durazno</option>
+                    <option value="Flores">Flores</option>
+                    <option value="Florida">Florida</option>
+                    <option value="Lavalleja">Lavalleja</option>
+                    <option value="Maldonado">Maldonado</option>
+                    <option value="Montevideo">Montevideo</option>
+                    <option value="Paysandú">Paysandú</option>
+                    <option value="Río Negro">Río Negro</option>
+                    <option value="Rivera">Rivera</option>
+                    <option value="Rocha">Rocha</option>
+                    <option value="Salto">Salto</option>
+                    <option value="San José">San José</option>
+                    <option value="Soriano">Soriano</option>
+                    <option value="Tacuarembó">Tacuarembó</option>
+                    <option value="Treinta y Tres">Treinta y Tres</option>
+                </select>
+
+                <label for="editarDireccionPedido">Dirección</label>
+                <input type="text" id="editarDireccionPedido">
+
+                <label for="editarCiudadPedido">Ciudad o barrio</label>
+                <input type="text" id="editarCiudadPedido">
+
+                <label for="editarCodigoPostalPedido">Código postal</label>
+                <input type="text" id="editarCodigoPostalPedido">
+
+                <label for="editarReferenciaPedido">Referencia</label>
+                <textarea id="editarReferenciaPedido" rows="2"></textarea>
+
+                <div class="editor-productos-pedido">
+                    <h3>Productos del pedido</h3>
+                    <div id="productosEditarPedido"></div>
+
+                    <div class="agregar-producto-edicion">
+                        <select id="productoNuevoEditarPedido"></select>
+                        <input type="number" min="0" id="precioNuevoEditarPedido" placeholder="Precio">
+                        <input type="number" min="1" value="1" id="cantidadNuevaEditarPedido" placeholder="Cantidad">
+                        <input type="button" value="Agregar" id="btnAgregarProductoEditarPedido" class="btn-form-admin">
+                    </div>
+                </div>
+
+                <h3 id="totalEditarPedido">Total: $0</h3>
+                <input type="submit" value="Guardar cambios">
+                <p class="mensaje-formulario" id="mensajeEditarPedido"></p>
+            </form>
+        </div>
+    </section>
+
+    <script src="./js/api.js"></script>
+    <script src="./js/clases.js"></script>
+    <script src="./js/usuarios.js"></script>
+    <script src="./js/sistema.js"></script>
+    <script src="./js/admin.js"></script>
+    <script src="./js/iniciar.js"></script>
+</body>
+
+</html>

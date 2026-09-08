@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light only">
+    <title>Contacto | Flamitas de Hécate</title>
+    <link rel="icon" type="image/png" href="./img/logo-flamitas-manos.png">
+
+    <link rel="stylesheet" href="./css/styles.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Montserrat:wght@300;400;500&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- Menú superior de la página de contacto. -->
+    <header class="menu">
+        <nav>
+            <!-- Logo de Flamitas en el menú; al tocarlo vuelve al inicio. -->
+            <a href="index.html" class="logo-menu" aria-label="Ir al inicio">
+                <img src="./img/logo-flamitas-manos.png" alt="Logo Flamitas de Hécate">
+            </a>
+
+            <div class="menu-toggle" id="menuToggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+
+            <ul class="menu-links" id="menuLinks">
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="tienda.html">Tienda</a></li>
+                <li><a href="contacto.html">Contacto</a></li>
+                <li><a href="login.html">Ingresar</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Encabezado simple para la página de contacto. -->
+    <section class="header header-contacto">
+        <h1>Contacto</h1>
+        <p>Escribinos tu consulta y te respondemos a la brevedad</p>
+    </section>
+
+    <!-- Formulario para recibir consultas de clientes. -->
+    <section class="formulario-acceso formulario-contacto">
+        <h2>Hablemos</h2>
+        <p>Completá tus datos para que podamos responderte.</p>
+
+        <form id="formContacto">
+            <label for="nombreContacto">Nombre</label>
+            <input type="text" id="nombreContacto" required>
+
+            <label for="telefonoContacto">Teléfono</label>
+            <input type="tel" id="telefonoContacto" required>
+
+            <label for="emailContacto">Mail</label>
+            <input type="email" id="emailContacto" required>
+
+            <label for="mensajeContacto">Mensaje</label>
+            <textarea id="mensajeContacto" rows="6" required></textarea>
+
+            <input type="submit" value="Enviar consulta">
+        </form>
+
+        <p id="mensajeContactoEstado" class="mensaje-formulario"></p>
+    </section>
+
+    <!-- Pie de página de la web. -->
+    <footer class="footer">
+        <p>© Flamitas de Hécate</p>
+    </footer>
+
+    <!-- Conecta el menú y el formulario de contacto con sus funciones. -->
+    <script src="./js/api.js"></script>
+    <script src="./js/main.js"></script>
+    <script src="./js/contacto.js"></script>
+    <script src="./js/iniciar.js"></script>
+</body>
+
+</html>
