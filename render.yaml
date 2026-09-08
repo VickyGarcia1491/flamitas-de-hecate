@@ -1,0 +1,30 @@
+# Prueba gratuita. Antes de operar permanentemente, cambiar el plan de PostgreSQL.
+services:
+  - type: web
+    name: flamitas-web
+    runtime: node
+    region: virginia
+    plan: free
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 22.22.0
+      - key: DATABASE_URL
+        fromDatabase:
+          name: flamitas-db
+          property: connectionString
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+databases:
+  - name: flamitas-db
+    region: virginia
+    plan: free
+    databaseName: flamitas
+    user: flamitas
+    ipAllowList: []

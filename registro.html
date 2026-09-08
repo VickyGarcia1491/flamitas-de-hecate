@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light only">
+    <title>Registro | Flamitas de Hécate</title>
+    <link rel="icon" type="image/png" href="./img/logo-flamitas-manos.png">
+
+    <link rel="stylesheet" href="./css/styles.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Montserrat:wght@300;400;500&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- Menú superior de la página de registro. -->
+    <header class="menu">
+        <nav>
+            <!-- Logo de Flamitas en el menú; al tocarlo vuelve al inicio. -->
+            <a href="index.html" class="logo-menu" aria-label="Ir al inicio">
+                <img src="./img/logo-flamitas-manos.png" alt="Logo Flamitas de Hécate">
+            </a>
+
+            <ul class="menu-links">
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="tienda.html">Tienda</a></li>
+                <li><a href="contacto.html">Contacto</a></li>
+                <li><a href="login.html">Ingresar</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Formulario para crear una cuenta nueva de cliente. -->
+    <section class="formulario-acceso formulario-registro">
+        <h1>Crear cuenta</h1>
+        <p>Creá tu cuenta para comprar más rápido y seguir tu pedido.</p>
+
+        <form id="formRegistro">
+            <label for="nombreRegistro">Nombre completo</label>
+            <input type="text" id="nombreRegistro" required>
+
+            <label for="emailRegistro">Email</label>
+            <input type="email" id="emailRegistro" required>
+
+            <label for="telefonoRegistro">Teléfono</label>
+            <input type="tel" id="telefonoRegistro" required>
+
+            <label for="passwordRegistro">Contraseña</label>
+            <input type="password" id="passwordRegistro" minlength="12" maxlength="128" placeholder="Mínimo 12 caracteres" required>
+
+            <input type="submit" value="Registrarme">
+        </form>
+
+        <p id="mensajeRegistro" class="mensaje-formulario"></p>
+        <p class="texto-formulario">¿Ya tenés cuenta? <a href="login.html">Ingresá acá</a></p>
+    </section>
+
+    <!-- Conecta el registro con la lógica de usuarios. -->
+    <script src="./js/api.js"></script>
+    <script src="./js/usuarios.js"></script>
+    <script src="./js/iniciar.js"></script>
+</body>
+
+</html>

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="light only">
     <title>Flamitas de Hécate</title>
+    <link rel="icon" type="image/png" href="./img/logo-flamitas-manos.png">
     <link rel="stylesheet" href="./css/styles.css">
     <link
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Montserrat:wght@300;400;500&display=swap"
@@ -16,9 +17,14 @@
 
 <body>
 
-    <!-- MENÚ -->
+    <!-- Menú superior de la página de inicio. -->
     <header class="menu">
         <nav>
+            <!-- Logo de Flamitas en el menú; al tocarlo vuelve al inicio. -->
+            <a href="#inicio" class="logo-menu" aria-label="Ir al inicio">
+                <img src="./img/logo-flamitas-manos.png" alt="Logo Flamitas de Hécate">
+            </a>
+
             <div class="menu-toggle" id="menuToggle">
                 <span></span>
                 <span></span>
@@ -27,19 +33,21 @@
 
             <ul class="menu-links" id="menuLinks">
                 <li><a href="#inicio">Inicio</a></li>
-                <li><a href="#tienda">Tienda</a></li>
-                <li><a href="#contacto">Contacto</a></li>
+                <li><a href="tienda.html">Tienda</a></li>
+                <li><a href="contacto.html">Contacto</a></li>
+                <li><a href="login.html">Ingresar</a></li>
             </ul>
+
         </nav>
     </header>
 
-    <!-- INICIO -->
+    <!-- Encabezado principal con el nombre del emprendimiento. -->
     <section id="inicio" class="header">
         <h1>Flamitas de Hécate</h1>
         <p>Velas artesanales hechas con intención</p>
     </section>
 
-    <!-- TIENDA -->
+    <!-- TIENDA 
     <section id="tienda" class="gallery">
         <h2>Nuestras velas</h2>
         <div class="gallery-grid">
@@ -47,41 +55,52 @@
             <img src="./img/vela2.jpeg" alt="Osito grande">
             <img src="./img/vela3.jpeg" alt="Cocos">
         </div>
-    </section>
+    </section> -->
 
-    <!-- SOBRE NOSOTROS-->
+    <!-- Sección para contar la historia de Flamitas. -->
 
     <section class="about">
-        <h2>Quienes somos</h2>
+    <div class="about-texto">
+        <h2>Quiénes somos</h2>
+
         <p>
-            Hola! Somos Victoria y Silvia, dos amigas con ganas de salir de la rutina y crear algo propio.
+            ¡Hola! Somos Victoria y Silvia, dos amigas con ganas de salir de la rutina y crear algo propio.
             Entre charlas, aromas y momentos compartidos, descubrimos que una vela puede transformar completamente un
-            espacio y también un momento.<br>
-            <br>
+            espacio y también un momento.
+        </p>
+
+        <p>
             Somos amantes de los pequeños rituales cotidianos: un rato de descanso después de un día largo, una serie
             que engancha, un buen libro o simplemente desconectar. En todos esos momentos, siempre había una vela
-            encendida acompañándonos.<br>
-            <br>
+            encendida acompañándonos.
+        </p>
+
+        <p>
             Así empezó todo. Con la idea de llevar esa sensación a otros espacios, a otras personas. Creamos velas
-            pensadas para acompañar, relajar y generar ambientes donde sea más fácil frenar un poco y disfrutar.<br>
-            <br>
+            pensadas para acompañar, relajar y generar ambientes donde sea más fácil frenar un poco y disfrutar.
+        </p>
+
+        <p>
             Flamitas de Hécate no es solo un producto, es una invitación a regalarse un momento.
         </p>
-    </section>
+    </div>
 
-    <!-- CONTACTO -->
-    <section id="contacto" class="contact">
-        <h2>Contacto</h2>
-        <p>📷 Instagram: @flamitasdehecate</p>
-        <p>📩 Email: flamitasdehecate@gmail.com</p>
-    </section>
+    <!-- Imagen lateral que acompaña el texto de quiénes somos. -->
+    <div class="about-imagen">
+        <img src="./img/Nosotras.jpeg" alt="Sil y Vicky">
+    </div>
+</section>
 
-    <!-- FOOTER -->
+    <!-- Pie de página de la web. -->
     <footer class="footer">
         <p>© Flamitas de Hécate</p>
     </footer>
 
+    <!-- Conecta la página de inicio con las funciones del menú. -->
+    <script src="./js/api.js"></script>
     <script src="./js/main.js"></script>
+    
+    <script src="./js/iniciar.js"></script>
 </body>
 
 </html>

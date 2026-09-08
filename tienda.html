@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light only">
+    <title>Tienda | Flamitas de Hécate</title>
+    <link rel="icon" type="image/png" href="./img/logo-flamitas-manos.png">
+
+    <link rel="stylesheet" href="./css/styles.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Montserrat:wght@300;400;500&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- Menú superior de la tienda con carrito a la derecha. -->
+    <header class="menu">
+        <nav>
+            <!-- Logo de Flamitas en el menú; al tocarlo vuelve al inicio. -->
+            <a href="index.html" class="logo-menu" aria-label="Ir al inicio">
+                <img src="./img/logo-flamitas-manos.png" alt="Logo Flamitas de Hécate">
+            </a>
+
+            <ul class="menu-links">
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="tienda.html">Tienda</a></li>
+                <li><a href="contacto.html" id="linkContacto">Contacto</a></li>
+                <li><a href="mi-cuenta.html" id="linkMiCuenta">Mi cuenta</a></li>
+                <li><a href="admin.html" id="linkAdmin">Admin</a></li>
+                <li><button class="btn-salir" id="btnCerrarSesion">Salir</button></li>
+            </ul>
+
+            <div class="carrito-icono" id="btnCarrito">
+                <img src="./img/carrito-vela.png" alt="Carrito de compras">
+                <span class="contador-carrito" id="contadorCarrito">0</span>
+            </div>
+
+        </nav>
+    </header>
+
+    <!-- Panel lateral donde se ven los productos agregados al carrito. -->
+    <section class="panel-carrito" id="panelCarrito">
+    <div class="panel-carrito-contenido">
+        <button class="cerrar-carrito" id="cerrarCarrito">X</button>
+
+        <h2>Mi carrito</h2>
+
+        <div id="contenedorCarrito">
+            <p>Tu carrito está vacío.</p>
+        </div>
+
+        <h3 id="totalCarrito">Total: $0</h3>
+        <input type="button" value="Finalizar pedido por WhatsApp" id="btnFinalizarPedido">
+    </div>
+</section>
+
+    <!-- Encabezado principal de la página tienda. -->
+    <section class="header tienda-header">
+        <h1>Tienda Flamitas</h1>
+        <p>Velas artesanales para regalarte un momento</p>
+    </section>
+
+    <!-- Contenedor donde JavaScript carga todos los productos de la tienda. -->
+    <section class="gallery">
+        <h2>Nuestros productos</h2>
+
+        <div class="gallery-grid" id="contenedorVelas">
+        </div>
+    </section>
+
+    <!-- Modal para elegir cantidades por esencia en latitas medianas. -->
+    <section class="modal-latitas" id="modalLatitas">
+    <div class="modal-latitas-contenido">
+        <button class="cerrar-modal" id="cerrarModalLatitas">X</button>
+
+        <h2>Latitas Medianas</h2>
+        <p>Elegí la cantidad que querés de cada esencia.</p>
+
+        <div class="contenedor-esencias" id="contenedorEsenciasLatitas">
+        </div>
+
+        <input type="button" value="Agregar selección al carrito" id="btnAgregarLatitas">
+    </div>
+</section>
+
+    <!-- Modal para elegir cantidades por esencia en latitas chicas. -->
+    <section class="modal-latitas" id="modalLatitasChicas">
+    <div class="modal-latitas-contenido">
+        <button class="cerrar-modal" id="cerrarModalLatitasChicas">X</button>
+
+        <h2>Latitas Chicas</h2>
+        <p>Elegí la cantidad que querés de cada esencia.</p>
+
+        <div class="contenedor-esencias" id="contenedorEsenciasLatitasChicas">
+        </div>
+
+        <input type="button" value="Agregar selección al carrito" id="btnAgregarLatitasChicas">
+    </div>
+</section>
+
+    <!-- Modal final para elegir retiro o envío antes de enviar el pedido. -->
+    <section class="modal-latitas" id="modalEntrega">
+    <div class="modal-latitas-contenido modal-entrega-contenido">
+        <button class="cerrar-modal" id="cerrarModalEntrega">X</button>
+
+        <h2>Finalizar pedido</h2>
+        <p>Revisá tu compra y completá los datos finales.</p>
+
+        <form id="formEntrega">
+            <div class="resumen-checkout">
+                <h3>Resumen de compra</h3>
+                <div id="resumenPedidoCheckout"></div>
+                <strong id="totalPedidoCheckout">Total: $0</strong>
+            </div>
+
+            <label for="metodoEntrega">Método de entrega</label>
+            <select id="metodoEntrega">
+                <option value="Retiro">Retiro</option>
+                <option value="Envío">Envío</option>
+            </select>
+
+            <div id="datosEnvio">
+                <label for="departamentoEntrega">Departamento</label>
+                <select id="departamentoEntrega">
+                    <option value="">Seleccioná un departamento</option>
+                    <option value="Artigas">Artigas</option>
+                    <option value="Canelones">Canelones</option>
+                    <option value="Cerro Largo">Cerro Largo</option>
+                    <option value="Colonia">Colonia</option>
+                    <option value="Durazno">Durazno</option>
+                    <option value="Flores">Flores</option>
+                    <option value="Florida">Florida</option>
+                    <option value="Lavalleja">Lavalleja</option>
+                    <option value="Maldonado">Maldonado</option>
+                    <option value="Montevideo">Montevideo</option>
+                    <option value="Paysandú">Paysandú</option>
+                    <option value="Río Negro">Río Negro</option>
+                    <option value="Rivera">Rivera</option>
+                    <option value="Rocha">Rocha</option>
+                    <option value="Salto">Salto</option>
+                    <option value="San José">San José</option>
+                    <option value="Soriano">Soriano</option>
+                    <option value="Tacuarembó">Tacuarembó</option>
+                    <option value="Treinta y Tres">Treinta y Tres</option>
+                </select>
+
+                <label for="direccionEntrega">Dirección</label>
+                <input type="text" id="direccionEntrega" placeholder="Calle, número y esquina">
+
+                <label for="ciudadEntrega">Ciudad o barrio</label>
+                <input type="text" id="ciudadEntrega">
+
+                <label for="codigoPostalEntrega">Código postal</label>
+                <input type="text" id="codigoPostalEntrega">
+
+                <label for="referenciaEntrega">Referencia para la entrega</label>
+                <textarea id="referenciaEntrega" rows="3"></textarea>
+            </div>
+
+            <label for="medioPagoEntrega">Método de pago</label>
+            <select id="medioPagoEntrega">
+                <option value="">Lo coordino por WhatsApp</option>
+                <option value="Efectivo">Efectivo</option>
+                <option value="Transferencia bancaria">Transferencia bancaria</option>
+                <option value="Mercado Pago">Mercado Pago</option>
+            </select>
+
+            <label for="estadoPagoEntrega">Estado del pago</label>
+            <select id="estadoPagoEntrega">
+                <option value="Pendiente">Pago pendiente</option>
+                
+            </select>
+
+            <input type="submit" value="Enviar pedido por WhatsApp">
+        </form>
+    </div>
+</section>
+
+    <footer class="footer">
+        <p>© Flamitas de Hécate</p>
+    </footer>
+
+    <script src="./js/api.js"></script>
+    <script src="./js/clases.js"></script>
+    <script src="./js/usuarios.js"></script>
+    <script src="./js/sistema.js"></script>
+    <script src="./js/tienda.js"></script>
+
+    <script src="./js/iniciar.js"></script>
+</body>
+
+</html>

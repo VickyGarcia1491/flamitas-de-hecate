@@ -1,5 +1,7 @@
+// Espera a que cargue la página de inicio antes de activar el menú.
 window.addEventListener("load", inicio);
 
+// Prepara el menú hamburguesa y cierra el menú cuando se toca un enlace.
 function inicio() {
 
     // BOTON MENU HAMBURGUESA
@@ -16,6 +18,7 @@ function inicio() {
 
 // ---------------- MENU ----------------
 
+// Abre o cierra el menú hamburguesa en pantallas chicas.
 function toggleMenu() {
     let menu = document.querySelector("#menuLinks");
 
@@ -28,6 +31,7 @@ function toggleMenu() {
 }
 
 
+// Cierra el menú hamburguesa después de tocar un enlace.
 function cerrarMenu() {
     let menu = document.querySelector("#menuLinks");
     menu.classList.remove("active");

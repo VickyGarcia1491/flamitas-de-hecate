@@ -1,3 +1,4 @@
+/* Estilos base de toda la web. */
 body {
   margin: 0;
   font-family: 'Montserrat', sans-serif;
@@ -11,6 +12,7 @@ body {
   text-align: center;
 }
 
+/* Carga la tipografía decorativa usada en los títulos principales. */
 @font-face {
   font-family: 'AmsterdamTwo';
   src: url('../fonts/amsterdam-two-ttf.ttf') format('truetype');
@@ -18,24 +20,29 @@ body {
   font-style: normal;
 }
 
+/* Aplica la tipografía decorativa a los títulos. */
 h1, h2 {
   font-family: 'AmsterdamTwo', serif;
 }
 
+/* Define el tamaño general de los títulos principales. */
 h1 {
   font-size: 3rem;
   letter-spacing: 1px;
 }
 
+/* Define el tamaño general de los subtítulos. */
 h2 {
   font-size: 2rem;
 }
 
+/* Da separación interna al contenido principal. */
 main {
   padding: 20px;
 }
 
-.about, .gallery, .contact {
+/* Estilo compartido para secciones grandes de inicio y tienda. */
+.about, .gallery {
   padding: 50px 20px;
   margin: 30px auto;
   max-width: 900px;
@@ -43,28 +50,45 @@ main {
   border-radius: 20px;
 }
 
-.gallery-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  margin-top: 30px;
-  justify-items: center;
+/* Agranda el contenedor de productos para que entren más tarjetas por fila. */
+.gallery {
+  max-width: 1280px;
+  padding-top: 42px;
 }
 
+/* Da más presencia al título de productos dentro de la tienda. */
+.gallery h2 {
+  font-size: 2.75rem;
+  line-height: 1.05;
+  margin: 0 0 28px;
+}
+
+/* Organiza los productos en una grilla responsive. */
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 22px;
+  margin-top: 0;
+  justify-items: stretch;
+}
+
+/* Define el tamaño y efecto visual de imágenes simples de galería. */
 .gallery-grid img {
   width: 100%;
-  max-width: 220px;
-  height: 320px;              
-  border-radius: 18px;
+  max-width: 190px;
+  height: 230px;              
+  border-radius: 16px;
   object-fit: cover;         
   transition: transform 0.4s ease, box-shadow 0.4s ease;
 }
 
+/* Agranda suavemente la imagen cuando se pasa el mouse. */
 .gallery-grid img:hover {
   transform: translateY(-6px) scale(1.03);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
 }
 
+/* Estilo de apoyo para bloques de vela usados como marcador visual. */
 .vela {
   width: 150px;
   height: 150px;
@@ -76,17 +100,18 @@ main {
   font-size: 14px;
 }
 
+/* Pie de página de la web. */
 .footer {
   padding: 20px;
   font-size: 13px;
 }
 
-/* MENÚ */
-
+/* Activa el desplazamiento suave al tocar enlaces internos. */
 html {
   scroll-behavior: smooth;
 }
 
+/* Barra superior de navegación. */
 .menu {
   position: sticky;
   top: 0;
@@ -97,6 +122,33 @@ html {
   z-index: 100;
 }
 
+/* Logo de Flamitas ubicado a la izquierda del menú superior. */
+.menu a.logo-menu {
+  position: absolute;
+  left: 24px;
+  top: 58%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  width: 48px;
+  height: 48px;
+  z-index: 2;
+}
+
+/* Evita que el logo reciba la línea decorativa de los links del menú. */
+.menu a.logo-menu::after {
+  display: none;
+}
+
+/* Ajusta el tamaño del logo sin deformar la imagen. */
+.logo-menu img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Lista de enlaces del menú superior. */
 .menu ul {
   list-style: none;
   display: flex;
@@ -106,6 +158,13 @@ html {
   padding: 0;
 }
 
+/* Reserva espacio lateral para el logo y el carrito cuando existen. */
+.menu .menu-links {
+  box-sizing: border-box;
+  padding: 0 120px;
+}
+
+/* Estilo visual de cada enlace del menú. */
 .menu a {
   text-decoration: none;
   font-family: 'Montserrat', sans-serif;
@@ -116,6 +175,7 @@ html {
   position: relative;
 }
 
+/* Línea decorativa que aparece debajo del enlace del menú. */
 .menu a::after {
   content: "";
   position: absolute;
@@ -127,10 +187,12 @@ html {
   transition: width 0.3s ease;
 }
 
+/* Muestra la línea decorativa al pasar el mouse. */
 .menu a:hover::after {
   width: 100%;
 }
 
+/* Encabezado principal de cada página. */
 .header {
   min-height: auto;
   display: flex;
@@ -141,6 +203,7 @@ html {
   text-align: center;
 }
 
+/* Título grande del encabezado. */
 .header h1 {
   font-family: 'AmsterdamTwo', serif;
   font-size: 4rem;
@@ -148,6 +211,7 @@ html {
   line-height: 1.1;
 }
 
+/* Frase secundaria del encabezado. */
 .header p {
   margin-top: 40px;
   font-size: 1rem;
@@ -156,6 +220,7 @@ html {
   opacity: 0.8;
 }
 
+/* Aplica una entrada suave a las secciones principales. */
 .header,
 .about,
 .gallery,
@@ -163,6 +228,7 @@ html {
   animation: fadeUp 1.2s ease both;
 }
 
+/* Animación que hace aparecer las secciones desde abajo. */
 @keyframes fadeUp {
   from {
     opacity: 0;
@@ -245,7 +311,7 @@ html {
   }
 }
 
-/* MENU */
+/* Botón hamburguesa para abrir el menú en celular. */
 .menu-toggle {
   display: none;
   flex-direction: column;
@@ -256,6 +322,7 @@ html {
   top: 20px;
 }
 
+/* Líneas internas del botón hamburguesa. */
 .menu-toggle span {
   width: 24px;
   height: 2px;
@@ -263,7 +330,7 @@ html {
   transition: all 0.3s ease;
 }
 
-/* MOBILE MENU */
+/* Ajustes básicos del menú en pantallas pequeñas. */
 @media (max-width: 768px) {
   .menu {
   position: sticky;
@@ -274,6 +341,7 @@ html {
   z-index: 100;
 }
 }
+/* Lista flexible de navegación superior. */
 .menu-links {
   list-style: none;
   display: flex;
@@ -283,6 +351,7 @@ html {
   padding: 0;
 }
 
+/* Segunda definición del botón hamburguesa usada por el menú responsive. */
 .menu-toggle {
   display: none;
   flex-direction: column;
@@ -293,12 +362,14 @@ html {
   top: 20px;
 }
 
+/* Tamaño de las líneas del botón hamburguesa. */
 .menu-toggle span {
   width: 26px;
   height: 2px;
   background-color: #4A3B35;
 }
 
+/* Fuerza el modo visual claro en navegadores compatibles. */
 html {
   color-scheme: light;
 }
@@ -327,5 +398,1775 @@ html {
   .menu-toggle {
     display: flex;
   }
+
+  .about {
+  grid-template-columns: 1fr;
 }
 
+.about-texto {
+  padding: 35px 25px;
+  text-align: center;
+}
+
+.about-imagen img {
+  min-height: 320px;
+}
+}
+
+/* Tarjeta visual de cada producto de la tienda. */
+.producto {
+  background-color: rgba(255, 255, 255, 0.72);
+  padding: 18px;
+  border-radius: 18px;
+  width: 100%;
+  min-height: 650px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+
+/* Imagen principal dentro de cada tarjeta de producto. */
+.producto img {
+  width: 100%;
+  height: 290px;
+  border-radius: 16px;
+  object-fit: cover;
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+
+/* Eleva la tarjeta al pasar el mouse. */
+.producto:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 30px rgba(156, 123, 190, 0.25);
+}
+
+/* Agranda la foto del producto al pasar el mouse. */
+.producto:hover img {
+  transform: scale(1.03);
+}
+
+/* Mantiene alineados los nombres de productos. */
+.producto h3 {
+  min-height: 32px;
+  margin: 22px 0 8px;
+}
+
+/* Texto descriptivo de cada producto. */
+.producto p {
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+/* Reserva espacio para que las descripciones queden alineadas. */
+.producto p:first-of-type {
+  min-height: 115px;
+}
+
+/* Precio del producto dentro de la tarjeta. */
+.producto h4 {
+  margin: 10px 0;
+}
+
+/* Primer ajuste del botón de agregar dentro de la tarjeta. */
+.producto input {
+  margin-top: auto;
+  width: 190px;
+}
+
+/* Efecto hover del botón de producto. */
+.producto input:hover {
+  background-color: #7B5BA6;
+  transform: scale(1.03);
+}
+
+/* Estado visual del botón cuando el producto está agotado. */
+.producto input:disabled {
+  background-color: #b8b0bd;
+  cursor: not-allowed;
+}
+
+.item-carrito {
+  border-bottom: 1px solid rgba(74, 59, 53, 0.2);
+  padding: 8px 0;
+}
+
+/* Permite ubicar el icono del carrito dentro del menú. */
+.menu nav {
+  position: relative;
+}
+
+/* Botón visual del carrito con forma de velita. */
+.carrito-icono {
+  position: absolute;
+  right: 25px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 90px;
+  height: 70px;
+  cursor: pointer;
+  overflow: visible;
+}
+
+/* Imagen de la velita usada como icono del carrito. */
+.carrito-icono img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: scale(1.65);
+  display: block;
+}
+
+/* Número de productos dentro del icono del carrito. */
+.contador-carrito {
+  position: absolute;
+  top: 37px;
+  left: 49%;
+  transform: translateX(-50%);
+  color: white;
+  font-size: 18px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* Ajusta el alto del encabezado de la tienda. */
+.tienda-header {
+  padding: 25px 30px;
+}
+
+/* Reduce el título de la tienda para que no ocupe tanto espacio. */
+.tienda-header h1 {
+  font-size: 3rem;
+  margin-bottom: 0;
+}
+
+/* Ajusta la distancia de la frase debajo del título de tienda. */
+.tienda-header p {
+  margin-top: 20px;
+}
+
+/* Estilo final del botón de agregar al carrito. */
+.producto input {
+  border: none;
+  background-color: #9C7BBE;
+  color: white;
+  padding: 12px 18px;
+  border-radius: 22px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+  width: 190px;
+  margin-top: auto;
+}
+
+.producto input:hover {
+  background-color: #7B5BA6;
+  transform: scale(1.03);
+}
+
+.producto input:disabled {
+  background-color: #b8b0bd;
+  cursor: not-allowed;
+}
+
+/* Layout de la sección quiénes somos con texto e imagen. */
+.about {
+  max-width: 1200px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1.7fr 0.8fr;
+  overflow: hidden;
+  text-align: left;
+}
+
+/* Espaciado interno del texto de quiénes somos. */
+.about-texto {
+  padding: 55px 60px;
+}
+
+/* Centra el título de la sección quiénes somos. */
+.about-texto h2 {
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 35px;
+}
+
+/* Ajusta la lectura de los párrafos de quiénes somos. */
+.about-texto p {
+  line-height: 1.7;
+  margin-bottom: 22px;
+}
+
+/* Columna donde se muestra la foto de quiénes somos. */
+.about-imagen {
+  min-height: 100%;
+}
+
+/* Hace que la imagen ocupe la columna sin deformarse. */
+.about-imagen img {
+  width: 100%;
+  height: 100%;
+  min-height: 520px;
+  object-fit: cover;
+  display: block;
+}
+
+/* Panel lateral del carrito de compras. */
+.panel-carrito {
+  position: fixed;
+  top: 0;
+  right: -380px;
+  width: 360px;
+  height: 100vh;
+  background-color: rgba(255, 255, 255, 0.96);
+  box-shadow: -8px 0 25px rgba(0, 0, 0, 0.12);
+  z-index: 200;
+  transition: right 0.3s ease;
+  overflow: hidden;
+}
+
+/* Muestra el carrito cuando JavaScript agrega la clase active. */
+.panel-carrito.active {
+  right: 0;
+}
+
+/* Ordena el contenido interno del carrito. */
+.panel-carrito-contenido {
+  height: 100%;
+  box-sizing: border-box;
+  padding: 28px 24px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Título del panel del carrito. */
+.panel-carrito-contenido h2 {
+  text-align: center;
+  margin: 0 0 18px;
+}
+
+/* Botón para cerrar el panel del carrito. */
+.cerrar-carrito {
+  position: absolute;
+  top: 15px;
+  right: 18px;
+  border: none;
+  background-color: transparent;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+/* Lista desplazable de productos dentro del carrito. */
+#contenedorCarrito {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 8px;
+  margin: 4px 0 16px;
+}
+
+/* Ancho de la barra de scroll del carrito. */
+#contenedorCarrito::-webkit-scrollbar {
+  width: 8px;
+}
+
+/* Color de la barra de scroll del carrito. */
+#contenedorCarrito::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 123, 190, 0.45);
+  border-radius: 10px;
+}
+
+/* Fila de un producto agregado al carrito. */
+.item-carrito {
+  border-bottom: 1px solid rgba(74, 59, 53, 0.16);
+  padding: 12px 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+/* Quita márgenes extra dentro de cada fila del carrito. */
+.item-carrito p {
+  margin: 0;
+}
+
+/* Columna con nombre, detalle y controles de cantidad. */
+.item-carrito-info {
+  flex: 1;
+}
+
+/* Nombre del producto dentro del carrito. */
+.item-carrito-nombre {
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+/* Detalle pequeño del producto dentro del carrito. */
+.item-carrito-detalle {
+  font-size: 0.78rem;
+  opacity: 0.75;
+  margin-top: 4px !important;
+}
+
+/* Botones para subir o bajar cantidades en el carrito. */
+.control-cantidad {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* Número de unidades entre los botones de cantidad. */
+.control-cantidad span {
+  min-width: 18px;
+  text-align: center;
+  font-size: 0.86rem;
+  font-weight: 500;
+}
+
+/* Botones redondos de más y menos cantidad. */
+.control-cantidad input {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+/* Columna del precio y botón quitar en el carrito. */
+.item-carrito-acciones {
+  width: 92px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Precio de cada línea del carrito. */
+.item-carrito-precio {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #7B5BA6;
+  margin-bottom: 7px !important;
+}
+
+/* Botón quitar dentro del carrito. */
+.item-carrito input {
+  border: none;
+  background-color: #9C7BBE;
+  color: white;
+  padding: 7px 11px;
+  border-radius: 18px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+/* Total acumulado del carrito. */
+#totalCarrito {
+  border-top: 1px solid rgba(74, 59, 53, 0.18);
+  padding-top: 14px;
+  margin: 0;
+  text-align: center;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1rem;
+  color: #4A3B35;
+}
+
+/* Fondo oscuro que aparece detrás de los modales. */
+.modal-latitas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background-color: rgba(74, 59, 53, 0.35);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+}
+
+/* Muestra el modal cuando JavaScript agrega la clase active. */
+.modal-latitas.active {
+  display: flex;
+}
+
+/* Caja blanca interna de los modales. */
+.modal-latitas-contenido {
+  width: 90%;
+  max-width: 900px;
+  max-height: 85vh;
+  overflow-y: auto;
+  background-color: rgba(255, 255, 255, 0.97);
+  border-radius: 20px;
+  padding: 35px;
+  position: relative;
+  text-align: center;
+}
+
+/* Botón para cerrar cualquier modal. */
+.cerrar-modal {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  border: none;
+  background-color: transparent;
+  color: #4A3B35;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+/* Grilla de esencias dentro de los modales de latitas. */
+.contenedor-esencias {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 18px;
+  margin: 30px 0;
+}
+
+/* Tarjeta individual para cada esencia de latita. */
+.tarjeta-esencia {
+  background-color: rgba(156, 123, 190, 0.12);
+  border-radius: 16px;
+  padding: 18px;
+}
+
+/* Título de cada esencia. */
+.tarjeta-esencia h3 {
+  margin-top: 0;
+}
+
+/* Campo para elegir cantidad de una esencia. */
+.tarjeta-esencia input[type="number"] {
+  width: 70px;
+  padding: 8px;
+  text-align: center;
+}
+
+/* Botón para agregar al carrito las latitas medianas seleccionadas. */
+#btnAgregarLatitas {
+  border: none;
+  background-color: #9C7BBE;
+  color: white;
+  padding: 12px 22px;
+  border-radius: 22px;
+  font-family: 'Montserrat', sans-serif;
+  cursor: pointer;
+}
+
+/* Efecto hover del botón de latitas medianas. */
+#btnAgregarLatitas:hover {
+  background-color: #7B5BA6;
+}
+
+/* Botón principal para iniciar el cierre del pedido. */
+#btnFinalizarPedido {
+  border: none;
+  background-color: #9C7BBE;
+  color: white;
+  padding: 11px 16px;
+  border-radius: 22px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.88rem;
+  cursor: pointer;
+  margin-top: 14px;
+  width: 100%;
+}
+
+/* Efecto hover del botón finalizar pedido. */
+#btnFinalizarPedido:hover {
+  background-color: #7B5BA6;
+}
+
+/* Texto usado antes para mostrar el usuario en el menú. */
+.usuario-menu {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  color: #7B5BA6;
+  text-transform: uppercase;
+}
+
+/* Botón para cerrar sesión. */
+.btn-salir {
+  border: none;
+  background-color: transparent;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  letter-spacing: 1px;
+  color: #4A3B35;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+/* Ubica bandeja y salir a la derecha del menú administrador. */
+.admin-menu-acciones {
+  position: fixed;
+  right: 24px;
+  top: 15px;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  z-index: 120;
+}
+
+/* Mantiene centrados los enlaces principales del menú admin. */
+.admin-menu-principal {
+  justify-content: center;
+}
+
+/* Botón con forma de bandeja para pedidos nuevos y pendientes del admin. */
+.bandeja-pedidos-admin {
+  position: relative;
+  width: 30px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* Dibuja la bandeja sin depender de una imagen externa. */
+.bandeja-pedidos-icono {
+  position: absolute;
+  left: 3px;
+  bottom: 2px;
+  width: 24px;
+  height: 15px;
+  border: 2px solid #4A3B35;
+  border-top: none;
+  border-radius: 3px 3px 6px 6px;
+  box-sizing: border-box;
+}
+
+/* Dibuja la parte superior inclinada de la bandeja. */
+.bandeja-pedidos-icono::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: -7px;
+  width: 16px;
+  height: 10px;
+  border-left: 2px solid #4A3B35;
+  border-bottom: 2px solid #4A3B35;
+  transform: rotate(-35deg);
+}
+
+/* Globo rojo con la cantidad de pedidos pendientes. */
+.contador-pedidos-admin {
+  position: absolute;
+  right: -8px;
+  top: -10px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background-color: #C83E4D;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  box-sizing: border-box;
+}
+
+/* Oculta el globo cuando no hay pedidos para revisar. */
+.contador-pedidos-admin.sin-pedidos {
+  display: none;
+}
+
+/* Caja principal de login y registro. */
+.formulario-acceso {
+  max-width: 520px;
+  margin: 70px auto;
+  padding: 45px;
+  background-color: rgba(255, 255, 255, 0.72);
+  border-radius: 20px;
+  text-align: left;
+}
+
+/* Ancho especial del formulario de registro. */
+.formulario-registro {
+  max-width: 680px;
+}
+
+/* Ajusta el encabezado de la página de contacto para que no ocupe tanto alto. */
+.header-contacto {
+  padding-bottom: 10px;
+}
+
+/* Define un ancho cómodo para el formulario de contacto. */
+.formulario-contacto {
+  max-width: 640px;
+}
+
+/* Título de las páginas de login y registro. */
+.formulario-acceso h1 {
+  text-align: center;
+  font-family: 'AmsterdamTwo', serif;
+  font-size: 3rem;
+  margin: 0 0 12px;
+}
+
+/* Título interno del formulario de contacto. */
+.formulario-acceso h2 {
+  text-align: center;
+  font-family: 'AmsterdamTwo', serif;
+  font-size: 2.7rem;
+  margin: 0 0 12px;
+}
+
+/* Texto introductorio de login y registro. */
+.formulario-acceso p {
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* Orden vertical de campos en login y registro. */
+.formulario-acceso form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+/* Etiquetas de los campos de login y registro. */
+.formulario-acceso label {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* Campos de formulario compartidos entre acceso y entrega. */
+.formulario-acceso input,
+.formulario-acceso textarea,
+.modal-entrega-contenido input,
+.modal-entrega-contenido textarea,
+.modal-entrega-contenido select {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid rgba(74, 59, 53, 0.18);
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.95rem;
+}
+
+/* Permite escribir consultas largas sin romper el diseño del formulario. */
+.formulario-acceso textarea {
+  resize: vertical;
+  min-height: 140px;
+}
+
+/* Botones principales de acceso y entrega. */
+.formulario-acceso input[type="submit"],
+.modal-entrega-contenido input[type="submit"] {
+  border: none;
+  background-color: #9C7BBE;
+  color: white;
+  border-radius: 22px;
+  cursor: pointer;
+  margin-top: 12px;
+}
+
+.formulario-acceso input[type="submit"]:hover,
+.modal-entrega-contenido input[type="submit"]:hover {
+  background-color: #7B5BA6;
+}
+
+/* Mensajes de ayuda o error debajo de formularios. */
+.mensaje-formulario {
+  color: #7B5BA6;
+  font-weight: 500;
+}
+
+/* Enlaces internos de login y registro. */
+.texto-formulario a {
+  color: #7B5BA6;
+  font-weight: 500;
+}
+
+/* Tamaño del modal de entrega. */
+.modal-entrega-contenido {
+  max-width: 560px;
+}
+
+/* Resumen visual antes de confirmar el pedido por WhatsApp. */
+.resumen-checkout {
+  background-color: rgba(156, 123, 190, 0.1);
+  border-radius: 18px;
+  padding: 18px;
+  margin-bottom: 14px;
+}
+
+/* Título del resumen de compra dentro del checkout. */
+.resumen-checkout h3 {
+  margin: 0 0 12px;
+  color: #7B5BA6;
+  text-align: center;
+}
+
+/* Línea de producto dentro del resumen final de compra. */
+.linea-resumen-checkout {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(74, 59, 53, 0.12);
+  font-size: 0.9rem;
+}
+
+/* Quita la línea del último producto del resumen. */
+.linea-resumen-checkout:last-child {
+  border-bottom: none;
+}
+
+/* Agrupa datos de entrega y pago en el resumen final. */
+.detalle-resumen-checkout {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(74, 59, 53, 0.14);
+}
+
+/* Mantiene compactas las líneas de entrega y pago. */
+.detalle-resumen-checkout p {
+  margin: 5px 0;
+  font-size: 0.9rem;
+}
+
+/* Total destacado dentro del modal de finalizar pedido. */
+#totalPedidoCheckout {
+  display: block;
+  margin-top: 12px;
+  text-align: right;
+  color: #4A3B35;
+}
+
+/* Contenedor principal de la página Mi cuenta. */
+.cuenta-cliente {
+  max-width: 980px;
+  margin: 0 auto 50px;
+  display: grid;
+  grid-template-columns: minmax(240px, 0.8fr) minmax(320px, 1.2fr);
+  gap: 24px;
+}
+
+/* Bloques internos para datos del cliente e historial. */
+.cuenta-bloque {
+  background-color: rgba(255, 255, 255, 0.72);
+  border-radius: 20px;
+  padding: 34px;
+  text-align: left;
+}
+
+/* Títulos dentro de Mi cuenta. */
+.cuenta-bloque h2 {
+  text-align: center;
+  margin-top: 0;
+}
+
+/* Tarjeta individual de pedido en Mi cuenta. */
+.pedido-cuenta {
+  border-bottom: 1px solid rgba(74, 59, 53, 0.16);
+  padding: 16px 0;
+}
+
+/* Evita una línea sobrante debajo del último pedido del cliente. */
+.pedido-cuenta:last-child {
+  border-bottom: none;
+}
+
+/* Tamaño y alineación del modal para editar pedidos. */
+.modal-editar-pedido-contenido {
+  max-width: 980px;
+  text-align: left;
+}
+
+.modal-editar-pedido-contenido h2 {
+  text-align: center;
+}
+
+/* Ancho interno del formulario de edición de pedidos. */
+.form-editar-pedido {
+  max-width: 860px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Bloque donde se editan los productos de un pedido. */
+.editor-productos-pedido {
+  grid-column: 1 / -1;
+  background-color: rgba(156, 123, 190, 0.1);
+  border-radius: 18px;
+  padding: 18px;
+  margin-top: 10px;
+}
+
+.editor-productos-pedido h3 {
+  margin: 0 0 14px;
+  color: #7B5BA6;
+  text-align: center;
+}
+
+/* Fila editable de un producto dentro del pedido. */
+.producto-editar-pedido {
+  display: grid;
+  grid-template-columns: 1.4fr 110px 90px 90px auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(74, 59, 53, 0.14);
+}
+
+.producto-editar-pedido:last-child {
+  border-bottom: none;
+}
+
+.producto-editar-pedido input,
+.agregar-producto-edicion input,
+.agregar-producto-edicion select {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid rgba(74, 59, 53, 0.18);
+  border-radius: 12px;
+  padding: 9px 10px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.86rem;
+}
+
+.producto-editar-pedido input[type="button"],
+.agregar-producto-edicion input[type="button"] {
+  grid-column: auto;
+  width: fit-content;
+}
+
+/* Fila para agregar un producto nuevo al pedido editado. */
+.agregar-producto-edicion {
+  display: grid;
+  grid-template-columns: 1fr 110px 100px auto;
+  gap: 10px;
+  align-items: center;
+  margin-top: 16px;
+}
+
+#totalEditarPedido {
+  grid-column: 2;
+  margin: 8px 0;
+  font-family: 'Montserrat', sans-serif;
+  color: #4A3B35;
+  text-align: right;
+  line-height: 1.55;
+}
+
+.modal-entrega-contenido form,
+#datosEnvio {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+  margin-top: 24px;
+}
+
+#datosEnvio {
+  margin-top: 0;
+}
+
+/* Layout principal del panel administrador. */
+.admin-panel {
+  max-width: 1280px;
+  margin: 30px auto 70px;
+  padding: 0 20px;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+/* Tamaño del título en el encabezado del admin. */
+.admin-header h1 {
+  font-size: 3.2rem;
+}
+
+/* Menú lateral del panel administrador. */
+.admin-menu-lateral {
+  position: sticky;
+  top: 92px;
+  background-color: rgba(255, 255, 255, 0.72);
+  border-radius: 20px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Botones del menú lateral del admin. */
+.admin-menu-boton {
+  border: none;
+  background-color: rgba(156, 123, 190, 0.14);
+  color: #4A3B35;
+  padding: 13px 14px;
+  border-radius: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.92rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+/* Estado activo o hover de los botones del menú lateral. */
+.admin-menu-boton.active,
+.admin-menu-boton:hover {
+  background-color: #9C7BBE;
+  color: white;
+}
+
+/* Grilla superior con números importantes del dashboard. */
+.dashboard-resumen-admin {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 14px;
+  margin: 24px 0;
+}
+
+/* Tarjeta individual de resumen en el dashboard. */
+.dashboard-card {
+  background-color: rgba(156, 123, 190, 0.13);
+  border-radius: 18px;
+  padding: 18px;
+  min-height: 92px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* Etiqueta chica de cada tarjeta del dashboard. */
+.dashboard-card span {
+  color: #7B5BA6;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+/* Número destacado de cada tarjeta del dashboard. */
+.dashboard-card strong {
+  color: #4A3B35;
+  font-size: 1.55rem;
+  line-height: 1.1;
+}
+
+/* Grilla con paneles de pedidos pendientes y bajo stock. */
+.dashboard-grid-admin {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+/* Panel interno del dashboard para listas breves. */
+.dashboard-panel {
+  background-color: rgba(255, 255, 255, 0.58);
+  border-radius: 18px;
+  padding: 18px;
+}
+
+/* Encabezado de cada panel del dashboard. */
+.dashboard-panel-titulo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+/* Título de cada panel del dashboard. */
+.dashboard-panel-titulo h3 {
+  margin: 0;
+  color: #7B5BA6;
+}
+
+/* Lista vertical de pedidos o productos importantes. */
+.dashboard-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Fila compacta dentro del dashboard. */
+.dashboard-item {
+  border-bottom: 1px solid rgba(74, 59, 53, 0.12);
+  padding-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+}
+
+/* Quita el separador de la última fila del dashboard. */
+.dashboard-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+/* Ordena los textos internos de cada fila del dashboard. */
+.dashboard-item div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Texto secundario de cada fila del dashboard. */
+.dashboard-item span {
+  font-size: 0.82rem;
+  opacity: 0.78;
+}
+
+/* Botones rápidos al final del dashboard. */
+.dashboard-acciones-admin {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+/* Caja principal de cada sección administrativa. */
+.admin-bloque {
+  background-color: rgba(255, 255, 255, 0.72);
+  border-radius: 20px;
+  padding: 28px;
+  text-align: left;
+}
+
+/* Oculta secciones administrativas que no están seleccionadas. */
+.admin-seccion {
+  display: none;
+}
+
+/* Muestra la sección administrativa seleccionada. */
+.admin-seccion.active {
+  display: block;
+}
+
+/* Títulos internos del panel administrador. */
+.admin-bloque h2 {
+  text-align: center;
+  margin-top: 0;
+}
+
+/* Texto de ayuda dentro del panel administrador. */
+.admin-ayuda {
+  max-width: 720px;
+  margin: 0 auto 22px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* Encabezado interno con título y acciones. */
+.admin-titulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-titulo h2 {
+  margin: 0;
+}
+
+/* Agrupa botones de acción del historial. */
+.admin-acciones-titulo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* Botón para borrar el historial de pedidos. */
+#btnVaciarPedidos {
+  border: none;
+  background-color: #9C7BBE;
+  color: white;
+  padding: 9px 14px;
+  border-radius: 18px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+#btnVaciarPedidos:hover {
+  background-color: #7B5BA6;
+}
+
+/* Filtros para consultar ventas por día o mes. */
+.filtros-pedidos-admin {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(160px, 1fr));
+  gap: 14px;
+  margin: 24px 0 16px;
+  align-items: end;
+}
+
+.filtros-pedidos-admin div {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.filtros-pedidos-admin label {
+  color: #7B5BA6;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.filtros-pedidos-admin input[type="date"],
+.filtros-pedidos-admin input[type="month"] {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid rgba(74, 59, 53, 0.18);
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.9rem;
+}
+
+/* Tarjetas de resumen de ventas y medios de pago. */
+.resumen-ventas-admin {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.resumen-ventas-admin p {
+  margin: 0;
+  background-color: rgba(156, 123, 190, 0.13);
+  border-radius: 16px;
+  padding: 14px 16px;
+  font-weight: 600;
+  color: #7B5BA6;
+}
+
+/* Resumen de productos vendidos para cierre de caja. */
+.cierre-caja-admin {
+  background-color: rgba(255, 255, 255, 0.55);
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 18px;
+}
+
+.cierre-caja-admin h3 {
+  margin: 0 0 10px;
+  color: #7B5BA6;
+}
+
+.cierre-caja-admin ul {
+  columns: 2;
+  margin: 0;
+  padding-left: 22px;
+}
+
+/* Tarjeta de cada pedido dentro del historial. */
+.pedido-admin {
+  border-bottom: 1px solid rgba(74, 59, 53, 0.18);
+  padding: 18px 0;
+}
+
+.pedido-admin:last-child {
+  border-bottom: none;
+}
+
+/* Encabezado de cada pedido con número y fecha. */
+.pedido-admin-encabezado {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+}
+
+.pedido-admin h3 {
+  margin: 0;
+  color: #7B5BA6;
+}
+
+.pedido-admin span {
+  font-size: 0.78rem;
+  opacity: 0.75;
+  text-align: right;
+}
+
+/* Selector de estado de cada pedido. */
+.estado-pedido {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.estado-pedido label {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #7B5BA6;
+}
+
+.estado-pedido select {
+  border: 1px solid rgba(74, 59, 53, 0.18);
+  border-radius: 14px;
+  padding: 8px 10px;
+  font-family: 'Montserrat', sans-serif;
+  color: #4A3B35;
+  background-color: rgba(255, 255, 255, 0.85);
+}
+
+.pedido-admin p {
+  margin: 8px 0;
+  line-height: 1.45;
+}
+
+.pedido-admin ul {
+  margin: 12px 0;
+  padding-left: 22px;
+}
+
+.pedido-admin li {
+  margin-bottom: 6px;
+}
+
+/* Botones para editar o eliminar pedidos. */
+.acciones-pedido-admin {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+/* Aviso que indica cuando el historial está filtrado por pendientes. */
+.aviso-pedidos-pendientes {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 16px 0 8px;
+  padding: 14px 16px;
+  background-color: rgba(156, 123, 190, 0.12);
+  border-radius: 16px;
+  color: #4A3B35;
+}
+
+/* Mensaje cuando no hay datos para mostrar. */
+.admin-vacio {
+  text-align: center;
+}
+
+/* Tablas usadas en productos, stock y esencias. */
+.tabla-admin {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.tabla-admin th,
+.tabla-admin td {
+  border-bottom: 1px solid rgba(74, 59, 53, 0.16);
+  padding: 11px 8px;
+  text-align: left;
+}
+
+.tabla-admin th {
+  color: #7B5BA6;
+}
+
+/* Campo editable de stock dentro de tablas. */
+.input-stock-admin {
+  width: 90px;
+  box-sizing: border-box;
+  border: 1px solid rgba(74, 59, 53, 0.2);
+  border-radius: 12px;
+  padding: 8px 10px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.9rem;
+}
+
+/* Etiqueta de estado general del stock. */
+.stock-estado {
+  display: inline-block;
+  min-width: 96px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Estado de stock suficiente. */
+.stock-verde {
+  background-color: rgba(96, 158, 112, 0.18);
+  color: #3d774a;
+}
+
+/* Estado de stock bajo. */
+.stock-amarillo {
+  background-color: rgba(224, 180, 74, 0.22);
+  color: #8a651d;
+}
+
+/* Estado de producto agotado. */
+.stock-rojo {
+  background-color: rgba(192, 79, 79, 0.18);
+  color: #a63d3d;
+}
+
+/* Estado para productos cuyo stock se consulta manualmente. */
+.stock-consultar {
+  background-color: rgba(156, 123, 190, 0.16);
+  color: #7B5BA6;
+}
+
+/* Botones de acciones dentro de tablas y pedidos. */
+.btn-tabla-admin {
+  border: none;
+  background-color: #9C7BBE;
+  color: white;
+  padding: 8px 13px;
+  border-radius: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.btn-tabla-admin:hover {
+  background-color: #7B5BA6;
+}
+
+/* Botones principales dentro de formularios del admin. */
+.btn-form-admin {
+  border: none !important;
+  background-color: #9C7BBE !important;
+  color: white !important;
+  padding: 11px 16px !important;
+  border-radius: 22px !important;
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.9rem !important;
+  cursor: pointer !important;
+  transition: background-color 0.3s ease, transform 0.3s ease !important;
+  width: fit-content !important;
+  min-width: 0 !important;
+  justify-self: start;
+}
+
+.btn-form-admin:hover {
+  background-color: #7B5BA6 !important;
+  transform: scale(1.02);
+}
+
+/* Botón de eliminar con color de advertencia. */
+.btn-eliminar-admin {
+  background-color: #b45f65;
+}
+
+.btn-eliminar-admin:hover {
+  background-color: #94474d;
+}
+
+/* Formularios del admin para productos, ventas y edición. */
+.form-producto-admin {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 12px 18px;
+  margin: 26px 0 32px;
+  align-items: center;
+}
+
+/* Reduce el ancho del formulario de venta manual. */
+#formVentaManual {
+  max-width: 760px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.form-producto-admin label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #7B5BA6;
+  text-align: left;
+}
+
+.form-producto-admin input,
+.form-producto-admin textarea,
+.form-producto-admin select {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid rgba(74, 59, 53, 0.18);
+  border-radius: 14px;
+  padding: 11px 13px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.92rem;
+}
+
+.form-producto-admin input[type="submit"],
+.form-producto-admin input[type="button"],
+.form-producto-admin .mensaje-formulario {
+  grid-column: 2;
+}
+
+.form-producto-admin textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.form-producto-admin input[type="submit"] {
+  border: none;
+  background-color: #9C7BBE;
+  color: white;
+  border-radius: 22px;
+  cursor: pointer;
+  margin-top: 8px;
+  width: fit-content;
+  min-width: 170px;
+  justify-self: start;
+}
+
+.form-producto-admin input[type="submit"]:hover {
+  background-color: #7B5BA6;
+}
+
+.producto-editar-pedido input[type="button"],
+.agregar-producto-edicion input[type="button"] {
+  grid-column: auto !important;
+  width: fit-content !important;
+}
+
+/* Da más espacio a la columna de detalle en la tabla de productos. */
+.tabla-productos-admin td:nth-child(2) {
+  min-width: 260px;
+  max-width: 420px;
+  white-space: normal;
+  line-height: 1.45;
+}
+
+/* Campos editables dentro de la tabla de productos. */
+.input-tabla-admin,
+.textarea-tabla-admin {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid rgba(74, 59, 53, 0.18);
+  border-radius: 12px;
+  padding: 8px 10px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.86rem;
+}
+
+.textarea-tabla-admin {
+  min-width: 260px;
+  min-height: 82px;
+  resize: vertical;
+}
+
+.input-precio-admin {
+  width: 86px;
+}
+
+.input-foto-tabla {
+  width: 170px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.78rem;
+}
+
+.acciones-tabla-admin {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Sección de control de stock por esencia. */
+.stock-esencias-admin {
+  margin-top: 34px;
+}
+
+.stock-esencias-admin h3 {
+  text-align: center;
+  color: #7B5BA6;
+}
+
+/* Organiza las tablas de esencias en columnas. */
+.stock-esencias-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(260px, 1fr));
+  gap: 22px;
+}
+
+.stock-esencias-grid h4 {
+  color: #7B5BA6;
+  margin-bottom: 10px;
+}
+
+/* Lista de productos cargados en una venta manual. */
+.venta-manual-lista {
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Fila de producto dentro de una venta manual. */
+.venta-manual-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(74, 59, 53, 0.14);
+}
+
+/* Total calculado para la venta manual. */
+#totalVentaManual {
+  grid-column: 2;
+  margin: 8px 0;
+  font-family: 'Montserrat', sans-serif;
+  color: #4A3B35;
+  text-align: right;
+}
+
+/* Ajustes para pantallas medianas donde la tienda necesita menos ancho. */
+@media (max-width: 1100px) {
+  .gallery {
+    max-width: 94%;
+  }
+
+  .gallery-grid {
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  }
+
+  .producto {
+    min-height: 620px;
+  }
+
+  .producto img {
+    height: 250px;
+  }
+}
+
+/* Ajustes del panel administrador para tablet. */
+@media (max-width: 900px) {
+  .admin-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-menu-lateral {
+    position: static;
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .admin-menu-boton {
+    flex: 0 0 auto;
+    text-align: center;
+  }
+
+  .admin-titulo,
+  .pedido-admin-encabezado {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dashboard-resumen-admin,
+  .dashboard-grid-admin {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-panel-titulo,
+  .dashboard-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .tabla-admin {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .form-producto-admin {
+    grid-template-columns: 1fr;
+  }
+
+  .form-producto-admin input[type="submit"],
+  .form-producto-admin input[type="button"],
+  .form-producto-admin .mensaje-formulario {
+    grid-column: 1;
+  }
+
+  .venta-manual-lista,
+  #totalVentaManual,
+  #totalEditarPedido {
+    grid-column: 1;
+  }
+
+  .filtros-pedidos-admin,
+  .resumen-ventas-admin {
+    grid-template-columns: 1fr;
+  }
+
+  .stock-esencias-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cierre-caja-admin ul {
+    columns: 1;
+  }
+}
+
+/* Ajustes del modal de edición de pedidos en pantallas chicas. */
+@media (max-width: 820px) {
+  .producto-editar-pedido,
+  .agregar-producto-edicion {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-editar-pedido-contenido {
+    padding: 28px 18px;
+  }
+}
+
+/* Ajustes generales para celular. */
+@media (max-width: 768px) {
+  .menu {
+    padding: 12px 8px;
+    box-sizing: border-box;
+  }
+
+  .menu a.logo-menu {
+    left: 8px;
+    top: 58%;
+    width: 42px;
+    height: 42px;
+  }
+
+  .menu .menu-links {
+    position: static;
+    transform: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+    width: auto;
+    padding: 0 72px 0 60px;
+    gap: 12px 18px;
+    background: transparent;
+    justify-content: flex-start;
+  }
+
+  .btn-salir {
+    font-size: 12px;
+  }
+
+  .admin-menu-acciones {
+    right: 8px;
+    top: 12px;
+    gap: 12px;
+  }
+
+  .bandeja-pedidos-admin {
+    width: 28px;
+    height: 22px;
+  }
+
+  .carrito-icono {
+    right: 4px;
+    width: 70px;
+    height: 56px;
+  }
+
+  .contador-carrito {
+    top: 30px;
+    font-size: 15px;
+  }
+
+  .header {
+    min-height: auto;
+  }
+
+  .tienda-header h1,
+  .admin-header h1 {
+    font-size: 2.25rem;
+  }
+
+  .gallery-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .producto {
+    min-height: 560px;
+  }
+
+  .producto img {
+    height: 220px;
+  }
+
+  .producto p:first-of-type {
+    min-height: auto;
+  }
+
+  .panel-carrito {
+    right: -100%;
+    width: 92%;
+    max-width: 360px;
+  }
+
+  .cuenta-cliente {
+    grid-template-columns: 1fr;
+    padding: 0 14px;
+  }
+
+  .cuenta-bloque {
+    padding: 26px 20px;
+  }
+
+  .modal-latitas-contenido {
+    width: 86%;
+    padding: 28px 20px;
+  }
+}
+
+/* Ajustes para celulares angostos. */
+@media (max-width: 560px) {
+  main {
+    padding: 12px;
+  }
+
+  .gallery {
+    margin: 18px 10px;
+    padding: 28px 14px;
+  }
+
+  .gallery h2 {
+    font-size: 2.15rem;
+    margin-bottom: 22px;
+  }
+
+  .gallery-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .producto {
+    min-height: auto;
+  }
+
+  .producto img {
+    max-width: 260px;
+  }
+
+  .admin-bloque {
+    padding: 20px 14px;
+  }
+
+  .dashboard-resumen-admin {
+    gap: 10px;
+  }
+
+  .dashboard-card {
+    min-height: 82px;
+    padding: 15px;
+  }
+
+  .venta-manual-item {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+}

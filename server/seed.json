@@ -1,0 +1,82 @@
+[
+  {
+    "id": 1,
+    "nombre": "Vela Clásica",
+    "descripcion": "Diseño simple. Elegí aroma, color y los detalles que la hacen única",
+    "precio": 350,
+    "imagen": "vela1.jpeg",
+    "stock": 5
+  },
+  {
+    "id": 2,
+    "nombre": "Osito Corazón",
+    "descripcion": "Diseño delicado que combina ternura y detalle. Perfecta para regalar y decorar",
+    "precio": 430,
+    "imagen": "vela2.jpeg",
+    "stock": 3
+  },
+  {
+    "id": 3,
+    "nombre": "Cocoteros",
+    "descripcion": "300gr de cera de soja, naranjas, canela y anis estrellado. El aspecto rústicoque viste cualquier sitio del hogar",
+    "precio": 700,
+    "imagen": "vela3.jpeg",
+    "stock": 4
+  },
+  {
+    "id": 4,
+    "nombre": "Latita Mediana",
+    "descripcion": "80gr de cera de soja. Sus esencias son Bamboo, Manzana y Canela, Mandarina y Té Verde, Bergamota y Verbena, Vainilla, Pino, Sándalo y Cedro.",
+    "precio": 280,
+    "imagen": "Latita bamboo.jpeg",
+    "stock": "Consultar"
+  },
+  {
+    "id": 5,
+    "nombre": "Latita Chicas",
+    "descripcion": "60gr de cera de soja. Sus esencias son Algas Marinas, Sandia, Melón y Pepino, Lavanda",
+    "precio": 240,
+    "imagen": "Latita colores 4.jpeg",
+    "stock": "Consultar"
+  },
+  {
+    "id": 6,
+    "nombre": "Velas de Miel",
+    "descripcion": "Envuelve los espacios con una energía cálida. Vienen en par pero puedes consultar por más cantidades",
+    "precio": 100,
+    "imagen": "Velas de miel.jpeg",
+    "stock": 26
+  },
+  {
+    "id": 7,
+    "nombre": "Velón de Miel",
+    "descripcion": "Diseño tipo colmena, con relieve detallado y natural. 100% miel.",
+    "precio": 280,
+    "imagen": "Velon de miel - panal.jpeg",
+    "stock": 4
+  },
+  {
+    "id": 8,
+    "nombre": "Flores Solitarias",
+    "descripcion": "Estas hermosas flores para decorar son perfectas cuando el regalo es un detalle simple y delicado",
+    "precio": 150,
+    "imagen": "Velitas individuales.jpeg",
+    "stock": 17
+  },
+  {
+    "id": 9,
+    "nombre": "Wax Melts y Hornitos",
+    "descripcion": "Transforma cualquier espacio con aromas envolventes. Incluye hornito cerámico y melts aromáticos",
+    "precio": 400,
+    "imagen": "Wax Melts.jpeg",
+    "stock": 10
+  },
+  {
+    "id": 10,
+    "nombre": "Boxes de Hécate",
+    "descripcion": "Podes personalizar tu Box como más te guste y nosotras la armamos",
+    "precio": "Consultar",
+    "imagen": "Flamita's box.jpeg",
+    "stock": "A definir"
+  }
+]

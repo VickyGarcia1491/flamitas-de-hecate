@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light only">
+    <title>Mi cuenta | Flamitas de Hécate</title>
+    <link rel="icon" type="image/png" href="./img/logo-flamitas-manos.png">
+
+    <link rel="stylesheet" href="./css/styles.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Montserrat:wght@300;400;500&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- Menú superior de la cuenta del cliente. -->
+    <header class="menu">
+        <nav>
+            <!-- Logo de Flamitas en el menú; al tocarlo vuelve al inicio. -->
+            <a href="index.html" class="logo-menu" aria-label="Ir al inicio">
+                <img src="./img/logo-flamitas-manos.png" alt="Logo Flamitas de Hécate">
+            </a>
+
+            <ul class="menu-links">
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="tienda.html">Tienda</a></li>
+                <li><a href="contacto.html" id="linkContacto">Contacto</a></li>
+                <li><a href="mi-cuenta.html">Mi cuenta</a></li>
+                <li><a href="admin.html" id="linkAdmin">Admin</a></li>
+                <li><button class="btn-salir" id="btnCerrarSesion">Salir</button></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Encabezado de la página de cuenta. -->
+    <section class="header tienda-header">
+        <h1>Mi cuenta</h1>
+        <p>Tus datos y pedidos en Flamitas</p>
+    </section>
+
+    <!-- Datos principales del cliente y su historial. -->
+    <main class="cuenta-cliente">
+        <section class="cuenta-bloque">
+            <h2>Mis datos</h2>
+            <div id="datosCuentaCliente"></div>
+        </section>
+
+        <section class="cuenta-bloque">
+            <h2>Mis pedidos</h2>
+            <div id="historialCuentaCliente"></div>
+        </section>
+    </main>
+
+    <!-- Pie de página de la web. -->
+    <footer class="footer">
+        <p>© Flamitas de Hécate</p>
+    </footer>
+
+    <!-- Conecta la cuenta con usuarios y pedidos guardados. -->
+    <script src="./js/api.js"></script>
+    <script src="./js/usuarios.js"></script>
+    <script src="./js/mi-cuenta.js"></script>
+    <script src="./js/iniciar.js"></script>
+</body>
+
+</html>
