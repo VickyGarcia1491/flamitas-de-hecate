@@ -13,7 +13,7 @@ window.addEventListener('load', async () => {
  }
 });
 
-// Activa el menú hamburguesa en todas las páginas y crea el botón si falta.
+// Activa el menú hamburguesa en todas las páginas y mantiene separadas las acciones del usuario.
 function prepararMenuResponsive() {
  const nav = document.querySelector('.menu nav');
  const links = document.querySelector('.menu .menu-links');
@@ -32,25 +32,26 @@ function prepararMenuResponsive() {
 
  links.id = links.id || 'menuLinks';
  links.dataset.menuPreparado = 'true';
+ toggle.setAttribute('aria-controls', links.id);
+ toggle.setAttribute('aria-expanded', 'false');
 
- const adminActions = document.querySelector('.admin-menu-acciones');
- if (adminActions && !links.contains(adminActions)) {
-  const itemActions = document.createElement('li');
-  itemActions.className = 'menu-acciones-item';
-  itemActions.appendChild(adminActions);
-  links.appendChild(itemActions);
- }
+ const cerrarMenu = () => {
+  links.classList.remove('active');
+  toggle.classList.remove('active');
+  toggle.setAttribute('aria-expanded', 'false');
+ };
 
  toggle.addEventListener('click', () => {
-  links.classList.toggle('active');
-  toggle.classList.toggle('active');
+  const abierto = !links.classList.contains('active');
+  links.classList.toggle('active', abierto);
+  toggle.classList.toggle('active', abierto);
+  toggle.setAttribute('aria-expanded', abierto ? 'true' : 'false');
  });
 
- links.querySelectorAll('a, button').forEach(item => {
-  item.addEventListener('click', () => {
-   links.classList.remove('active');
-   toggle.classList.remove('active');
-  });
+ links.addEventListener('click', event => {
+  if (event.target.closest('a, button')) {
+   cerrarMenu();
+  }
  });
 }
 

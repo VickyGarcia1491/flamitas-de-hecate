@@ -1,6 +1,14 @@
 /* Estilos base de toda la web. */
+html {
+  max-width: 100%;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
+  max-width: 100%;
+  overflow-x: hidden;
   font-family: 'Montserrat', sans-serif;
   background-image: url('../img/fondo-flamitas-web.png');
   background-size: cover;
@@ -104,11 +112,6 @@ main {
 .footer {
   padding: 20px;
   font-size: 13px;
-}
-
-/* Activa el desplazamiento suave al tocar enlaces internos. */
-html {
-  scroll-behavior: smooth;
 }
 
 /* Barra superior de navegación. */
@@ -991,6 +994,11 @@ html {
 /* Mantiene centrados los enlaces principales del menú admin. */
 .admin-menu-principal {
   justify-content: center;
+}
+
+/* En escritorio el panel admin ya tiene Salir a la derecha; el duplicado queda para celular. */
+.admin-menu-principal .menu-salir-dinamico {
+  display: none;
 }
 
 /* Botón con forma de bandeja para pedidos nuevos y pendientes del admin. */
@@ -2715,5 +2723,217 @@ html {
   .form-producto-admin select {
     min-height: 44px;
     font-size: 1rem;
+  }
+}
+
+/* Ajuste final del menú en tablet y celular: saludo arriba, navegación en desplegable y sin ancho extra. */
+@media (max-width: 900px) {
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    background-size: cover;
+    background-position: center top;
+  }
+
+  .menu,
+  .header,
+  .about,
+  .gallery,
+  .contact,
+  .admin-panel,
+  .admin-bloque,
+  .footer {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .menu {
+    min-height: 64px;
+    padding: 8px 0;
+    overflow: visible;
+  }
+
+  .menu nav {
+    position: relative;
+    display: block;
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .menu a.logo-menu {
+    left: 12px;
+    top: 50%;
+    width: 44px;
+    height: 44px;
+    z-index: 135;
+  }
+
+  .saludo-menu {
+    position: absolute !important;
+    left: 64px;
+    right: 72px;
+    top: 50%;
+    transform: translateY(-50%) !important;
+    display: block;
+    max-width: none;
+    overflow: hidden;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #7B5BA6;
+    font-size: 0.74rem;
+    line-height: 1.2;
+    z-index: 124;
+  }
+
+  .menu:has(.carrito-icono) .saludo-menu {
+    right: 88px;
+  }
+
+  .menu:has(.admin-menu-acciones) .saludo-menu {
+    right: 112px;
+  }
+
+  .menu-toggle {
+    display: flex !important;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 145;
+  }
+
+  .menu:has(.carrito-icono) .menu-toggle {
+    right: 84px;
+  }
+
+  .menu .menu-links {
+    position: absolute !important;
+    top: calc(100% + 8px) !important;
+    right: 10px !important;
+    left: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    width: min(250px, calc(100vw - 20px)) !important;
+    max-width: calc(100vw - 20px) !important;
+    max-height: calc(100vh - 90px);
+    overflow-y: auto;
+    padding: 14px !important;
+    gap: 10px !important;
+    background: rgba(255, 255, 255, 0.97) !important;
+    border: 1px solid rgba(156, 123, 190, 0.2);
+    border-radius: 16px;
+    box-shadow: 0 14px 34px rgba(74, 59, 53, 0.14);
+    transform: translateX(110%) !important;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 132;
+  }
+
+  .menu .menu-links.active {
+    transform: translateX(0) !important;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .menu .menu-links li {
+    display: block;
+    width: 100%;
+  }
+
+  .menu .admin-menu-principal .menu-salir-dinamico {
+    display: block;
+  }
+
+  .menu .menu-links a,
+  .menu .menu-links .btn-salir {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 0.84rem;
+    line-height: 1.25;
+  }
+
+  .admin-menu-acciones {
+    position: absolute !important;
+    right: 58px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 136;
+  }
+
+  .admin-menu-acciones .btn-salir {
+    display: none;
+  }
+
+  .bandeja-pedidos-admin {
+    width: 30px;
+    height: 26px;
+  }
+
+  .carrito-icono {
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 70px;
+    height: 56px;
+    z-index: 136;
+  }
+
+  .contador-carrito {
+    top: 30px;
+    right: 26px;
+    font-size: 15px;
+  }
+}
+
+/* Ajusta la misma barra para celulares angostos sin tapar logo, saludo ni carrito. */
+@media (max-width: 480px) {
+  .menu a.logo-menu {
+    left: 8px;
+    width: 42px;
+    height: 42px;
+  }
+
+  .saludo-menu {
+    left: 56px;
+    right: 60px;
+    font-size: 0.68rem;
+  }
+
+  .menu:has(.carrito-icono) .saludo-menu {
+    right: 78px;
+  }
+
+  .menu:has(.admin-menu-acciones) .saludo-menu {
+    right: 104px;
+  }
+
+  .menu-toggle {
+    right: 12px;
+  }
+
+  .menu:has(.carrito-icono) .menu-toggle {
+    right: 74px;
+  }
+
+  .admin-menu-acciones {
+    right: 52px;
+  }
+
+  .carrito-icono {
+    width: 62px;
+    height: 52px;
   }
 }

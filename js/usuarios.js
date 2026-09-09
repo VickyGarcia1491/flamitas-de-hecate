@@ -30,6 +30,7 @@ function mostrarUsuarioEnMenu() {
     }
 
     mostrarSaludoUsuario(usuario);
+    normalizarMenuPorRol(usuario);
 
     if (document.querySelector("#linkAdmin") !== null) {
         if (usuario === null || usuario.rol !== "admin") {
@@ -60,6 +61,118 @@ function mostrarUsuarioEnMenu() {
     if (document.querySelector("#btnCerrarSesion") !== null) {
         if (usuario === null) {
             document.querySelector("#btnCerrarSesion").style.display = "none";
+        }
+    }
+}
+
+// Ordena las opciones del menú para que cada rol vea lo mismo en todas las páginas.
+function normalizarMenuPorRol(usuario) {
+    let menuLinks = document.querySelector(".menu .menu-links");
+    if (menuLinks === null) return;
+
+    let esAdmin = usuario !== null && usuario.rol === "admin";
+    let hayUsuario = usuario !== null;
+
+    restaurarItemsMenu(menuLinks);
+    limpiarItemsDinamicosMenu(menuLinks);
+
+    if (esAdmin) {
+        ocultarLinksPorHref(menuLinks, "contacto.html");
+        ocultarLinksPorHref(menuLinks, "login.html");
+        ocultarLinksPorHref(menuLinks, "registro.html");
+        ocultarLinksPorHref(menuLinks, "mi-cuenta.html");
+        asegurarLinkMenu(menuLinks, "admin.html", "Admin", "menu-admin-dinamico");
+        asegurarBotonSalirMenu(menuLinks);
+        return;
+    }
+
+    ocultarLinksPorHref(menuLinks, "admin.html");
+
+    if (hayUsuario) {
+        ocultarLinksPorHref(menuLinks, "login.html");
+        ocultarLinksPorHref(menuLinks, "registro.html");
+        asegurarLinkMenu(menuLinks, "mi-cuenta.html", "Mi cuenta", "menu-cuenta-dinamico");
+        asegurarBotonSalirMenu(menuLinks);
+    } else {
+        ocultarBotonesSalir(menuLinks);
+        ocultarLinksPorHref(menuLinks, "mi-cuenta.html");
+    }
+}
+
+// Vuelve visibles los items antes de aplicar las reglas del usuario actual.
+function restaurarItemsMenu(menuLinks) {
+    let items = menuLinks.querySelectorAll("li, a, button");
+
+    for (let i = 0; i < items.length; i++) {
+        items[i].style.display = "";
+    }
+}
+
+// Elimina opciones creadas por JavaScript para evitar duplicados al recargar datos.
+function limpiarItemsDinamicosMenu(menuLinks) {
+    let dinamicos = menuLinks.querySelectorAll(".menu-dinamico");
+
+    for (let i = 0; i < dinamicos.length; i++) {
+        dinamicos[i].remove();
+    }
+}
+
+// Oculta enlaces que no corresponden al rol actual.
+function ocultarLinksPorHref(menuLinks, href) {
+    let links = menuLinks.querySelectorAll('a[href="' + href + '"]');
+
+    for (let i = 0; i < links.length; i++) {
+        let item = links[i].closest("li");
+        if (item !== null) {
+            item.style.display = "none";
+        } else {
+            links[i].style.display = "none";
+        }
+    }
+}
+
+// Agrega una opción cuando una página no la trae escrita en su HTML.
+function asegurarLinkMenu(menuLinks, href, texto, clase) {
+    if (menuLinks.querySelector('a[href="' + href + '"]') !== null) return;
+
+    let item = document.createElement("li");
+    item.className = "menu-dinamico " + clase;
+
+    let link = document.createElement("a");
+    link.href = href;
+    link.textContent = texto;
+
+    item.appendChild(link);
+    menuLinks.appendChild(item);
+}
+
+// Agrega Salir dentro del menú desplegable cuando hay sesión iniciada.
+function asegurarBotonSalirMenu(menuLinks) {
+    if (menuLinks.querySelector(".btn-salir") !== null) return;
+
+    let item = document.createElement("li");
+    item.className = "menu-dinamico menu-salir-dinamico";
+
+    let boton = document.createElement("button");
+    boton.type = "button";
+    boton.className = "btn-salir";
+    boton.textContent = "Salir";
+    boton.addEventListener("click", cerrarSesion);
+
+    item.appendChild(boton);
+    menuLinks.appendChild(item);
+}
+
+// Oculta botones de salir escritos en el HTML cuando no hay sesión.
+function ocultarBotonesSalir(menuLinks) {
+    let botones = menuLinks.querySelectorAll(".btn-salir");
+
+    for (let i = 0; i < botones.length; i++) {
+        let item = botones[i].closest("li");
+        if (item !== null) {
+            item.style.display = "none";
+        } else {
+            botones[i].style.display = "none";
         }
     }
 }
@@ -97,12 +210,9 @@ function mostrarSaludoUsuario(usuario) {
 
 // Ubica el saludo junto a las acciones de cada menú.
 function ubicarSaludoUsuario(saludo) {
-    let menuLinks = document.querySelector(".menu .menu-links");
     let menu = document.querySelector(".menu nav");
 
-    if (menuLinks !== null) {
-        menuLinks.appendChild(saludo);
-    } else if (menu !== null) {
+    if (menu !== null) {
         menu.appendChild(saludo);
     }
 }
