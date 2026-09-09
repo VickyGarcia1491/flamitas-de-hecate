@@ -163,22 +163,38 @@
             <details class="producto-admin-nuevo">
                 <summary>Agregar producto nuevo</summary>
 
-                <!-- Formulario para agregar productos nuevos al catálogo. -->
+                <!-- Alta rápida: permite elegir si se suma una vela vendible o una esencia interna. -->
                 <form class="form-producto-admin" id="formProductoAdmin">
+                    <label for="tipoAltaProducto">Qué querés agregar</label>
+                    <select id="tipoAltaProducto">
+                        <option value="vela">Vela nueva</option>
+                        <option value="esencia">Esencia nueva</option>
+                    </select>
+
                     <label for="nombreProductoAdmin">Nombre</label>
                     <input type="text" id="nombreProductoAdmin" required>
 
                     <label for="detalleProductoAdmin">Detalle</label>
                     <textarea id="detalleProductoAdmin" rows="4" required></textarea>
 
-                    <label for="fotoProductoAdmin">Foto</label>
-                    <input type="file" id="fotoProductoAdmin" accept="image/*" required>
+                    <label for="fotoProductoAdmin" class="campo-vela-alta">Foto</label>
+                    <input type="file" id="fotoProductoAdmin" class="campo-vela-alta" accept="image/*" required>
 
-                    <label for="precioProductoAdmin">Precio</label>
-                    <input type="text" id="precioProductoAdmin" placeholder="Ej: 350 o Consultar" required>
+                    <label for="precioProductoAdmin" class="campo-vela-alta">Precio</label>
+                    <input type="text" id="precioProductoAdmin" class="campo-vela-alta" placeholder="Ej: 350 o Consultar" required>
 
-                    <label for="stockProductoAdminNuevo">Stock</label>
-                    <input type="text" id="stockProductoAdminNuevo" placeholder="Ej: 5 o Consultar" required>
+                    <label for="stockProductoAdminNuevo" class="campo-vela-alta">Stock</label>
+                    <input type="text" id="stockProductoAdminNuevo" class="campo-vela-alta" placeholder="Ej: 5 o Consultar" required>
+
+                    <label for="stockEsenciaNueva" class="campo-esencia-alta">Stock</label>
+                    <select id="stockEsenciaNueva" class="campo-esencia-alta">
+                        <option value="Sí">Sí</option>
+                        <option value="No">No</option>
+                        <option value="Queda poco">Queda poco</option>
+                    </select>
+
+                    <label class="campo-esencia-alta">Estado</label>
+                    <span class="stock-estado stock-verde campo-esencia-alta" id="estadoEsenciaNueva">Stock OK</span>
 
                     <input type="submit" value="Agregar producto">
                     <p class="mensaje-formulario" id="mensajeProductoAdmin"></p>

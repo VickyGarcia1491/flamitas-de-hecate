@@ -32,6 +32,8 @@ function iniciarAdmin() {
     document.querySelector("#btnBandejaPedidos").addEventListener("click", mostrarPedidosPendientesDesdeBandeja);
     document.querySelector("#btnExportarPedidos").addEventListener("click", exportarPedidosCSV);
     document.querySelector("#formProductoAdmin").addEventListener("submit", agregarProductoAdmin);
+    document.querySelector("#tipoAltaProducto").addEventListener("change", actualizarFormularioAltaProducto);
+    document.querySelector("#stockEsenciaNueva").addEventListener("change", actualizarEstadoEsenciaNueva);
     document.querySelector("#btnAgregarVentaManual").addEventListener("click", agregarProductoVentaManual);
     document.querySelector("#formVentaManual").addEventListener("submit", guardarVentaManual);
     document.querySelector("#filtroFechaPedidos").addEventListener("change", mostrarPedidosAdmin);
@@ -44,6 +46,7 @@ function iniciarAdmin() {
     document.querySelector("#btnAgregarProductoEditarPedido").addEventListener("click", agregarProductoAlPedidoEditando);
     document.querySelector("#productoNuevoEditarPedido").addEventListener("change", actualizarPrecioNuevoPedidoEditando);
     document.querySelector("#editarMedioPagoPedido").addEventListener("change", mostrarProductosPedidoEditando);
+    actualizarFormularioAltaProducto();
 }
 
 // Permite entrar al panel solo si el usuario activo es administrador.
@@ -1209,9 +1212,47 @@ function prepararTextoParaTextarea(texto) {
     return String(texto).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-// Toma los datos del formulario para crear un producto.
+// Ajusta el formulario de alta según se agregue una vela vendible o una esencia interna.
+function actualizarFormularioAltaProducto() {
+    let tipo = document.querySelector("#tipoAltaProducto").value;
+    let camposVela = document.querySelectorAll(".campo-vela-alta");
+    let camposEsencia = document.querySelectorAll(".campo-esencia-alta");
+    let mostrarVela = tipo === "vela";
+
+    for (let i = 0; i < camposVela.length; i++) {
+        camposVela[i].classList.toggle("campo-oculto", mostrarVela === false);
+        camposVela[i].disabled = mostrarVela === false;
+    }
+
+    for (let i = 0; i < camposEsencia.length; i++) {
+        camposEsencia[i].classList.toggle("campo-oculto", mostrarVela === true);
+        camposEsencia[i].disabled = mostrarVela === true;
+    }
+
+    document.querySelector("#fotoProductoAdmin").required = mostrarVela;
+    document.querySelector("#precioProductoAdmin").required = mostrarVela;
+    document.querySelector("#stockProductoAdminNuevo").required = mostrarVela;
+    actualizarEstadoEsenciaNueva();
+}
+
+// Actualiza la etiqueta visual del stock elegido para una esencia nueva.
+function actualizarEstadoEsenciaNueva() {
+    let estadoElemento = document.querySelector("#estadoEsenciaNueva");
+    let estado = obtenerEstadoStockEsencia(document.querySelector("#stockEsenciaNueva").value);
+
+    estadoElemento.textContent = estado.texto;
+    estadoElemento.className = "stock-estado campo-esencia-alta " + estado.clase;
+    if (document.querySelector("#tipoAltaProducto").value === "vela") estadoElemento.classList.add("campo-oculto");
+}
+
+// Toma los datos del formulario para crear una vela o una esencia.
 async function agregarProductoAdmin(evento) {
     evento.preventDefault();
+
+    if (document.querySelector("#tipoAltaProducto").value === "esencia") {
+        await guardarNuevaEsenciaAdmin();
+        return;
+    }
 
     let foto = document.querySelector("#fotoProductoAdmin").files[0];
     let mensaje = document.querySelector("#mensajeProductoAdmin");
@@ -1227,6 +1268,31 @@ async function agregarProductoAdmin(evento) {
 
         lector.readAsDataURL(foto);
     }
+}
+
+// Guarda una esencia nueva dentro del catálogo interno compartido.
+async function guardarNuevaEsenciaAdmin() {
+    let catalogo = obtenerCatalogoEsenciasGuardado();
+    let stock = obtenerStockEsenciasGuardado();
+    let indice = catalogo.length;
+    let mensaje = document.querySelector("#mensajeProductoAdmin");
+
+    if (stock.general === undefined) stock.general = {};
+
+    catalogo.push({
+        nombre: document.querySelector("#nombreProductoAdmin").value,
+        detalle: document.querySelector("#detalleProductoAdmin").value
+    });
+    stock.general[indice] = document.querySelector("#stockEsenciaNueva").value;
+    esenciaSeleccionadaIndice = indice;
+
+    await guardarEstadoServidor({esenciasCatalogo: catalogo, esencias: stock});
+    sincronizarCatalogoEsencias();
+    actualizarVistaProductos();
+
+    document.querySelector("#formProductoAdmin").reset();
+    actualizarFormularioAltaProducto();
+    mensaje.innerHTML = "Esencia agregada al stock interno.";
 }
 
 // Guarda un producto nuevo con imagen, precio y stock.
