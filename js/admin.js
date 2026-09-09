@@ -110,6 +110,7 @@ function mostrarPedidosAdmin() {
                     </div>
 
                     <p><strong>Origen:</strong> ${origenPedido}</p>
+                    ${mostrarCargadoPor(pedido)}
                     ${mostrarDatosPago(pedido)}
 
                     <div class="estado-pedido">
@@ -162,6 +163,17 @@ function mostrarPedidosAdmin() {
             await eliminarPedido(pedidosFiltrados[i].id);
         });
     }
+}
+
+// Muestra quién cargó la venta cuando el pedido trae ese dato.
+function mostrarCargadoPor(pedido) {
+    let html = "";
+
+    if (pedido.cargadoPor !== undefined && pedido.cargadoPor.nombre !== undefined) {
+        html = `<p><strong>Cargado por:</strong> ${pedido.cargadoPor.nombre}</p>`;
+    }
+
+    return html;
 }
 
 // Devuelve solo los pedidos que coinciden con el filtro de día o mes.
@@ -732,7 +744,7 @@ function prepararProductosPedidoEditado() {
 // Exporta a CSV los pedidos visibles según el filtro activo.
 function exportarPedidosCSV() {
     let pedidos = filtrarPedidos(obtenerPedidos());
-    let csv = "Fecha,Origen,Cliente,Telefono,Producto,Cantidad,Precio unitario,Subtotal,Medio de pago,Estado del pago,Ajuste Mercado Pago,Total,Estado,Entrega,Departamento,Direccion,Ciudad o barrio,Codigo postal\n";
+    let csv = "Fecha,Origen,Cargado por,Cliente,Telefono,Producto,Cantidad,Precio unitario,Subtotal,Medio de pago,Estado del pago,Ajuste Mercado Pago,Total,Estado,Entrega,Departamento,Direccion,Ciudad o barrio,Codigo postal\n";
 
     for (let i = 0; i < pedidos.length; i++) {
         for (let j = 0; j < pedidos[i].productos.length; j++) {
@@ -751,6 +763,7 @@ function armarLineaCSV(pedido, producto) {
     return [
         pedido.fecha,
         origen,
+        obtenerNombreCargadoPor(pedido),
         pedido.cliente.nombre,
         mostrarDatoOpcional(pedido.cliente.telefono, ""),
         producto.nombre,
@@ -768,6 +781,17 @@ function armarLineaCSV(pedido, producto) {
         mostrarDatoOpcional(pedido.entrega.ciudad, ""),
         mostrarDatoOpcional(pedido.entrega.codigoPostal, "")
     ].map(escaparCSV).join(",") + "\n";
+}
+
+// Devuelve el nombre de quien cargó la venta para mostrarlo o exportarlo.
+function obtenerNombreCargadoPor(pedido) {
+    let nombre = "";
+
+    if (pedido.cargadoPor !== undefined && pedido.cargadoPor.nombre !== undefined) {
+        nombre = pedido.cargadoPor.nombre;
+    }
+
+    return nombre;
 }
 
 // Devuelve datos de pago seguros para exportar aunque falten campos.
@@ -1670,6 +1694,7 @@ function descontarStockVentaManual() {
 async function crearPedidoVentaManual() {
     let pedidos = obtenerPedidos();
     let productos = [];
+    let usuario = obtenerUsuarioActivo();
 
     for (let i = 0; i < productosVentaManual.length; i++) {
         productos.push({
@@ -1686,6 +1711,11 @@ async function crearPedidoVentaManual() {
         fechaISO: obtenerFechaLocalISO(),
         estado: "Nuevo",
         origen: document.querySelector("#origenVentaManual").value,
+        cargadoPor: {
+            nombre: usuario.nombre,
+            email: usuario.email,
+            rol: usuario.rol
+        },
         cliente: {
             nombre: document.querySelector("#clienteVentaManual").value,
             email: "Venta manual",
