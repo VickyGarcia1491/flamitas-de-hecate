@@ -34,6 +34,12 @@ function mostrarUsuarioEnMenu() {
         }
     }
 
+    if (document.querySelector("#linkIngresar") !== null) {
+        if (usuario !== null) {
+            document.querySelector("#linkIngresar").style.display = "none";
+        }
+    }
+
     if (document.querySelector("#linkContacto") !== null) {
         if (usuario !== null && usuario.rol === "admin") {
             document.querySelector("#linkContacto").style.display = "none";
@@ -41,8 +47,14 @@ function mostrarUsuarioEnMenu() {
     }
 
     if (document.querySelector("#linkMiCuenta") !== null) {
-        if (usuario !== null && usuario.rol === "admin") {
+        if (usuario === null || usuario.rol === "admin") {
             document.querySelector("#linkMiCuenta").style.display = "none";
+        }
+    }
+
+    if (document.querySelector("#btnCerrarSesion") !== null) {
+        if (usuario === null) {
+            document.querySelector("#btnCerrarSesion").style.display = "none";
         }
     }
 }

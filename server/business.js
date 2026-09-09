@@ -49,11 +49,14 @@ export function checkout(state, body, user, id) {
     }
     return {id: product.id, nombre, precio: product.precio, cantidad: item.cantidad, subtotal: money(product.precio * item.cantidad), ...(variant ? {tipoLatita: variant, indiceEsencia: item.indiceEsencia} : {})};
   });
-  const total = money(lines.reduce((sum, line) => sum + line.subtotal, 0));
+  const subtotal = money(lines.reduce((sum, line) => sum + line.subtotal, 0));
   const medio = body.pago?.medio || '';
   if (!['', 'Efectivo', 'Transferencia bancaria', 'Mercado Pago'].includes(medio)) fail('Medio de pago inválido.');
+  // Mismo redondeo a pesos que en la venta manual del administrador.
+  const ajuste = medio === 'Mercado Pago' ? Math.round(subtotal * 0.10) : 0;
+  const total = money(subtotal + ajuste);
   const now = new Date();
-  const order = {id, fecha: now.toLocaleString('es-UY', {timeZone: 'America/Montevideo'}), fechaISO: now.toLocaleDateString('en-CA', {timeZone: 'America/Montevideo'}), estado: 'Nuevo', origen: 'Web', cliente: {nombre: user.nombre, email: user.email, telefono: user.telefono}, productos: lines, total, entrega: delivery, pago: {medio, estado: 'Pendiente', subtotal: total, ajuste: 0, total}};
+  const order = {id, fecha: now.toLocaleString('es-UY', {timeZone: 'America/Montevideo'}), fechaISO: now.toLocaleDateString('en-CA', {timeZone: 'America/Montevideo'}), estado: 'Nuevo', origen: 'Web', cliente: {nombre: user.nombre, email: user.email, telefono: user.telefono}, productos: lines, total, entrega: delivery, pago: {medio, estado: 'Pendiente', subtotal, ajuste, total}};
   state.pedidos.push(order);
   return order;
 }

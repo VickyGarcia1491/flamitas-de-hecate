@@ -119,6 +119,9 @@ export function createApp(db, config = {}) {
   app.get('/health', async (req, res) => { await db.query('SELECT 1'); res.json({ok: true}); });
   // Servir únicamente recursos públicos; nunca .env, SQL, código del servidor ni backups.
   for (const folder of ['css', 'js', 'img', 'fonts']) app.use('/' + folder, express.static(path.join(root, folder)));
+  app.get('/manifest.webmanifest', (req, res) => res.type('application/manifest+json').sendFile(path.join(root, 'manifest.webmanifest')));
+  app.get('/sw.js', (req, res) => res.type('application/javascript').sendFile(path.join(root, 'sw.js')));
+  app.get('/icon.svg', (req, res) => res.type('image/svg+xml').sendFile(path.join(root, 'icon.svg')));
   const pages = ['index', 'tienda', 'login', 'registro', 'mi-cuenta', 'admin', 'contacto', 'migracion'];
   app.get('/', (req, res) => res.sendFile(path.join(root, 'index.html')));
   for (const page of pages) app.get('/' + page + '.html', (req, res) => res.sendFile(path.join(root, page + '.html')));

@@ -3,7 +3,7 @@
 
 // Prepara productos, carrito, modales y formulario de entrega.
 function inicioTienda() {
-    if (!protegerPagina()) return;
+    recuperarCarritoPendiente();
     mostrarVelas();
     mostrarCarrito();
     document.querySelector("#btnCarrito").addEventListener("click", abrirCarrito);
@@ -36,8 +36,9 @@ function mostrarVelas() {
         let unaVela = velas[i];
         let textoBoton = "Agregar al carrito";
         let textoPrecio = "$" + unaVela.precio;
-        let textoStock = "Disponible";
         let usuario = obtenerUsuarioActivo();
+        let textoStock = obtenerTextoStockProducto(unaVela, usuario);
+        let lineaStock = textoStock === "" ? "" : `<p>${textoStock}</p>`;
 
         if (unaVela.id === 4) {
             textoBoton = "Elegir esencias";
@@ -51,21 +52,13 @@ function mostrarVelas() {
             textoPrecio = unaVela.precio;
         }
 
-        if (usuario !== null && usuario.rol === "admin") {
-            textoStock = "Stock disponible: " + unaVela.stock;
-        } else if (unaVela.stock === 0) {
-            textoStock = "Producto agotado";
-        } else if (typeof unaVela.stock !== "number") {
-            textoStock = "Consultar disponibilidad";
-        }
-
         html += `
             <div class="producto">
                 <img src="${obtenerRutaImagenProducto(unaVela.imagen)}" alt="${unaVela.nombre}">
                 <h3>${unaVela.nombre}</h3>
                 <p>${unaVela.descripcion}</p>
                 <h4>${textoPrecio}</h4>
-                <p>${textoStock}</p>
+                ${lineaStock}
                 <input type="button" value="${textoBoton}" id="btn${unaVela.id}">
             </div>
         `;
@@ -90,6 +83,19 @@ function mostrarVelas() {
             document.querySelector("#btn" + unaVela.id).value = "Sin stock";
         }
     }
+}
+
+// Decide qué stock se muestra según el rol: admin ve cantidades, cliente solo ve agotado.
+function obtenerTextoStockProducto(producto, usuario) {
+    if (usuario !== null && usuario.rol === "admin") {
+        return "Stock disponible: " + producto.stock;
+    }
+
+    if (producto.stock === 0) {
+        return "Producto agotado";
+    }
+
+    return "";
 }
 
 // Decide si una imagen viene de la carpeta img o fue cargada desde el admin.
@@ -334,6 +340,7 @@ function abrirModalLatitas() {
     for (let i = 0; i < esenciasLatitaMediana.length; i++) {
         let stock = obtenerStockEsencia("mediana", i);
         let textoStock = obtenerTextoStockEsencia(stock);
+        let lineaStock = textoStock === "" ? "" : `<p>${textoStock}</p>`;
         let deshabilitado = stock === 0 ? "disabled" : "";
 
         html += `
@@ -341,7 +348,7 @@ function abrirModalLatitas() {
                 <h3>${esenciasLatitaMediana[i]}</h3>
                 <p>Latita mediana de 80gr</p>
                 <p>$280</p>
-                <p>${textoStock}</p>
+                ${lineaStock}
 
                 <label for="cantidadEsencia${i}">Cantidad:</label>
                 <input type="number" min="0" value="0" id="cantidadEsencia${i}" ${deshabilitado}>
@@ -393,6 +400,7 @@ function abrirModalLatitasChicas() {
     for (let i = 0; i < esenciasLatitaChica.length; i++) {
         let stock = obtenerStockEsencia("chica", i);
         let textoStock = obtenerTextoStockEsencia(stock);
+        let lineaStock = textoStock === "" ? "" : `<p>${textoStock}</p>`;
         let deshabilitado = stock === 0 ? "disabled" : "";
 
         html += `
@@ -400,7 +408,7 @@ function abrirModalLatitasChicas() {
                 <h3>${esenciasLatitaChica[i]}</h3>
                 <p>Latita chica de 60gr</p>
                 <p>$240</p>
-                <p>${textoStock}</p>
+                ${lineaStock}
 
                 <label for="cantidadEsenciaChica${i}">Cantidad:</label>
                 <input type="number" min="0" value="0" id="cantidadEsenciaChica${i}" ${deshabilitado}>
@@ -446,12 +454,15 @@ function agregarLatitasChicasAlCarrito() {
 
 // Traduce el stock de una esencia a un texto visible para el cliente.
 function obtenerTextoStockEsencia(stock) {
-    let texto = "Disponible";
+    let usuario = obtenerUsuarioActivo();
+    let texto = "";
+
+    if (usuario !== null && usuario.rol === "admin") {
+        texto = "Stock disponible: " + stock;
+    }
 
     if (stock === 0) {
         texto = "Agotada";
-    } else if (typeof stock !== "number") {
-        texto = "Consultar disponibilidad";
     }
 
     return texto;
@@ -575,8 +586,27 @@ function finalizarPedidoWhatsApp() {
 
     if (carrito.length === 0) {
         alert("Tu carrito está vacío.");
+    } else if (obtenerUsuarioActivo() === null) {
+        guardarCarritoPendiente();
+        alert("Para finalizar la compra necesitás ingresar o registrarte. Te guardamos el carrito para que puedas continuar.");
+        window.location = "login.html";
     } else {
         abrirModalEntrega();
+    }
+}
+
+// Guarda el carrito antes de mandar a login para que no se pierda la selección.
+function guardarCarritoPendiente() {
+    sessionStorage.setItem("carritoPendienteFlamitas", JSON.stringify(carrito));
+}
+
+// Recupera el carrito si la persona volvió desde login o registro.
+function recuperarCarritoPendiente() {
+    let carritoGuardado = sessionStorage.getItem("carritoPendienteFlamitas");
+
+    if (carritoGuardado !== null) {
+        carrito = JSON.parse(carritoGuardado);
+        sessionStorage.removeItem("carritoPendienteFlamitas");
     }
 }
 
@@ -617,7 +647,7 @@ async function enviarPedidoWhatsApp(evento) {
  const boton = evento.target.querySelector('[type=submit]'); boton.disabled = true;
  try {
   const pedido = await guardarPedido(datos);
-  const mensaje = encodeURIComponent('Hola! Mi pedido #' + pedido.id + '\n' + pedido.productos.map(p => p.nombre + ' x' + p.cantidad + ' - $' + p.subtotal).join('\n') + '\nTotal: $' + pedido.total + '\nEntrega: ' + pedido.entrega.metodo + '\nPago pendiente de confirmación.');
+  const mensaje = armarMensajePedidoGuardado(pedido);
   const enlace = document.createElement('a'); enlace.href = 'https://wa.me/?text=' + mensaje; enlace.target = '_blank'; enlace.rel = 'noopener'; enlace.textContent = 'Abrir WhatsApp para enviar el pedido #' + pedido.id;
   document.querySelector('#formEntrega').prepend(enlace);
   carrito = []; solicitudPedido = crypto.randomUUID(); mostrarCarrito(); cerrarCarrito();
@@ -627,6 +657,17 @@ async function enviarPedidoWhatsApp(evento) {
 }
 
 // Lee los campos del cierre de compra y los agrupa en un solo objeto.
+function armarMensajePedidoGuardado(pedido) {
+ const ajuste = pedido.pago.ajuste > 0 ? '\nAjuste Mercado Pago 10%: $' + pedido.pago.ajuste : '';
+ return encodeURIComponent('Hola! Mi pedido #' + pedido.id + '\n' + pedido.productos.map(p => p.nombre + ' x' + p.cantidad + ' - $' + p.subtotal).join('\n') + '\nSubtotal: $' + pedido.pago.subtotal + ajuste + '\nTotal: $' + pedido.total + '\nEntrega: ' + pedido.entrega.metodo + '\nMedio de pago: ' + (pedido.pago.medio || 'A coordinar') + '\nPago pendiente de confirmación.');
+}
+
+function obtenerImportesCheckout(medio) {
+ const subtotal = Math.round(obtenerTotalCarrito() * 100) / 100;
+ const ajuste = medio === 'Mercado Pago' ? Math.round(subtotal * 0.10) : 0;
+ return {subtotal, ajuste, total: Math.round((subtotal + ajuste) * 100) / 100};
+}
+
 function obtenerDatosCheckout() {
     return {
         entrega: {
@@ -678,9 +719,14 @@ function actualizarResumenCheckout() {
     }
 
     html = html + armarDetalleResumenCheckout(datosPedido);
+    const importes = obtenerImportesCheckout(datosPedido.pago.medio);
+    html += `<div class="linea-resumen-checkout"><span>Subtotal</span><strong>$${importes.subtotal}</strong></div>`;
+    if (datosPedido.pago.medio === 'Mercado Pago') {
+        html += `<div class="linea-resumen-checkout"><span>Ajuste Mercado Pago 10%</span><strong>$${importes.ajuste}</strong></div>`;
+    }
 
     document.querySelector("#resumenPedidoCheckout").innerHTML = html;
-    document.querySelector("#totalPedidoCheckout").innerHTML = "Total: $" + obtenerTotalCarrito();
+    document.querySelector("#totalPedidoCheckout").textContent = "Total: $" + importes.total;
 }
 
 // Arma los datos de entrega y pago que aparecen en el resumen del checkout.

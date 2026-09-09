@@ -11,3 +11,10 @@ window.addEventListener('load', async () => {
   document.body.prepend(aviso);
  }
 });
+
+// Permite instalar la web como app en celulares, tablets y computadoras compatibles.
+if ('serviceWorker' in navigator) {
+ window.addEventListener('load', () => {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+ });
+}
