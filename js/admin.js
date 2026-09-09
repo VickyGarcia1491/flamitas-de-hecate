@@ -9,6 +9,10 @@ let pedidoEditandoId = null;
 let productosPedidoEditando = [];
 // Indica si el historial está mostrando solo pedidos nuevos y pendientes.
 let filtroPedidosPendientesActivo = false;
+// Recuerda qué producto está abierto en la edición compacta de stock.
+let productoAdminSeleccionadoId = null;
+// Recuerda si el bloque de modificación de stock está abierto.
+let edicionProductoAdminAbierta = false;
 
 // Prepara seguridad, pedidos, productos, stock, venta manual y eventos del admin.
 function iniciarAdmin() {
@@ -971,17 +975,42 @@ function obtenerPedidosPendientes(pedidos) {
     return pendientes;
 }
 
-// Devuelve productos con stock numérico bajo o agotado.
+// Devuelve productos y esencias que necesitan atención de stock.
 function obtenerProductosBajoStock() {
-    let productos = [];
+    let alertas = [];
 
     for (let i = 0; i < velas.length; i++) {
         if (typeof velas[i].stock === "number" && velas[i].stock <= 3) {
-            productos.push(velas[i]);
+            alertas.push({
+                nombre: velas[i].nombre,
+                detalle: "Stock disponible: " + velas[i].stock,
+                estado: obtenerEstadoStock(velas[i].stock)
+            });
         }
     }
 
-    return productos;
+    agregarAlertasStockEsencias(alertas, "mediana", esenciasLatitaMediana, "latitas medianas");
+    agregarAlertasStockEsencias(alertas, "chica", esenciasLatitaChica, "latitas chicas");
+
+    return alertas;
+}
+
+// Agrega al dashboard las esencias agotadas o con poco stock.
+function agregarAlertasStockEsencias(alertas, tipoLatita, esencias, nombreGrupo) {
+    for (let i = 0; i < esencias.length; i++) {
+        let stock = obtenerStockEsencia(tipoLatita, i);
+
+        if (esenciaTieneStockBajo(stock) === true) {
+            let estado = obtenerEstadoStockEsencia(stock);
+            let detalle = estado.texto === "Sin stock" ? "Sin stock para " + nombreGrupo + "." : "Comprar más esencia para " + nombreGrupo + ".";
+
+            alertas.push({
+                nombre: "Esencia: " + esencias[i],
+                detalle: detalle,
+                estado: estado
+            });
+        }
+    }
 }
 
 // Arma una lista breve de los últimos pedidos pendientes.
@@ -1015,23 +1044,21 @@ function armarPedidosPendientesDashboard(pedidos) {
     return html;
 }
 
-// Arma una lista breve de productos que necesitan atención de stock.
-function armarStockBajoDashboard(productos) {
-    let html = "<p class='admin-vacio'>No hay productos con stock bajo.</p>";
+// Arma una lista breve de productos y esencias que necesitan atención.
+function armarStockBajoDashboard(alertas) {
+    let html = "<p class='admin-vacio'>No hay stock bajo por ahora.</p>";
 
-    if (productos.length > 0) {
+    if (alertas.length > 0) {
         html = "<div class='dashboard-lista'>";
 
-        for (let i = 0; i < productos.length && i < 4; i++) {
-            let estado = obtenerEstadoStock(productos[i].stock);
-
+        for (let i = 0; i < alertas.length && i < 4; i++) {
             html += `
                 <article class="dashboard-item">
                     <div>
-                        <strong>${productos[i].nombre}</strong>
-                        <span>Stock disponible: ${productos[i].stock}</span>
+                        <strong>${alertas[i].nombre}</strong>
+                        <span>${alertas[i].detalle}</span>
                     </div>
-                    <span class="stock-estado ${estado.clase}">${estado.texto}</span>
+                    <span class="stock-estado ${alertas[i].estado.clase}">${alertas[i].estado.texto}</span>
                 </article>
             `;
         }
@@ -1042,59 +1069,107 @@ function armarStockBajoDashboard(productos) {
     return html;
 }
 
-// Muestra la tabla editable de productos y stock.
+// Muestra una edición compacta para modificar un producto por vez.
 async function mostrarProductosAdmin() {
-    let html = `
-        <table class="tabla-admin tabla-productos-admin">
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th>Detalle</th>
-                    <th>Precio</th>
-                    <th>Stock</th>
-                    <th>Estado</th>
-                    <th>Foto</th>
-                    <th>Acción</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
+    let html = "<p class='admin-vacio'>Todavía no hay productos cargados.</p>";
 
-    for (let i = 0; i < velas.length; i++) {
-        let estado = obtenerEstadoStock(velas[i].stock);
+    if (velas.length > 0) {
+        if (productoAdminSeleccionadoId === null || buscarProductoPorId(productoAdminSeleccionadoId) === null) {
+            productoAdminSeleccionadoId = velas[0].id;
+        }
 
-        html += `
-            <tr>
-                <td data-label="Producto"><input type="text" value="${prepararTextoParaInput(velas[i].nombre)}" id="nombreEditar${velas[i].id}" class="input-tabla-admin"></td>
-                <td data-label="Detalle"><textarea id="detalleEditar${velas[i].id}" class="textarea-tabla-admin">${velas[i].descripcion}</textarea></td>
-                <td data-label="Precio"><input type="text" value="${velas[i].precio}" id="precioEditar${velas[i].id}" class="input-tabla-admin input-precio-admin"></td>
-                <td data-label="Stock"><input type="text" value="${velas[i].stock}" id="stockEditar${velas[i].id}" class="input-tabla-admin input-stock-admin"></td>
-                <td data-label="Estado"><span class="stock-estado ${estado.clase}">${estado.texto}</span></td>
-                <td data-label="Foto"><input type="file" id="fotoEditar${velas[i].id}" class="input-foto-tabla" accept="image/*"></td>
-                <td data-label="Acción" class="acciones-tabla-admin">
-                    <input type="button" value="Guardar" id="guardarProducto${velas[i].id}" class="btn-tabla-admin">
-                    <input type="button" value="Eliminar" id="eliminarProducto${velas[i].id}" class="btn-tabla-admin btn-eliminar-admin">
-                </td>
-            </tr>
+        html = `
+            <details class="producto-admin-nuevo producto-admin-edicion" ${edicionProductoAdminAbierta === true ? "open" : ""}>
+                <summary>Modificación de stock</summary>
+                <div class="producto-admin-selector">
+                    <label for="selectorProductoAdmin">Elegí un producto</label>
+                    <select id="selectorProductoAdmin">
+                        ${armarOpcionesProductosAdmin()}
+                    </select>
+                </div>
+                <div id="productoSeleccionadoAdmin">
+                    ${armarProductoSeleccionadoAdmin(productoAdminSeleccionadoId)}
+                </div>
+            </details>
         `;
     }
 
-    html += `
-            </tbody>
-        </table>
-    `;
-
     document.querySelector("#contenedorProductosAdmin").innerHTML = html;
 
-    for (let i = 0; i < velas.length; i++) {
-        document.querySelector("#guardarProducto" + velas[i].id).addEventListener("click", async function () {
-            await editarProductoAdmin(velas[i].id);
+    if (velas.length > 0) {
+        conectarEventosProductoSeleccionadoAdmin(productoAdminSeleccionadoId);
+        document.querySelector(".producto-admin-edicion").addEventListener("toggle", function () {
+            edicionProductoAdminAbierta = this.open;
         });
 
-        document.querySelector("#eliminarProducto" + velas[i].id).addEventListener("click", async function () {
-            await eliminarProductoAdmin(velas[i].id);
+        document.querySelector("#selectorProductoAdmin").addEventListener("change", function () {
+            edicionProductoAdminAbierta = true;
+            productoAdminSeleccionadoId = Number(this.value);
+            document.querySelector("#productoSeleccionadoAdmin").innerHTML = armarProductoSeleccionadoAdmin(productoAdminSeleccionadoId);
+            conectarEventosProductoSeleccionadoAdmin(productoAdminSeleccionadoId);
         });
     }
+}
+
+// Arma el combo con los productos disponibles para editar.
+function armarOpcionesProductosAdmin() {
+    let html = "";
+
+    for (let i = 0; i < velas.length; i++) {
+        let seleccionado = velas[i].id === productoAdminSeleccionadoId ? "selected" : "";
+        html += `<option value="${velas[i].id}" ${seleccionado}>${velas[i].nombre}</option>`;
+    }
+
+    return html;
+}
+
+// Arma la tarjeta de edición del producto elegido.
+function armarProductoSeleccionadoAdmin(idProducto) {
+    let producto = buscarProductoPorId(idProducto);
+
+    if (producto === null) {
+        return "<p class='admin-vacio'>Elegí un producto para modificar.</p>";
+    }
+
+    let estado = obtenerEstadoStock(producto.stock);
+
+    return `
+        <div class="producto-admin-edicion-card">
+            <label for="nombreEditar${producto.id}">Nombre</label>
+            <input type="text" value="${prepararTextoParaInput(producto.nombre)}" id="nombreEditar${producto.id}" class="input-tabla-admin">
+
+            <label for="detalleEditar${producto.id}">Detalle</label>
+            <textarea id="detalleEditar${producto.id}" class="textarea-tabla-admin">${producto.descripcion}</textarea>
+
+            <label for="precioEditar${producto.id}">Precio</label>
+            <input type="text" value="${producto.precio}" id="precioEditar${producto.id}" class="input-tabla-admin input-precio-admin">
+
+            <label for="stockEditar${producto.id}">Stock</label>
+            <input type="text" value="${producto.stock}" id="stockEditar${producto.id}" class="input-tabla-admin input-stock-admin">
+
+            <label>Estado</label>
+            <span class="stock-estado ${estado.clase}">${estado.texto}</span>
+
+            <label for="fotoEditar${producto.id}">Foto</label>
+            <input type="file" id="fotoEditar${producto.id}" class="input-foto-tabla" accept="image/*">
+
+            <div class="acciones-tabla-admin producto-admin-acciones">
+                <input type="button" value="Guardar" id="guardarProducto${producto.id}" class="btn-tabla-admin">
+                <input type="button" value="Eliminar" id="eliminarProducto${producto.id}" class="btn-tabla-admin btn-eliminar-admin">
+            </div>
+        </div>
+    `;
+}
+
+// Conecta los botones de guardar y eliminar del producto elegido.
+function conectarEventosProductoSeleccionadoAdmin(idProducto) {
+    document.querySelector("#guardarProducto" + idProducto).addEventListener("click", async function () {
+        await editarProductoAdmin(idProducto);
+    });
+
+    document.querySelector("#eliminarProducto" + idProducto).addEventListener("click", async function () {
+        await eliminarProductoAdmin(idProducto);
+    });
 }
 
 // Evita que las comillas rompan los campos de texto.
@@ -1138,6 +1213,7 @@ async function guardarNuevoProductoAdmin(imagenProducto) {
     );
 
     velas.push(nuevoProducto);
+    productoAdminSeleccionadoId = nuevoProducto.id;
     await guardarProductosVelas();
     actualizarVistaProductos();
 
@@ -1178,6 +1254,7 @@ async function guardarEdicionProductoAdmin(idProducto, imagenNueva) {
     }
 
     await guardarProductosVelas();
+    edicionProductoAdminAbierta = true;
     actualizarVistaProductos();
 }
 
@@ -1193,6 +1270,8 @@ async function eliminarProductoAdmin(idProducto) {
         }
 
         await guardarProductosVelas();
+        productoAdminSeleccionadoId = velas.length > 0 ? velas[0].id : null;
+        edicionProductoAdminAbierta = velas.length > 0;
         actualizarVistaProductos();
     }
 }
@@ -1233,10 +1312,10 @@ function armarTablaEsenciasAdmin(tipoLatita, esencias) {
         <table class="tabla-admin">
             <thead>
                 <tr>
-                    <th>Esencia</th>
+                    <th>Nombre de esencia</th>
                     <th>Stock</th>
                     <th>Estado</th>
-                    <th>Acción</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -1244,14 +1323,21 @@ function armarTablaEsenciasAdmin(tipoLatita, esencias) {
 
     for (let i = 0; i < esencias.length; i++) {
         let stock = obtenerStockEsencia(tipoLatita, i);
-        let estado = obtenerEstadoStock(stock);
+        let estado = obtenerEstadoStockEsencia(stock);
+        let valorSeleccionado = normalizarStockEsenciaParaSelector(stock);
 
         html = html + `
             <tr>
-                <td data-label="Esencia">${esencias[i]}</td>
-                <td data-label="Stock"><input type="text" value="${stock}" id="stockEsencia${tipoLatita}${i}" class="input-tabla-admin input-stock-admin"></td>
+                <td data-label="Nombre de esencia">${esencias[i]}</td>
+                <td data-label="Stock">
+                    <select id="stockEsencia${tipoLatita}${i}" class="input-tabla-admin input-stock-admin">
+                        <option value="Sí" ${valorSeleccionado === "Sí" ? "selected" : ""}>Sí</option>
+                        <option value="No" ${valorSeleccionado === "No" ? "selected" : ""}>No</option>
+                        <option value="Queda poco" ${valorSeleccionado === "Queda poco" ? "selected" : ""}>Queda poco</option>
+                    </select>
+                </td>
                 <td data-label="Estado"><span class="stock-estado ${estado.clase}">${estado.texto}</span></td>
-                <td data-label="Acción"><input type="button" value="Guardar" id="guardarEsencia${tipoLatita}${i}" class="btn-tabla-admin"></td>
+                <td data-label=""><input type="button" value="Guardar" id="guardarEsencia${tipoLatita}${i}" class="btn-tabla-admin"></td>
             </tr>
         `;
     }
@@ -1269,8 +1355,9 @@ async function agregarEventosStockEsencias(tipoLatita, esencias) {
     for (let i = 0; i < esencias.length; i++) {
         document.querySelector("#guardarEsencia" + tipoLatita + i).addEventListener("click", async function () {
             let valor = document.querySelector("#stockEsencia" + tipoLatita + i).value;
-            await actualizarStockEsencia(tipoLatita, i, convertirNumeroSiCorresponde(valor));
+            await actualizarStockEsencia(tipoLatita, i, valor);
             mostrarStockEsenciasAdmin();
+            mostrarDashboardAdmin();
         });
     }
 }
@@ -1318,6 +1405,44 @@ function obtenerEstadoStock(stock) {
     }
 
     return estado;
+}
+
+// Normaliza el stock de esencia antiguo al nuevo selector simple.
+function normalizarStockEsenciaParaSelector(stock) {
+    let valor = "Sí";
+
+    if (stock === 0 || stock === "0" || stock === "No") {
+        valor = "No";
+    } else if (stock === "Queda poco" || (typeof stock === "number" && stock <= 3)) {
+        valor = "Queda poco";
+    }
+
+    return valor;
+}
+
+// Devuelve el estado visual del stock por esencia.
+function obtenerEstadoStockEsencia(stock) {
+    let valor = normalizarStockEsenciaParaSelector(stock);
+    let estado = {
+        texto: "Stock OK",
+        clase: "stock-verde"
+    };
+
+    if (valor === "No") {
+        estado.texto = "Sin stock";
+        estado.clase = "stock-rojo";
+    } else if (valor === "Queda poco") {
+        estado.texto = "Queda poco";
+        estado.clase = "stock-amarillo";
+    }
+
+    return estado;
+}
+
+// Indica si una esencia debe mostrarse como alerta del dashboard.
+function esenciaTieneStockBajo(stock) {
+    let valor = normalizarStockEsenciaParaSelector(stock);
+    return valor === "No" || valor === "Queda poco";
 }
 
 // Carga los productos en el selector de venta manual.

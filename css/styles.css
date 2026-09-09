@@ -1496,6 +1496,51 @@ html {
   padding: 20px;
 }
 
+/* Desplegable compacto para elegir qué producto se quiere editar. */
+.producto-admin-edicion {
+  max-width: 860px;
+}
+
+/* Selector superior del producto que se va a modificar. */
+.producto-admin-selector {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 12px 18px;
+  align-items: center;
+  padding: 20px 20px 0;
+}
+
+.producto-admin-selector label,
+.producto-admin-edicion-card label {
+  color: #7B5BA6;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.producto-admin-selector select {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid rgba(74, 59, 53, 0.18);
+  border-radius: 14px;
+  padding: 11px 13px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.92rem;
+}
+
+/* Tarjeta con los campos del producto seleccionado. */
+.producto-admin-edicion-card {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 12px 18px;
+  align-items: center;
+  padding: 20px;
+}
+
+/* Botones finales de la edición compacta de producto. */
+.producto-admin-acciones {
+  grid-column: 2;
+}
+
 /* Encabezado interno con título y acciones. */
 .admin-titulo {
   display: flex;
@@ -1711,7 +1756,7 @@ html {
 
 /* Campo editable de stock dentro de tablas. */
 .input-stock-admin {
-  width: 90px;
+  width: 120px;
   box-sizing: border-box;
   border: 1px solid rgba(74, 59, 53, 0.2);
   border-radius: 12px;
@@ -1933,6 +1978,11 @@ html {
   margin-bottom: 10px;
 }
 
+/* Quita la etiqueta móvil cuando una celda solo contiene un botón. */
+.tabla-admin td[data-label=""]::before {
+  display: none;
+}
+
 /* Lista de productos cargados en una venta manual. */
 .venta-manual-lista {
   grid-column: 2;
@@ -2021,6 +2071,15 @@ html {
 
   .form-producto-admin {
     grid-template-columns: 1fr;
+  }
+
+  .producto-admin-selector,
+  .producto-admin-edicion-card {
+    grid-template-columns: 1fr;
+  }
+
+  .producto-admin-acciones {
+    grid-column: 1;
   }
 
   .form-producto-admin input[type="submit"],

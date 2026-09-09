@@ -297,7 +297,10 @@ function subirCantidadCarrito(posicion) {
     if (producto.tipoLatita !== undefined) {
         let stockEsencia = obtenerStockEsencia(producto.tipoLatita, producto.indiceEsencia);
 
-        if (typeof stockEsencia === "number" && cantidad + 1 > stockEsencia) {
+        if (esenciaEstaAgotada(stockEsencia) === true) {
+            puedeSumar = false;
+            alert("Esa esencia está agotada.");
+        } else if (typeof stockEsencia === "number" && cantidad + 1 > stockEsencia) {
             puedeSumar = false;
             alert("No hay stock suficiente de esa esencia.");
         }
@@ -341,7 +344,7 @@ function abrirModalLatitas() {
         let stock = obtenerStockEsencia("mediana", i);
         let textoStock = obtenerTextoStockEsencia(stock);
         let lineaStock = textoStock === "" ? "" : `<p>${textoStock}</p>`;
-        let deshabilitado = stock === 0 ? "disabled" : "";
+        let deshabilitado = esenciaEstaAgotada(stock) === true ? "disabled" : "";
 
         html += `
             <div class="tarjeta-esencia">
@@ -401,7 +404,7 @@ function abrirModalLatitasChicas() {
         let stock = obtenerStockEsencia("chica", i);
         let textoStock = obtenerTextoStockEsencia(stock);
         let lineaStock = textoStock === "" ? "" : `<p>${textoStock}</p>`;
-        let deshabilitado = stock === 0 ? "disabled" : "";
+        let deshabilitado = esenciaEstaAgotada(stock) === true ? "disabled" : "";
 
         html += `
             <div class="tarjeta-esencia">
@@ -458,10 +461,10 @@ function obtenerTextoStockEsencia(stock) {
     let texto = "";
 
     if (usuario !== null && usuario.rol === "admin") {
-        texto = "Stock disponible: " + stock;
+        texto = "Stock: " + normalizarStockEsenciaTienda(stock);
     }
 
-    if (stock === 0) {
+    if (esenciaEstaAgotada(stock) === true) {
         texto = "Agotada";
     }
 
@@ -472,12 +475,33 @@ function obtenerTextoStockEsencia(stock) {
 function puedeAgregarEsencia(tipoLatita, indiceEsencia, cantidad, stock) {
     let puede = true;
 
-    if (typeof stock === "number" && cantidad + obtenerCantidadEsenciaEnCarrito(tipoLatita, indiceEsencia) > stock) {
+    if (esenciaEstaAgotada(stock) === true) {
+        alert("Esa esencia está agotada.");
+        puede = false;
+    } else if (typeof stock === "number" && cantidad + obtenerCantidadEsenciaEnCarrito(tipoLatita, indiceEsencia) > stock) {
         alert("No hay stock suficiente de esa esencia.");
         puede = false;
     }
 
     return puede;
+}
+
+// Normaliza los estados de esencia para mostrarlos en la tienda.
+function normalizarStockEsenciaTienda(stock) {
+    let valor = "Sí";
+
+    if (stock === 0 || stock === "0" || stock === "No") {
+        valor = "No";
+    } else if (stock === "Queda poco" || (typeof stock === "number" && stock <= 3)) {
+        valor = "Queda poco";
+    }
+
+    return valor;
+}
+
+// Indica si una esencia debe bloquearse para la compra.
+function esenciaEstaAgotada(stock) {
+    return normalizarStockEsenciaTienda(stock) === "No";
 }
 
 // Cuenta cuántas unidades de una esencia ya hay en el carrito.

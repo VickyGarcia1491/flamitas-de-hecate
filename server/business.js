@@ -46,6 +46,8 @@ export function checkout(state, body, user, id) {
     if (typeof stockOwner[stockKey] === 'number') {
       if (stockOwner[stockKey] < item.cantidad) fail(`No hay stock suficiente de ${nombre}.`, 409);
       stockOwner[stockKey] -= item.cantidad;
+    } else if (stockOwner[stockKey] === 'No' || stockOwner[stockKey] === '0') {
+      fail(`No hay stock suficiente de ${nombre}.`, 409);
     }
     return {id: product.id, nombre, precio: product.precio, cantidad: item.cantidad, subtotal: money(product.precio * item.cantidad), ...(variant ? {tipoLatita: variant, indiceEsencia: item.indiceEsencia} : {})};
   });
