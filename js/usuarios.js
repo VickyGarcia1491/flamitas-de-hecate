@@ -28,6 +28,8 @@ function mostrarUsuarioEnMenu() {
         document.querySelector("#nombreUsuario").textContent = usuario.nombre;
     }
 
+    mostrarSaludoUsuario(usuario);
+
     if (document.querySelector("#linkAdmin") !== null) {
         if (usuario === null || usuario.rol !== "admin") {
             document.querySelector("#linkAdmin").style.display = "none";
@@ -39,6 +41,8 @@ function mostrarUsuarioEnMenu() {
             document.querySelector("#linkIngresar").style.display = "none";
         }
     }
+
+    ocultarLinksLoginSiHayUsuario(usuario);
 
     if (document.querySelector("#linkContacto") !== null) {
         if (usuario !== null && usuario.rol === "admin") {
@@ -57,4 +61,53 @@ function mostrarUsuarioEnMenu() {
             document.querySelector("#btnCerrarSesion").style.display = "none";
         }
     }
+}
+
+// Oculta links de ingreso sin id en páginas públicas cuando ya hay sesión.
+function ocultarLinksLoginSiHayUsuario(usuario) {
+    let linksLogin = document.querySelectorAll('.menu a[href="login.html"]');
+
+    for (let i = 0; i < linksLogin.length; i++) {
+        if (usuario !== null) {
+            linksLogin[i].style.display = "none";
+        }
+    }
+}
+
+// Muestra un saludo breve para la persona que inició sesión.
+function mostrarSaludoUsuario(usuario) {
+    let saludo = document.querySelector("#saludoUsuarioMenu");
+
+    if (usuario === null) {
+        if (saludo !== null) {
+            saludo.remove();
+        }
+    } else {
+        if (saludo === null) {
+            saludo = document.createElement("span");
+            saludo.id = "saludoUsuarioMenu";
+            saludo.className = "saludo-menu";
+            ubicarSaludoUsuario(saludo);
+        }
+
+        saludo.textContent = "Hola, " + obtenerPrimerNombreUsuario(usuario.nombre);
+    }
+}
+
+// Ubica el saludo junto a las acciones de cada menú.
+function ubicarSaludoUsuario(saludo) {
+    let accionesAdmin = document.querySelector(".admin-menu-acciones");
+    let menu = document.querySelector(".menu nav");
+
+    if (accionesAdmin !== null) {
+        accionesAdmin.prepend(saludo);
+    } else if (menu !== null) {
+        menu.appendChild(saludo);
+    }
+}
+
+// Usa solo el primer nombre para que el saludo no ocupe demasiado espacio.
+function obtenerPrimerNombreUsuario(nombreCompleto) {
+    let partes = String(nombreCompleto).trim().split(" ");
+    return partes[0];
 }

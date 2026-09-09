@@ -933,6 +933,29 @@ html {
   text-transform: uppercase;
 }
 
+/* Saludo breve del usuario activo en el extremo derecho del menú. */
+.saludo-menu {
+  position: absolute;
+  right: 130px;
+  top: 50%;
+  transform: translateY(-50%);
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #7B5BA6;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+/* En admin el saludo vive junto a la bandeja y el botón salir. */
+.admin-menu-acciones .saludo-menu {
+  position: static;
+  transform: none;
+  max-width: 140px;
+}
+
 /* Botón para cerrar sesión. */
 .btn-salir {
   border: none;
@@ -2010,8 +2033,48 @@ html {
 /* Organiza las tablas de esencias en columnas. */
 .stock-esencias-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
   gap: 22px;
+}
+
+/* Evita que las columnas internas de esencias invadan otra tabla. */
+.stock-esencias-grid > div {
+  min-width: 0;
+}
+
+/* Mantiene ordenadas las columnas del stock por esencia. */
+.stock-esencias-grid .tabla-admin {
+  table-layout: fixed;
+}
+
+.stock-esencias-grid .tabla-admin th:nth-child(1),
+.stock-esencias-grid .tabla-admin td:nth-child(1) {
+  width: 32%;
+}
+
+.stock-esencias-grid .tabla-admin th:nth-child(2),
+.stock-esencias-grid .tabla-admin td:nth-child(2) {
+  width: 18%;
+}
+
+.stock-esencias-grid .tabla-admin th:nth-child(3),
+.stock-esencias-grid .tabla-admin td:nth-child(3) {
+  width: 30%;
+}
+
+.stock-esencias-grid .tabla-admin th:nth-child(4),
+.stock-esencias-grid .tabla-admin td:nth-child(4) {
+  width: 20%;
+  text-align: right;
+}
+
+.stock-esencias-grid .btn-tabla-admin {
+  white-space: nowrap;
+}
+
+.stock-esencias-grid .input-stock-admin {
+  width: 100%;
+  min-width: 76px;
 }
 
 .stock-esencias-grid h4 {
@@ -2144,6 +2207,12 @@ html {
     grid-template-columns: 1fr;
   }
 
+  .stock-esencias-grid .tabla-admin {
+    display: table;
+    overflow: visible;
+    white-space: normal;
+  }
+
   .cierre-caja-admin ul {
     columns: 1;
   }
@@ -2195,6 +2264,16 @@ html {
     right: 8px;
     top: 12px;
     gap: 12px;
+  }
+
+  .saludo-menu {
+    right: 82px;
+    max-width: 96px;
+    font-size: 0.74rem;
+  }
+
+  .admin-menu-acciones .saludo-menu {
+    max-width: 82px;
   }
 
   .bandeja-pedidos-admin {
