@@ -612,7 +612,48 @@ html {
   height: 100%;
   min-height: 520px;
   object-fit: cover;
+  object-position: center;
   display: block;
+}
+
+/* Mantiene visible la foto del inicio cuando la pantalla empieza a achicarse. */
+@media (max-width: 1100px) and (min-width: 769px) {
+  .about {
+    max-width: calc(100% - 32px);
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 0.72fr);
+  }
+
+  .about-texto {
+    padding: 44px 42px;
+  }
+
+  .about-imagen img {
+    min-height: 100%;
+  }
+}
+
+/* En celular apila la historia y muestra la imagen completa debajo del texto. */
+@media (max-width: 768px) {
+  .about {
+    grid-template-columns: 1fr;
+    max-width: calc(100% - 24px);
+  }
+
+  .about-texto {
+    padding: 34px 24px 26px;
+    text-align: center;
+  }
+
+  .about-imagen {
+    background-color: rgba(247, 237, 255, 0.86);
+  }
+
+  .about-imagen img {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    object-fit: contain;
+  }
 }
 
 /* Panel lateral del carrito de compras. */
