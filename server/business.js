@@ -29,10 +29,6 @@ function getEssenceStock(state) {
   }
   return stock;
 }
-function ensureEssenceStock(state) {
-  if (!state.esencias.general) state.esencias = {...state.esencias, general: getEssenceStock(state)};
-  return state.esencias.general;
-}
 export function validateState(state) {
   validateTree(state);
   if (!state || !Array.isArray(state.productos) || !Array.isArray(state.pedidos) || !Array.isArray(state.vistos) || !state.esencias) fail('Formato de datos inválido.');
@@ -79,7 +75,6 @@ export function checkout(state, body, user, id) {
     if (variant) {
       if (!Number.isInteger(item.indiceEsencia) || !aromas[item.indiceEsencia]) fail('Esencia inválida.');
       nombre = `Latita ${variant === 'mediana' ? 'Mediana' : 'Chica'} - ${aromas[item.indiceEsencia]}`;
-      stockOwner = ensureEssenceStock(state); stockKey = item.indiceEsencia;
     } else if ([4, 5].includes(product.id)) fail('Elegí la esencia de la latita.');
     if (typeof stockOwner[stockKey] === 'number') {
       if (stockOwner[stockKey] < item.cantidad) fail(`No hay stock suficiente de ${nombre}.`, 409);
