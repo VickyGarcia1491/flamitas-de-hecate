@@ -1,4 +1,4 @@
-let datosServidor = {usuario: null, productos: [], esencias: {mediana: {}, chica: {}}, esenciasCatalogo: {mediana: [], chica: []}, pedidos: [], vistos: [], version: 0};
+let datosServidor = {usuario: null, productos: [], esencias: {general: {}}, esenciasCatalogo: [], pedidos: [], vistos: [], version: 0};
 async function api(url, method = 'GET', body) {
  const response = await fetch(url, {method, credentials: 'same-origin', headers: {'Content-Type': 'application/json', 'X-Flamitas': '1'}, ...(body === undefined ? {} : {body: JSON.stringify(body)})});
  const data = await response.json().catch(() => ({error: 'El servidor no respondió correctamente.'}));

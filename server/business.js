@@ -1,21 +1,41 @@
 import { fail, validateTree, text } from './security.js';
-const aromasIniciales = { mediana: ['Bamboo', 'Manzana y Canela', 'Mandarina y Té Verde', 'Bergamota y Verbena', 'Vainilla', 'Pino', 'Sándalo y Cedro'], chica: ['Algas Marinas', 'Sandía', 'Melón y Pepino', 'Lavanda'] };
-export const defaultEssenceCatalog = () => ({
-  mediana: aromasIniciales.mediana.map(nombre => ({nombre, detalle: ''})),
-  chica: aromasIniciales.chica.map(nombre => ({nombre, detalle: ''}))
-});
-export const emptyState = products => ({ productos: products, esencias: {mediana: {}, chica: {}}, esenciasCatalogo: defaultEssenceCatalog(), pedidos: [], vistos: [] });
+const aromasIniciales = ['Bamboo', 'Manzana y Canela', 'Mandarina y Té Verde', 'Bergamota y Verbena', 'Vainilla', 'Pino', 'Sándalo y Cedro', 'Algas Marinas', 'Sandía', 'Melón y Pepino', 'Lavanda'];
+export const defaultEssenceCatalog = () => aromasIniciales.map(nombre => ({nombre, detalle: ''}));
+export const emptyState = products => ({ productos: products, esencias: {general: {}}, esenciasCatalogo: defaultEssenceCatalog(), pedidos: [], vistos: [] });
 const money = n => Math.round(n * 100) / 100;
 function getEssenceCatalog(state) {
-  return state.esenciasCatalogo || defaultEssenceCatalog();
+  if (Array.isArray(state.esenciasCatalogo)) return state.esenciasCatalogo;
+  const catalog = state.esenciasCatalogo || {};
+  const names = new Set();
+  const list = [];
+  for (const group of [catalog.mediana || [], catalog.chica || []]) for (const item of group) {
+    if (!names.has(item.nombre)) {
+      names.add(item.nombre);
+      list.push({nombre: item.nombre, detalle: item.detalle || ''});
+    }
+  }
+  return list.length > 0 ? list : defaultEssenceCatalog();
 }
-function getEssenceNames(state) {
+function getEssenceStock(state) {
+  if (state.esencias?.general) return state.esencias.general;
+  const stock = {};
   const catalog = getEssenceCatalog(state);
-  return { mediana: catalog.mediana.map(item => item.nombre), chica: catalog.chica.map(item => item.nombre) };
+  const oldCatalog = state.esenciasCatalogo || {};
+  for (let i = 0; i < catalog.length; i++) {
+    for (const type of ['mediana', 'chica']) {
+      const oldIndex = (oldCatalog[type] || []).findIndex(item => item.nombre === catalog[i].nombre);
+      if (oldIndex >= 0 && state.esencias?.[type]?.[oldIndex] !== undefined) stock[i] = state.esencias[type][oldIndex];
+    }
+  }
+  return stock;
+}
+function ensureEssenceStock(state) {
+  if (!state.esencias.general) state.esencias = {...state.esencias, general: getEssenceStock(state)};
+  return state.esencias.general;
 }
 export function validateState(state) {
   validateTree(state);
-  if (!state || !Array.isArray(state.productos) || !Array.isArray(state.pedidos) || !Array.isArray(state.vistos) || !state.esencias?.mediana || !state.esencias?.chica) fail('Formato de datos inválido.');
+  if (!state || !Array.isArray(state.productos) || !Array.isArray(state.pedidos) || !Array.isArray(state.vistos) || !state.esencias) fail('Formato de datos inválido.');
   for (const list of [state.productos, state.pedidos]) {
     if (new Set(list.map(x => x.id)).size !== list.length) fail('Hay identificadores repetidos.');
     for (const item of list) if (!Number.isSafeInteger(item.id) || item.id < 1) fail('Identificador inválido.');
@@ -29,15 +49,13 @@ export function validateState(state) {
     }
   }
   const catalog = getEssenceCatalog(state);
-  for (const type of Object.keys(aromasIniciales)) {
-    if (!Array.isArray(catalog[type])) fail('Catálogo de esencias inválido.');
-    for (const item of catalog[type]) {
-      text(item.nombre, 120);
-      text(item.detalle || '', 1000, false);
-    }
-    for (const [index, count] of Object.entries(state.esencias[type])) {
-      if (!catalog[type][index] || !(typeof count === 'string' || Number.isInteger(count) && count >= 0)) fail('Stock de esencia inválido.');
-    }
+  if (!Array.isArray(catalog)) fail('Catálogo de esencias inválido.');
+  for (const item of catalog) {
+    text(item.nombre, 120);
+    text(item.detalle || '', 1000, false);
+  }
+  for (const [index, count] of Object.entries(getEssenceStock(state))) {
+    if (!catalog[index] || !(typeof count === 'string' || Number.isInteger(count) && count >= 0)) fail('Stock de esencia inválido.');
   }
   for (const order of state.pedidos) {
     if (!order.cliente || !order.entrega || !Array.isArray(order.productos) || !Number.isFinite(order.total) || order.total < 0) fail('Pedido inválido.');
@@ -46,7 +64,7 @@ export function validateState(state) {
 }
 export function checkout(state, body, user, id) {
   validateTree(body);
-  const aromas = getEssenceNames(state);
+  const aromas = getEssenceCatalog(state).map(item => item.nombre);
   if (!Array.isArray(body.productos) || body.productos.length < 1 || body.productos.length > 100) fail('El carrito está vacío o es demasiado grande.');
   const delivery = body.entrega;
   if (!delivery || !['Retiro', 'Envío', 'Retiro en local', 'Retiro en persona'].includes(delivery.metodo)) fail('Elegí una forma de entrega.');
@@ -59,9 +77,9 @@ export function checkout(state, body, user, id) {
     let nombre = product.nombre;
     let stockOwner = product, stockKey = 'stock';
     if (variant) {
-      if (!aromas[variant] || !Number.isInteger(item.indiceEsencia) || !aromas[variant][item.indiceEsencia]) fail('Esencia inválida.');
-      nombre = `Latita ${variant === 'mediana' ? 'Mediana' : 'Chica'} - ${aromas[variant][item.indiceEsencia]}`;
-      stockOwner = state.esencias[variant]; stockKey = item.indiceEsencia;
+      if (!Number.isInteger(item.indiceEsencia) || !aromas[item.indiceEsencia]) fail('Esencia inválida.');
+      nombre = `Latita ${variant === 'mediana' ? 'Mediana' : 'Chica'} - ${aromas[item.indiceEsencia]}`;
+      stockOwner = ensureEssenceStock(state); stockKey = item.indiceEsencia;
     } else if ([4, 5].includes(product.id)) fail('Elegí la esencia de la latita.');
     if (typeof stockOwner[stockKey] === 'number') {
       if (stockOwner[stockKey] < item.cantidad) fail(`No hay stock suficiente de ${nombre}.`, 409);

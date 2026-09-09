@@ -343,7 +343,7 @@ function abrirModalLatitas() {
     for (let i = 0; i < esenciasLatitaMediana.length; i++) {
         let stock = obtenerStockEsencia("mediana", i);
         let detalle = obtenerDetalleEsencia("mediana", i);
-        let lineaDetalle = detalle === "" ? "" : `<p>${detalle}</p>`;
+        let lineaDetalle = detalle === "" ? "" : `<p>${prepararTextoParaHTML(detalle)}</p>`;
         let textoStock = obtenerTextoStockEsencia(stock);
         let lineaStock = textoStock === "" ? "" : `<p>${textoStock}</p>`;
         let deshabilitado = esenciaEstaAgotada(stock) === true ? "disabled" : "";
@@ -406,7 +406,7 @@ function abrirModalLatitasChicas() {
     for (let i = 0; i < esenciasLatitaChica.length; i++) {
         let stock = obtenerStockEsencia("chica", i);
         let detalle = obtenerDetalleEsencia("chica", i);
-        let lineaDetalle = detalle === "" ? "" : `<p>${detalle}</p>`;
+        let lineaDetalle = detalle === "" ? "" : `<p>${prepararTextoParaHTML(detalle)}</p>`;
         let textoStock = obtenerTextoStockEsencia(stock);
         let lineaStock = textoStock === "" ? "" : `<p>${textoStock}</p>`;
         let deshabilitado = esenciaEstaAgotada(stock) === true ? "disabled" : "";

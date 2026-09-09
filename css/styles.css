@@ -2020,7 +2020,7 @@ html {
   gap: 8px;
 }
 
-/* Sección de control de stock por esencia. */
+/* Stock por esencia: una ficha simple para editar la lista compartida de aromas. */
 .stock-esencias-admin {
   margin-top: 34px;
 }
@@ -2030,42 +2030,10 @@ html {
   color: #7B5BA6;
 }
 
-/* Organiza las tablas de esencias en columnas. */
+/* Centra el módulo para que no quede ancho ni pesado en pantallas grandes. */
 .stock-esencias-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
-  gap: 22px;
-}
-
-/* Evita que las columnas internas de esencias invadan otra tabla. */
-.stock-esencias-grid > div {
-  min-width: 0;
-}
-
-/* Mantiene ordenadas las columnas del stock por esencia. */
-.stock-esencias-grid .tabla-admin {
-  table-layout: fixed;
-}
-
-.stock-esencias-grid .tabla-admin th:nth-child(1),
-.stock-esencias-grid .tabla-admin td:nth-child(1) {
-  width: 32%;
-}
-
-.stock-esencias-grid .tabla-admin th:nth-child(2),
-.stock-esencias-grid .tabla-admin td:nth-child(2) {
-  width: 18%;
-}
-
-.stock-esencias-grid .tabla-admin th:nth-child(3),
-.stock-esencias-grid .tabla-admin td:nth-child(3) {
-  width: 30%;
-}
-
-.stock-esencias-grid .tabla-admin th:nth-child(4),
-.stock-esencias-grid .tabla-admin td:nth-child(4) {
-  width: 20%;
-  text-align: right;
+  max-width: 760px;
+  margin: 0 auto;
 }
 
 .stock-esencias-grid .btn-tabla-admin {
@@ -2077,21 +2045,16 @@ html {
   min-width: 76px;
 }
 
-.stock-esencias-grid h4 {
-  color: #7B5BA6;
-  margin-bottom: 10px;
-}
-
-/* Fichas editables de esencias, con el mismo criterio que productos. */
+/* Ficha editable de esencias, con el mismo criterio visual que productos. */
 .esencia-admin-edicion {
   width: 100%;
-  max-width: none;
+  max-width: 760px;
   margin: 12px 0 0;
 }
 
 .stock-esencias-grid .producto-admin-selector,
 .stock-esencias-grid .producto-admin-edicion-card {
-  grid-template-columns: 120px minmax(0, 1fr);
+  grid-template-columns: 160px minmax(0, 1fr);
 }
 
 .stock-esencias-grid .producto-admin-edicion-card {
@@ -2233,16 +2196,6 @@ html {
   .filtros-pedidos-admin,
   .resumen-ventas-admin {
     grid-template-columns: 1fr;
-  }
-
-  .stock-esencias-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .stock-esencias-grid .tabla-admin {
-    display: table;
-    overflow: visible;
-    white-space: normal;
   }
 
   .cierre-caja-admin ul {
@@ -2432,31 +2385,25 @@ html {
 
 /* Convierte las tablas grandes del admin en tarjetas legibles en celular. */
 @media (max-width: 760px) {
-  .tabla-productos-admin,
-  .stock-esencias-grid .tabla-admin {
+  .tabla-productos-admin {
     display: block;
     overflow: visible;
     white-space: normal;
   }
 
-  .tabla-productos-admin thead,
-  .stock-esencias-grid .tabla-admin thead {
+  .tabla-productos-admin thead {
     display: none;
   }
 
   .tabla-productos-admin tbody,
-  .stock-esencias-grid .tabla-admin tbody,
   .tabla-productos-admin tr,
-  .stock-esencias-grid .tabla-admin tr,
-  .tabla-productos-admin td,
-  .stock-esencias-grid .tabla-admin td {
+  .tabla-productos-admin td {
     display: block;
     width: 100%;
     box-sizing: border-box;
   }
 
-  .tabla-productos-admin tr,
-  .stock-esencias-grid .tabla-admin tr {
+  .tabla-productos-admin tr {
     background-color: rgba(255, 255, 255, 0.68);
     border: 1px solid rgba(156, 123, 190, 0.16);
     border-radius: 18px;
@@ -2464,14 +2411,12 @@ html {
     margin-bottom: 14px;
   }
 
-  .tabla-productos-admin td,
-  .stock-esencias-grid .tabla-admin td {
+  .tabla-productos-admin td {
     border-bottom: none;
     padding: 8px 0;
   }
 
-  .tabla-productos-admin td::before,
-  .stock-esencias-grid .tabla-admin td::before {
+  .tabla-productos-admin td::before {
     content: attr(data-label);
     display: block;
     margin-bottom: 6px;
@@ -2504,7 +2449,7 @@ html {
   }
 
   .acciones-tabla-admin .btn-tabla-admin,
-  .stock-esencias-grid .btn-tabla-admin {
+  .btn-tabla-admin {
     min-height: 42px;
   }
 }

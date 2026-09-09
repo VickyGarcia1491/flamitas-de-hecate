@@ -13,10 +13,8 @@ let filtroPedidosPendientesActivo = false;
 let productoAdminSeleccionadoId = null;
 // Recuerda si el bloque de modificación de stock está abierto.
 let edicionProductoAdminAbierta = false;
-// Recuerda qué esencia mediana está abierta en el módulo editable.
-let esenciaMedianaSeleccionadaIndice = 0;
-// Recuerda qué esencia chica está abierta en el módulo editable.
-let esenciaChicaSeleccionadaIndice = 0;
+// Recuerda qué esencia está abierta en el módulo editable de stock.
+let esenciaSeleccionadaIndice = 0;
 
 // Prepara seguridad, pedidos, productos, stock, venta manual y eventos del admin.
 function iniciarAdmin() {
@@ -1017,20 +1015,21 @@ function obtenerProductosBajoStock() {
         }
     }
 
-    agregarAlertasStockEsencias(alertas, "mediana", esenciasLatitaMediana, "latitas medianas");
-    agregarAlertasStockEsencias(alertas, "chica", esenciasLatitaChica, "latitas chicas");
+    agregarAlertasStockEsencias(alertas);
 
     return alertas;
 }
 
 // Agrega al dashboard las esencias agotadas o con poco stock.
-function agregarAlertasStockEsencias(alertas, tipoLatita, esencias, nombreGrupo) {
+function agregarAlertasStockEsencias(alertas) {
+    let esencias = esenciasLatitaMediana;
+
     for (let i = 0; i < esencias.length; i++) {
-        let stock = obtenerStockEsencia(tipoLatita, i);
+        let stock = obtenerStockEsencia("general", i);
 
         if (esenciaTieneStockBajo(stock) === true) {
             let estado = obtenerEstadoStockEsencia(stock);
-            let detalle = estado.texto === "Sin stock" ? "Sin stock para " + nombreGrupo + "." : "Comprar más esencia para " + nombreGrupo + ".";
+            let detalle = estado.texto === "Sin stock" ? "Sin stock disponible." : "Comprar más esencia.";
 
             alertas.push({
                 nombre: "Esencia: " + esencias[i],
@@ -1318,44 +1317,37 @@ function actualizarVistaProductos() {
     mostrarDashboardAdmin();
 }
 
-// Muestra módulos compactos para editar esencias por tipo de latita.
+// Muestra un único módulo para editar nombre, detalle y stock de cada esencia.
 function mostrarStockEsenciasAdmin() {
     let html = `
         <div class="stock-esencias-grid">
-            <div>
-                <h4>Latitas medianas</h4>
-                ${armarModuloEsenciasAdmin("mediana", esenciasLatitaMediana)}
-            </div>
-            <div>
-                <h4>Latitas chicas</h4>
-                ${armarModuloEsenciasAdmin("chica", esenciasLatitaChica)}
-            </div>
+            ${armarModuloEsenciasAdmin()}
         </div>
     `;
 
     document.querySelector("#contenedorStockEsencias").innerHTML = html;
 
-    conectarEventosModuloEsencias("mediana", esenciasLatitaMediana);
-    conectarEventosModuloEsencias("chica", esenciasLatitaChica);
+    conectarEventosModuloEsencias();
 }
 
 // Arma el módulo desplegable para elegir y modificar una esencia.
-function armarModuloEsenciasAdmin(tipoLatita, esencias) {
-    let indice = obtenerIndiceEsenciaSeleccionada(tipoLatita, esencias);
+function armarModuloEsenciasAdmin() {
+    let esencias = esenciasLatitaMediana;
+    let indice = obtenerIndiceEsenciaSeleccionada(esencias);
     let html = "<p class='admin-vacio'>No hay esencias cargadas.</p>";
 
     if (esencias.length > 0) {
         html = `
             <details class="producto-admin-nuevo producto-admin-edicion esencia-admin-edicion" open>
-                <summary>Modificar esencias</summary>
+                <summary>Modificar stock de esencia</summary>
                 <div class="producto-admin-selector">
-                    <label for="selectorEsencia${tipoLatita}">Elegí una esencia</label>
-                    <select id="selectorEsencia${tipoLatita}">
-                        ${armarOpcionesEsenciasAdmin(tipoLatita, esencias, indice)}
+                    <label for="selectorEsenciaAdmin">Elegí una esencia</label>
+                    <select id="selectorEsenciaAdmin">
+                        ${armarOpcionesEsenciasAdmin(esencias, indice)}
                     </select>
                 </div>
-                <div id="esenciaSeleccionada${tipoLatita}">
-                    ${armarEsenciaSeleccionadaAdmin(tipoLatita, indice)}
+                <div id="esenciaSeleccionadaAdmin">
+                    ${armarEsenciaSeleccionadaAdmin(indice)}
                 </div>
             </details>
         `;
@@ -1364,29 +1356,17 @@ function armarModuloEsenciasAdmin(tipoLatita, esencias) {
     return html;
 }
 
-// Mantiene seleccionado un índice válido para cada grupo de esencias.
-function obtenerIndiceEsenciaSeleccionada(tipoLatita, esencias) {
-    let indice = tipoLatita === "mediana" ? esenciaMedianaSeleccionadaIndice : esenciaChicaSeleccionadaIndice;
-
-    if (indice >= esencias.length) {
-        indice = 0;
-        guardarIndiceEsenciaSeleccionada(tipoLatita, indice);
+// Mantiene seleccionado un índice válido de la lista única de esencias.
+function obtenerIndiceEsenciaSeleccionada(esencias) {
+    if (esenciaSeleccionadaIndice >= esencias.length) {
+        esenciaSeleccionadaIndice = 0;
     }
 
-    return indice;
-}
-
-// Recuerda la esencia seleccionada de cada tipo de latita.
-function guardarIndiceEsenciaSeleccionada(tipoLatita, indice) {
-    if (tipoLatita === "mediana") {
-        esenciaMedianaSeleccionadaIndice = indice;
-    } else {
-        esenciaChicaSeleccionadaIndice = indice;
-    }
+    return esenciaSeleccionadaIndice;
 }
 
 // Arma el combo con las esencias disponibles.
-function armarOpcionesEsenciasAdmin(tipoLatita, esencias, indiceSeleccionado) {
+function armarOpcionesEsenciasAdmin(esencias, indiceSeleccionado) {
     let html = "";
 
     for (let i = 0; i < esencias.length; i++) {
@@ -1398,23 +1378,23 @@ function armarOpcionesEsenciasAdmin(tipoLatita, esencias, indiceSeleccionado) {
 }
 
 // Arma la ficha editable de la esencia elegida.
-function armarEsenciaSeleccionadaAdmin(tipoLatita, indice) {
+function armarEsenciaSeleccionadaAdmin(indice) {
     let catalogo = obtenerCatalogoEsenciasGuardado();
-    let esencia = catalogo[tipoLatita][indice];
-    let stock = obtenerStockEsencia(tipoLatita, indice);
+    let esencia = catalogo[indice];
+    let stock = obtenerStockEsencia("general", indice);
     let estado = obtenerEstadoStockEsencia(stock);
     let valorSeleccionado = normalizarStockEsenciaParaSelector(stock);
 
     return `
         <div class="producto-admin-edicion-card">
-            <label for="nombreEsencia${tipoLatita}${indice}">Nombre</label>
-            <input type="text" value="${prepararTextoParaInput(esencia.nombre)}" id="nombreEsencia${tipoLatita}${indice}" class="input-tabla-admin">
+            <label for="nombreEsencia${indice}">Nombre</label>
+            <input type="text" value="${prepararTextoParaInput(esencia.nombre)}" id="nombreEsencia${indice}" class="input-tabla-admin">
 
-            <label for="detalleEsencia${tipoLatita}${indice}">Detalle</label>
-            <textarea id="detalleEsencia${tipoLatita}${indice}" class="textarea-tabla-admin">${prepararTextoParaTextarea(esencia.detalle || "")}</textarea>
+            <label for="detalleEsencia${indice}">Detalle</label>
+            <textarea id="detalleEsencia${indice}" class="textarea-tabla-admin">${prepararTextoParaTextarea(esencia.detalle || "")}</textarea>
 
-            <label for="stockEsencia${tipoLatita}${indice}">Stock</label>
-            <select id="stockEsencia${tipoLatita}${indice}" class="input-tabla-admin input-stock-admin">
+            <label for="stockEsencia${indice}">Stock</label>
+            <select id="stockEsencia${indice}" class="input-tabla-admin input-stock-admin">
                 <option value="Sí" ${valorSeleccionado === "Sí" ? "selected" : ""}>Sí</option>
                 <option value="No" ${valorSeleccionado === "No" ? "selected" : ""}>No</option>
                 <option value="Queda poco" ${valorSeleccionado === "Queda poco" ? "selected" : ""}>Queda poco</option>
@@ -1424,92 +1404,53 @@ function armarEsenciaSeleccionadaAdmin(tipoLatita, indice) {
             <span class="stock-estado ${estado.clase}">${estado.texto}</span>
 
             <div class="acciones-tabla-admin producto-admin-acciones">
-                <input type="button" value="Guardar" id="guardarEsencia${tipoLatita}${indice}" class="btn-tabla-admin">
-                <input type="button" value="Eliminar" id="eliminarEsencia${tipoLatita}${indice}" class="btn-tabla-admin btn-eliminar-admin">
+                <input type="button" value="Guardar" id="guardarEsencia${indice}" class="btn-tabla-admin">
             </div>
         </div>
     `;
 }
 
 // Conecta el selector y los botones del módulo de esencias.
-function conectarEventosModuloEsencias(tipoLatita, esencias) {
+function conectarEventosModuloEsencias() {
+    let esencias = esenciasLatitaMediana;
+
     if (esencias.length === 0) {
         return;
     }
 
-    let selector = document.querySelector("#selectorEsencia" + tipoLatita);
-    let indice = obtenerIndiceEsenciaSeleccionada(tipoLatita, esencias);
+    let selector = document.querySelector("#selectorEsenciaAdmin");
+    let indice = obtenerIndiceEsenciaSeleccionada(esencias);
 
     selector.addEventListener("change", function () {
         let nuevoIndice = Number(this.value);
-        guardarIndiceEsenciaSeleccionada(tipoLatita, nuevoIndice);
-        document.querySelector("#esenciaSeleccionada" + tipoLatita).innerHTML = armarEsenciaSeleccionadaAdmin(tipoLatita, nuevoIndice);
-        conectarBotonesEsenciaSeleccionada(tipoLatita, nuevoIndice);
+        esenciaSeleccionadaIndice = nuevoIndice;
+        document.querySelector("#esenciaSeleccionadaAdmin").innerHTML = armarEsenciaSeleccionadaAdmin(nuevoIndice);
+        conectarBotonesEsenciaSeleccionada(nuevoIndice);
     });
 
-    conectarBotonesEsenciaSeleccionada(tipoLatita, indice);
+    conectarBotonesEsenciaSeleccionada(indice);
 }
 
-// Conecta guardar y eliminar para la esencia seleccionada.
-function conectarBotonesEsenciaSeleccionada(tipoLatita, indice) {
-    document.querySelector("#guardarEsencia" + tipoLatita + indice).addEventListener("click", async function () {
-        await guardarEsenciaAdmin(tipoLatita, indice);
-    });
-
-    document.querySelector("#eliminarEsencia" + tipoLatita + indice).addEventListener("click", async function () {
-        await eliminarEsenciaAdmin(tipoLatita, indice);
+// Conecta guardar para la esencia seleccionada.
+function conectarBotonesEsenciaSeleccionada(indice) {
+    document.querySelector("#guardarEsencia" + indice).addEventListener("click", async function () {
+        await guardarEsenciaAdmin(indice);
     });
 }
 
 // Guarda nombre, detalle y stock de la esencia seleccionada.
-async function guardarEsenciaAdmin(tipoLatita, indice) {
+async function guardarEsenciaAdmin(indice) {
     let catalogo = obtenerCatalogoEsenciasGuardado();
     let stock = obtenerStockEsenciasGuardado();
 
-    catalogo[tipoLatita][indice].nombre = document.querySelector("#nombreEsencia" + tipoLatita + indice).value;
-    catalogo[tipoLatita][indice].detalle = document.querySelector("#detalleEsencia" + tipoLatita + indice).value;
-    stock[tipoLatita][indice] = document.querySelector("#stockEsencia" + tipoLatita + indice).value;
+    catalogo[indice].nombre = document.querySelector("#nombreEsencia" + indice).value;
+    catalogo[indice].detalle = document.querySelector("#detalleEsencia" + indice).value;
+    stock.general[indice] = document.querySelector("#stockEsencia" + indice).value;
 
     await guardarEstadoServidor({esenciasCatalogo: catalogo, esencias: stock});
     sincronizarCatalogoEsencias();
     mostrarStockEsenciasAdmin();
     mostrarDashboardAdmin();
-}
-
-// Elimina una esencia del catálogo y reordena sus valores de stock.
-async function eliminarEsenciaAdmin(tipoLatita, indice) {
-    let confirmar = confirm("¿Querés eliminar esta esencia?");
-
-    if (confirmar === true) {
-        let catalogo = obtenerCatalogoEsenciasGuardado();
-        let stock = obtenerStockEsenciasGuardado();
-
-        catalogo[tipoLatita].splice(indice, 1);
-        stock[tipoLatita] = reordenarStockEsenciaDespuesDeEliminar(stock[tipoLatita], indice);
-        guardarIndiceEsenciaSeleccionada(tipoLatita, 0);
-
-        await guardarEstadoServidor({esenciasCatalogo: catalogo, esencias: stock});
-        sincronizarCatalogoEsencias();
-        mostrarStockEsenciasAdmin();
-        mostrarDashboardAdmin();
-    }
-}
-
-// Mueve los índices de stock para que coincidan con el catálogo tras eliminar.
-function reordenarStockEsenciaDespuesDeEliminar(stock, indiceEliminado) {
-    let stockNuevo = {};
-
-    for (let clave in stock) {
-        let indice = Number(clave);
-
-        if (indice < indiceEliminado) {
-            stockNuevo[indice] = stock[clave];
-        } else if (indice > indiceEliminado) {
-            stockNuevo[indice - 1] = stock[clave];
-        }
-    }
-
-    return stockNuevo;
 }
 
 // Calcula el siguiente id disponible para un producto nuevo.

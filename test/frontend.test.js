@@ -10,7 +10,7 @@ async function page(name,user) {
  const win = dom.window, errors = [], writes = [];
  win.structuredClone = structuredClone;
  win.alert = message => errors.push(message); win.confirm = () => true;
- let state = {usuario:user,productos:structuredClone(seed),esencias:{mediana:{},chica:{}},pedidos:[],vistos:[],version:1};
+ let state = {usuario:user,productos:structuredClone(seed),esencias:{general:{}},esenciasCatalogo:[],pedidos:[],vistos:[],version:1};
  win.fetch = async (url,options) => {
   if (url === '/api/admin/state') {const body=JSON.parse(options.body); writes.push(body); state = {...state,...body.data,version:state.version+1}; return {ok:true,json:async()=>({version:state.version})};}
   return {ok:true,json:async()=>structuredClone(state)};
