@@ -157,28 +157,33 @@
         <!-- Sección para crear, editar o eliminar productos y controlar stock. -->
         <section class="admin-bloque admin-seccion" id="seccionProductos">
             <h2>Productos y stock</h2>
-            <p class="admin-ayuda">Cargá productos nuevos o editá los existentes. El cliente verá foto, nombre, detalle y precio; el stock queda solo para administración.</p>
+            <p class="admin-ayuda">Editá productos y stock desde esta vista rápida. El cliente solo verá foto, nombre, detalle y precio.</p>
 
-            <!-- Formulario para agregar productos nuevos al catálogo. -->
-            <form class="form-producto-admin" id="formProductoAdmin">
-                <label for="nombreProductoAdmin">Nombre</label>
-                <input type="text" id="nombreProductoAdmin" required>
+            <!-- Desplegable para cargar productos nuevos sin ocupar espacio cuando no se usa. -->
+            <details class="producto-admin-nuevo">
+                <summary>Agregar producto nuevo</summary>
 
-                <label for="detalleProductoAdmin">Detalle</label>
-                <textarea id="detalleProductoAdmin" rows="4" required></textarea>
+                <!-- Formulario para agregar productos nuevos al catálogo. -->
+                <form class="form-producto-admin" id="formProductoAdmin">
+                    <label for="nombreProductoAdmin">Nombre</label>
+                    <input type="text" id="nombreProductoAdmin" required>
 
-                <label for="fotoProductoAdmin">Foto</label>
-                <input type="file" id="fotoProductoAdmin" accept="image/*" required>
+                    <label for="detalleProductoAdmin">Detalle</label>
+                    <textarea id="detalleProductoAdmin" rows="4" required></textarea>
 
-                <label for="precioProductoAdmin">Precio</label>
-                <input type="text" id="precioProductoAdmin" placeholder="Ej: 350 o Consultar" required>
+                    <label for="fotoProductoAdmin">Foto</label>
+                    <input type="file" id="fotoProductoAdmin" accept="image/*" required>
 
-                <label for="stockProductoAdminNuevo">Stock</label>
-                <input type="text" id="stockProductoAdminNuevo" placeholder="Ej: 5 o Consultar" required>
+                    <label for="precioProductoAdmin">Precio</label>
+                    <input type="text" id="precioProductoAdmin" placeholder="Ej: 350 o Consultar" required>
 
-                <input type="submit" value="Agregar producto">
-                <p class="mensaje-formulario" id="mensajeProductoAdmin"></p>
-            </form>
+                    <label for="stockProductoAdminNuevo">Stock</label>
+                    <input type="text" id="stockProductoAdminNuevo" placeholder="Ej: 5 o Consultar" required>
+
+                    <input type="submit" value="Agregar producto">
+                    <p class="mensaje-formulario" id="mensajeProductoAdmin"></p>
+                </form>
+            </details>
 
             <div id="contenedorProductosAdmin">
             </div>

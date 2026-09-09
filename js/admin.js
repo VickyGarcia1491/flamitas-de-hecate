@@ -1065,13 +1065,13 @@ async function mostrarProductosAdmin() {
 
         html += `
             <tr>
-                <td><input type="text" value="${prepararTextoParaInput(velas[i].nombre)}" id="nombreEditar${velas[i].id}" class="input-tabla-admin"></td>
-                <td><textarea id="detalleEditar${velas[i].id}" class="textarea-tabla-admin">${velas[i].descripcion}</textarea></td>
-                <td><input type="text" value="${velas[i].precio}" id="precioEditar${velas[i].id}" class="input-tabla-admin input-precio-admin"></td>
-                <td><input type="text" value="${velas[i].stock}" id="stockEditar${velas[i].id}" class="input-tabla-admin input-stock-admin"></td>
-                <td><span class="stock-estado ${estado.clase}">${estado.texto}</span></td>
-                <td><input type="file" id="fotoEditar${velas[i].id}" class="input-foto-tabla" accept="image/*"></td>
-                <td class="acciones-tabla-admin">
+                <td data-label="Producto"><input type="text" value="${prepararTextoParaInput(velas[i].nombre)}" id="nombreEditar${velas[i].id}" class="input-tabla-admin"></td>
+                <td data-label="Detalle"><textarea id="detalleEditar${velas[i].id}" class="textarea-tabla-admin">${velas[i].descripcion}</textarea></td>
+                <td data-label="Precio"><input type="text" value="${velas[i].precio}" id="precioEditar${velas[i].id}" class="input-tabla-admin input-precio-admin"></td>
+                <td data-label="Stock"><input type="text" value="${velas[i].stock}" id="stockEditar${velas[i].id}" class="input-tabla-admin input-stock-admin"></td>
+                <td data-label="Estado"><span class="stock-estado ${estado.clase}">${estado.texto}</span></td>
+                <td data-label="Foto"><input type="file" id="fotoEditar${velas[i].id}" class="input-foto-tabla" accept="image/*"></td>
+                <td data-label="Acción" class="acciones-tabla-admin">
                     <input type="button" value="Guardar" id="guardarProducto${velas[i].id}" class="btn-tabla-admin">
                     <input type="button" value="Eliminar" id="eliminarProducto${velas[i].id}" class="btn-tabla-admin btn-eliminar-admin">
                 </td>
@@ -1248,10 +1248,10 @@ function armarTablaEsenciasAdmin(tipoLatita, esencias) {
 
         html = html + `
             <tr>
-                <td>${esencias[i]}</td>
-                <td><input type="text" value="${stock}" id="stockEsencia${tipoLatita}${i}" class="input-tabla-admin input-stock-admin"></td>
-                <td><span class="stock-estado ${estado.clase}">${estado.texto}</span></td>
-                <td><input type="button" value="Guardar" id="guardarEsencia${tipoLatita}${i}" class="btn-tabla-admin"></td>
+                <td data-label="Esencia">${esencias[i]}</td>
+                <td data-label="Stock"><input type="text" value="${stock}" id="stockEsencia${tipoLatita}${i}" class="input-tabla-admin input-stock-admin"></td>
+                <td data-label="Estado"><span class="stock-estado ${estado.clase}">${estado.texto}</span></td>
+                <td data-label="Acción"><input type="button" value="Guardar" id="guardarEsencia${tipoLatita}${i}" class="btn-tabla-admin"></td>
             </tr>
         `;
     }
