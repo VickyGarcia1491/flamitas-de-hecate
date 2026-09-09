@@ -18,6 +18,7 @@ function iniciarUsuarios() {
  document.querySelector('#formRegistro')?.addEventListener('submit', e => enviarAcceso(e,true));
  document.querySelector('#formLogin')?.addEventListener('submit', e => enviarAcceso(e,false));
  document.querySelector('#btnCerrarSesion')?.addEventListener('click', cerrarSesion);
+ prepararBotonesMostrarPassword();
  mostrarUsuarioEnMenu();
 }
 // Muestra datos del usuario en el menú y ajusta links según el rol.
@@ -96,13 +97,41 @@ function mostrarSaludoUsuario(usuario) {
 
 // Ubica el saludo junto a las acciones de cada menú.
 function ubicarSaludoUsuario(saludo) {
-    let accionesAdmin = document.querySelector(".admin-menu-acciones");
+    let menuLinks = document.querySelector(".menu .menu-links");
     let menu = document.querySelector(".menu nav");
 
-    if (accionesAdmin !== null) {
-        accionesAdmin.prepend(saludo);
+    if (menuLinks !== null) {
+        menuLinks.appendChild(saludo);
     } else if (menu !== null) {
         menu.appendChild(saludo);
+    }
+}
+
+// Agrega un botón de ojo para mostrar u ocultar la contraseña al escribir.
+function prepararBotonesMostrarPassword() {
+    let campos = document.querySelectorAll('input[type="password"]');
+
+    for (let i = 0; i < campos.length; i++) {
+        let campo = campos[i];
+        if (campo.parentElement.classList.contains("password-wrapper")) continue;
+
+        let wrapper = document.createElement("div");
+        wrapper.className = "password-wrapper";
+        campo.parentNode.insertBefore(wrapper, campo);
+        wrapper.appendChild(campo);
+
+        let boton = document.createElement("button");
+        boton.type = "button";
+        boton.className = "password-toggle";
+        boton.setAttribute("aria-label", "Mostrar contraseña");
+        boton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+        boton.addEventListener("click", function () {
+            let mostrar = campo.type === "password";
+            campo.type = mostrar ? "text" : "password";
+            boton.setAttribute("aria-label", mostrar ? "Ocultar contraseña" : "Mostrar contraseña");
+            boton.classList.toggle("active", mostrar);
+        });
+        wrapper.appendChild(boton);
     }
 }
 

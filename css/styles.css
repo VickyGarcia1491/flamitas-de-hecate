@@ -360,6 +360,9 @@ html {
   position: absolute;
   right: 20px;
   top: 20px;
+  border: none;
+  background: transparent;
+  padding: 0;
 }
 
 /* Tamaño de las líneas del botón hamburguesa. */
@@ -440,6 +443,12 @@ html {
 .producto:hover {
   transform: translateY(-8px);
   box-shadow: 0 12px 30px rgba(156, 123, 190, 0.25);
+}
+
+/* Evita que las acciones fijas del admin ocupen espacio en el menú de escritorio. */
+.menu-acciones-item {
+  list-style: none;
+  width: 0;
 }
 
 /* Agranda la foto del producto al pasar el mouse. */
@@ -1950,6 +1959,48 @@ html {
   font-size: 0.92rem;
 }
 
+.password-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.formulario-acceso .password-wrapper input {
+  width: 100%;
+}
+
+.password-wrapper input {
+  padding-right: 46px !important;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background-color: rgba(156, 123, 190, 0.12);
+  color: #7B5BA6;
+  cursor: pointer;
+}
+
+.password-toggle svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.password-toggle.active {
+  background-color: rgba(156, 123, 190, 0.24);
+}
+
 .form-producto-admin input[type="submit"],
 .form-producto-admin input[type="button"],
 .form-producto-admin .mensaje-formulario {
@@ -2387,6 +2438,111 @@ html {
   .venta-manual-item {
     grid-template-columns: 1fr;
     gap: 7px;
+  }
+}
+
+/* Menú final para tablet y celular: evita superposiciones usando solo el desplegable. */
+@media (max-width: 900px) {
+  .menu {
+    min-height: 64px;
+    padding: 8px 0;
+    box-sizing: border-box;
+  }
+
+  .menu nav {
+    min-height: 48px;
+    position: relative;
+  }
+
+  .menu-toggle {
+    display: flex !important;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 140;
+  }
+
+  .menu:has(.carrito-icono) .menu-toggle {
+    right: 92px;
+  }
+
+  .menu .menu-links {
+    position: absolute !important;
+    top: calc(100% + 8px) !important;
+    right: 10px !important;
+    left: auto !important;
+    display: flex;
+    flex-direction: column !important;
+    align-items: stretch;
+    width: min(245px, calc(100vw - 20px)) !important;
+    max-height: calc(100vh - 90px);
+    overflow-y: auto;
+    padding: 16px !important;
+    gap: 12px !important;
+    background: rgba(255, 255, 255, 0.96) !important;
+    border: 1px solid rgba(156, 123, 190, 0.18);
+    border-radius: 18px;
+    box-shadow: 0 14px 34px rgba(74, 59, 53, 0.14);
+    transform: translateX(calc(100% + 28px)) !important;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 130;
+  }
+
+  .menu .menu-links.active {
+    transform: translateX(0) !important;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .menu .menu-links li {
+    width: 100%;
+  }
+
+  .menu .menu-links a,
+  .menu .menu-links .btn-salir {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px 10px;
+    text-align: left;
+    font-size: 0.82rem;
+  }
+
+  .menu .menu-links .saludo-menu {
+    position: static;
+    display: block;
+    transform: none;
+    max-width: none;
+    padding: 9px 10px;
+    text-align: left;
+    white-space: normal;
+    overflow: visible;
+  }
+
+  .menu .menu-acciones-item {
+    display: block;
+    width: 100%;
+  }
+
+  .menu .admin-menu-acciones {
+    position: static;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    padding: 8px 10px;
+    box-sizing: border-box;
+  }
+
+  .menu .admin-menu-acciones .btn-salir {
+    width: auto;
+    padding: 0;
+  }
+
+  .menu a.logo-menu {
+    left: 14px;
+    top: 50%;
   }
 }
 
