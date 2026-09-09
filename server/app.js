@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { hashPassword, verifyPassword, tokenHash, newToken, fail, text, email, password, validateTree } from './security.js';
-import { emptyState, validateState, checkout } from './business.js';
+import { emptyState, validateState, checkout, defaultEssenceCatalog } from './business.js';
 const root = fileURLToPath(new URL('../', import.meta.url));
 
 function getConfiguredAdmins(config) {
@@ -97,7 +97,7 @@ export function createApp(db, config = {}) {
   });
   app.get('/api/bootstrap', async (req, res) => {
     const {data, version} = (await db.query('SELECT * FROM business_state WHERE id=1')).rows[0];
-    res.json({usuario: req.user || null, version, productos: data.productos, esencias: data.esencias, pedidos: req.user?.rol === 'admin' ? data.pedidos : data.pedidos.filter(p => req.user && p.cliente.email === req.user.email), vistos: req.user?.rol === 'admin' ? data.vistos : []});
+    res.json({usuario: req.user || null, version, productos: data.productos, esencias: data.esencias, esenciasCatalogo: data.esenciasCatalogo || defaultEssenceCatalog(), pedidos: req.user?.rol === 'admin' ? data.pedidos : data.pedidos.filter(p => req.user && p.cliente.email === req.user.email), vistos: req.user?.rol === 'admin' ? data.vistos : []});
   });
   app.put('/api/admin/state', admin, async (req, res) => {
     validateState(req.body.data);

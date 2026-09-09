@@ -342,6 +342,8 @@ function abrirModalLatitas() {
 
     for (let i = 0; i < esenciasLatitaMediana.length; i++) {
         let stock = obtenerStockEsencia("mediana", i);
+        let detalle = obtenerDetalleEsencia("mediana", i);
+        let lineaDetalle = detalle === "" ? "" : `<p>${detalle}</p>`;
         let textoStock = obtenerTextoStockEsencia(stock);
         let lineaStock = textoStock === "" ? "" : `<p>${textoStock}</p>`;
         let deshabilitado = esenciaEstaAgotada(stock) === true ? "disabled" : "";
@@ -350,6 +352,7 @@ function abrirModalLatitas() {
             <div class="tarjeta-esencia">
                 <h3>${esenciasLatitaMediana[i]}</h3>
                 <p>Latita mediana de 80gr</p>
+                ${lineaDetalle}
                 <p>$280</p>
                 ${lineaStock}
 
@@ -402,6 +405,8 @@ function abrirModalLatitasChicas() {
 
     for (let i = 0; i < esenciasLatitaChica.length; i++) {
         let stock = obtenerStockEsencia("chica", i);
+        let detalle = obtenerDetalleEsencia("chica", i);
+        let lineaDetalle = detalle === "" ? "" : `<p>${detalle}</p>`;
         let textoStock = obtenerTextoStockEsencia(stock);
         let lineaStock = textoStock === "" ? "" : `<p>${textoStock}</p>`;
         let deshabilitado = esenciaEstaAgotada(stock) === true ? "disabled" : "";
@@ -410,6 +415,7 @@ function abrirModalLatitasChicas() {
             <div class="tarjeta-esencia">
                 <h3>${esenciasLatitaChica[i]}</h3>
                 <p>Latita chica de 60gr</p>
+                ${lineaDetalle}
                 <p>$240</p>
                 ${lineaStock}
 

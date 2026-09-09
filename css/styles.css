@@ -2082,6 +2082,38 @@ html {
   margin-bottom: 10px;
 }
 
+/* Fichas editables de esencias, con el mismo criterio que productos. */
+.esencia-admin-edicion {
+  width: 100%;
+  max-width: none;
+  margin: 12px 0 0;
+}
+
+.stock-esencias-grid .producto-admin-selector,
+.stock-esencias-grid .producto-admin-edicion-card {
+  grid-template-columns: 120px minmax(0, 1fr);
+}
+
+.stock-esencias-grid .producto-admin-edicion-card {
+  align-items: start;
+}
+
+.stock-esencias-grid .producto-admin-edicion-card label {
+  padding-top: 10px;
+}
+
+.stock-esencias-grid .producto-admin-edicion-card .stock-estado {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.stock-esencias-grid .producto-admin-acciones {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 /* Quita la etiqueta móvil cuando una celda solo contiene un botón. */
 .tabla-admin td[data-label=""]::before {
   display: none;

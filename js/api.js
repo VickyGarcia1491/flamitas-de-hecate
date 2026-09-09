@@ -1,4 +1,4 @@
-let datosServidor = {usuario: null, productos: [], esencias: {mediana: {}, chica: {}}, pedidos: [], vistos: [], version: 0};
+let datosServidor = {usuario: null, productos: [], esencias: {mediana: {}, chica: {}}, esenciasCatalogo: {mediana: [], chica: []}, pedidos: [], vistos: [], version: 0};
 async function api(url, method = 'GET', body) {
  const response = await fetch(url, {method, credentials: 'same-origin', headers: {'Content-Type': 'application/json', 'X-Flamitas': '1'}, ...(body === undefined ? {} : {body: JSON.stringify(body)})});
  const data = await response.json().catch(() => ({error: 'El servidor no respondió correctamente.'}));
@@ -8,13 +8,14 @@ async function api(url, method = 'GET', body) {
 async function cargarDatosServidor() {
  datosServidor = await api('/api/bootstrap');
  if (typeof velas !== 'undefined') velas = structuredClone(datosServidor.productos);
+ if (typeof sincronizarCatalogoEsencias === 'function') sincronizarCatalogoEsencias();
 }
 let guardandoEstado = false;
 async function guardarEstadoServidor(cambios) {
  if (guardandoEstado) throw new Error('Esperá a que termine el guardado anterior.');
  guardandoEstado = true;
  try {
-  const data = {productos: datosServidor.productos, esencias: datosServidor.esencias, pedidos: datosServidor.pedidos, vistos: datosServidor.vistos, ...cambios};
+  const data = {productos: datosServidor.productos, esencias: datosServidor.esencias, esenciasCatalogo: datosServidor.esenciasCatalogo, pedidos: datosServidor.pedidos, vistos: datosServidor.vistos, ...cambios};
   const result = await api('/api/admin/state', 'PUT', {version: datosServidor.version, data});
   datosServidor = {...datosServidor, ...structuredClone(data), version: result.version};
  } catch(error) {

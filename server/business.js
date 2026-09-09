@@ -1,7 +1,18 @@
 import { fail, validateTree, text } from './security.js';
-export const emptyState = products => ({ productos: products, esencias: {mediana: {}, chica: {}}, pedidos: [], vistos: [] });
-const aromas = { mediana: ['Bamboo', 'Manzana y Canela', 'Mandarina y Té Verde', 'Bergamota y Verbena', 'Vainilla', 'Pino', 'Sándalo y Cedro'], chica: ['Algas Marinas', 'Sandía', 'Melón y Pepino', 'Lavanda'] };
+const aromasIniciales = { mediana: ['Bamboo', 'Manzana y Canela', 'Mandarina y Té Verde', 'Bergamota y Verbena', 'Vainilla', 'Pino', 'Sándalo y Cedro'], chica: ['Algas Marinas', 'Sandía', 'Melón y Pepino', 'Lavanda'] };
+export const defaultEssenceCatalog = () => ({
+  mediana: aromasIniciales.mediana.map(nombre => ({nombre, detalle: ''})),
+  chica: aromasIniciales.chica.map(nombre => ({nombre, detalle: ''}))
+});
+export const emptyState = products => ({ productos: products, esencias: {mediana: {}, chica: {}}, esenciasCatalogo: defaultEssenceCatalog(), pedidos: [], vistos: [] });
 const money = n => Math.round(n * 100) / 100;
+function getEssenceCatalog(state) {
+  return state.esenciasCatalogo || defaultEssenceCatalog();
+}
+function getEssenceNames(state) {
+  const catalog = getEssenceCatalog(state);
+  return { mediana: catalog.mediana.map(item => item.nombre), chica: catalog.chica.map(item => item.nombre) };
+}
 export function validateState(state) {
   validateTree(state);
   if (!state || !Array.isArray(state.productos) || !Array.isArray(state.pedidos) || !Array.isArray(state.vistos) || !state.esencias?.mediana || !state.esencias?.chica) fail('Formato de datos inválido.');
@@ -17,8 +28,16 @@ export function validateState(state) {
       } else text(product[key], 100);
     }
   }
-  for (const type of Object.keys(aromas)) for (const [index, count] of Object.entries(state.esencias[type])) {
-    if (!aromas[type][index] || !(typeof count === 'string' || Number.isInteger(count) && count >= 0)) fail('Stock de esencia inválido.');
+  const catalog = getEssenceCatalog(state);
+  for (const type of Object.keys(aromasIniciales)) {
+    if (!Array.isArray(catalog[type])) fail('Catálogo de esencias inválido.');
+    for (const item of catalog[type]) {
+      text(item.nombre, 120);
+      text(item.detalle || '', 1000, false);
+    }
+    for (const [index, count] of Object.entries(state.esencias[type])) {
+      if (!catalog[type][index] || !(typeof count === 'string' || Number.isInteger(count) && count >= 0)) fail('Stock de esencia inválido.');
+    }
   }
   for (const order of state.pedidos) {
     if (!order.cliente || !order.entrega || !Array.isArray(order.productos) || !Number.isFinite(order.total) || order.total < 0) fail('Pedido inválido.');
@@ -27,6 +46,7 @@ export function validateState(state) {
 }
 export function checkout(state, body, user, id) {
   validateTree(body);
+  const aromas = getEssenceNames(state);
   if (!Array.isArray(body.productos) || body.productos.length < 1 || body.productos.length > 100) fail('El carrito está vacío o es demasiado grande.');
   const delivery = body.entrega;
   if (!delivery || !['Retiro', 'Envío', 'Retiro en local', 'Retiro en persona'].includes(delivery.metodo)) fail('Elegí una forma de entrega.');
