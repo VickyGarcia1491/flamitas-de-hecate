@@ -72,13 +72,18 @@ export function createApp(db, config = {}) {
   });
   app.get('/api/bootstrap', async (req, res) => {
     const {data, version} = (await db.query('SELECT * FROM business_state WHERE id=1')).rows[0];
-    res.json({usuario: req.user || null, version, productos: data.productos, esencias: data.esencias, pedidos: req.user?.rol === 'admin' ? data.pedidos : data.pedidos.filter(p => req.user && p.cliente.email === req.user.email), vistos: req.user?.rol === 'admin' ? data.vistos : []});
+    res.json({usuario: req.user || null, version, productos: data.productos, esencias: data.esencias, esenciasCatalogo: data.esenciasCatalogo, pedidos: req.user?.rol === 'admin' ? data.pedidos : data.pedidos.filter(p => req.user && p.cliente.email === req.user.email), vistos: req.user?.rol === 'admin' ? data.vistos : []});
   });
   app.put('/api/admin/state', admin, async (req, res) => {
-    validateState(req.body.data);
-    const result = await db.query('UPDATE business_state SET data=$1,version=version+1 WHERE id=1 AND version=$2 RETURNING version', [JSON.stringify(req.body.data), req.body.version]);
-    if (!result.rows.length) fail('Los datos cambiaron en otra sesión. Recargá la página y repetí el cambio.', 409);
-    res.json(result.rows[0]);
+    res.json(await transact(async client => {
+      const current = (await client.query('SELECT data,version FROM business_state WHERE id=1 FOR UPDATE')).rows[0];
+      if (current.version !== req.body.version) fail('Los datos cambiaron en otra sesión. Recargá la página y repetí el cambio.', 409);
+      // Conservar campos introducidos por otras versiones que un cliente antiguo no envía.
+      if (!req.body.data || typeof req.body.data !== 'object' || Array.isArray(req.body.data)) fail('Formato de datos inválido.');
+      const data = {...current.data, ...req.body.data};
+      validateState(data);
+      return (await client.query('UPDATE business_state SET data=$1,version=version+1 WHERE id=1 RETURNING version', [JSON.stringify(data)])).rows[0];
+    }));
   });
   app.post('/api/orders', auth, async (req, res) => {
     const key = text(req.body.requestId, 100);

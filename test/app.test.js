@@ -68,6 +68,25 @@ test('PostgreSQL: sesiones, permisos, pedidos, concurrencia y persistencia', asy
   assert.equal((await request('/api/admin/state','PUT',body,adminCookie)).status,200);
   assert.equal((await request('/api/admin/state','PUT',body,adminCookie)).status,409);
  });
+ await t.test('Base anterior con esencias generales: guardar venta y bandeja conserva catálogo y stock interno', async () => {
+  const previous = (await db.query('SELECT data FROM business_state WHERE id=1')).rows[0].data;
+  const migrated = {...previous,esencias:{general:{0:7}},esenciasCatalogo:[{nombre:'Esencia personalizada',detalle:'Insumo interno'}],configuracionAnterior:{conservar:true}};
+  await db.query('UPDATE business_state SET data=$1,version=version+1 WHERE id=1',[JSON.stringify(migrated)]);
+  const state=(await request('/api/bootstrap','GET',null,adminCookie)).data;
+  assert.deepEqual(state.esenciasCatalogo,migrated.esenciasCatalogo);
+  const pedido={id:777,cliente:{nombre:'Venta prueba',email:'Venta manual'},entrega:{metodo:'Retiro'},productos:[{nombre:'Osito',cantidad:1,precio:430,subtotal:430}],total:430};
+  const productos=structuredClone(state.productos); productos[1].stock--;
+  const saved=await request('/api/admin/state','PUT',{version:state.version,data:{productos,esencias:state.esencias,pedidos:[...state.pedidos,pedido],vistos:state.vistos}},adminCookie);
+  assert.equal(saved.status,200);
+  assert.equal((await request('/api/admin/state','PUT',{version:saved.data.version,data:{vistos:[777]}},adminCookie)).status,200);
+  const stored=(await db.query('SELECT data FROM business_state WHERE id=1')).rows[0].data;
+  assert.deepEqual(stored.esencias,migrated.esencias);
+  assert.deepEqual(stored.esenciasCatalogo,migrated.esenciasCatalogo);
+  assert.deepEqual(stored.configuracionAnterior,{conservar:true});
+  assert.equal(stored.pedidos.at(-1).id,777);
+  assert.equal(stored.productos[1].stock,2);
+  await db.query('UPDATE business_state SET data=$1,version=version+1 WHERE id=1',[JSON.stringify(previous)]);
+ });
  await t.test('Consultas persistentes y cierre de sesión revocado', async () => {
   assert.equal((await request('/api/contact','POST',{nombre:'Ana',telefono:'',email:'ana@example.com',mensaje:'Hola\nConsulta'})).status,201);
   assert.equal((await request('/api/admin/backup','GET',null,adminCookie)).data.consultas.length,1);

@@ -4,7 +4,16 @@ const aromas = { mediana: ['Bamboo', 'Manzana y Canela', 'Mandarina y Té Verde'
 const money = n => Math.round(n * 100) / 100;
 export function validateState(state) {
   validateTree(state);
-  if (!state || !Array.isArray(state.productos) || !Array.isArray(state.pedidos) || !Array.isArray(state.vistos) || !state.esencias?.mediana || !state.esencias?.chica) fail('Formato de datos inválido.');
+  if (!state || !Array.isArray(state.productos) || !Array.isArray(state.pedidos) || !Array.isArray(state.vistos)) fail('Formato de datos inválido.');
+  const mapa = valor => valor && typeof valor === 'object' && !Array.isArray(valor);
+  if (!mapa(state.esencias) || !(mapa(state.esencias.general) || mapa(state.esencias.mediana) && mapa(state.esencias.chica))) fail('Formato de stock de esencias inválido.');
+  if (state.esenciasCatalogo !== undefined) {
+    const grupos = Array.isArray(state.esenciasCatalogo) ? [state.esenciasCatalogo] : [state.esenciasCatalogo.mediana, state.esenciasCatalogo.chica];
+    for (const grupo of grupos) {
+      if (!Array.isArray(grupo)) fail('Catálogo de esencias inválido.');
+      for (const item of grupo) { text(item.nombre,120); text(item.detalle || '',1000,false); }
+    }
+  }
   for (const list of [state.productos, state.pedidos]) {
     if (new Set(list.map(x => x.id)).size !== list.length) fail('Hay identificadores repetidos.');
     for (const item of list) if (!Number.isSafeInteger(item.id) || item.id < 1) fail('Identificador inválido.');
@@ -17,7 +26,11 @@ export function validateState(state) {
       } else text(product[key], 100);
     }
   }
-  for (const type of Object.keys(aromas)) for (const [index, count] of Object.entries(state.esencias[type])) {
+  if (state.esencias.general) for (const [index, count] of Object.entries(state.esencias.general)) {
+    if (!/^\d+$/.test(index) || !(typeof count === 'string' || Number.isInteger(count) && count >= 0)) fail('Stock de esencia inválido.');
+    if (Array.isArray(state.esenciasCatalogo) && !state.esenciasCatalogo[Number(index)]) fail('Stock sin esencia correspondiente.');
+  }
+  for (const type of Object.keys(aromas)) for (const [index, count] of Object.entries(state.esencias[type] || {})) {
     if (!aromas[type][index] || !(typeof count === 'string' || Number.isInteger(count) && count >= 0)) fail('Stock de esencia inválido.');
   }
   for (const order of state.pedidos) {
@@ -41,7 +54,8 @@ export function checkout(state, body, user, id) {
     if (variant) {
       if (!aromas[variant] || !Number.isInteger(item.indiceEsencia) || !aromas[variant][item.indiceEsencia]) fail('Esencia inválida.');
       nombre = `Latita ${variant === 'mediana' ? 'Mediana' : 'Chica'} - ${aromas[variant][item.indiceEsencia]}`;
-      stockOwner = state.esencias[variant]; stockKey = item.indiceEsencia;
+      // El stock general es de insumos internos; las latitas descuentan el producto terminado.
+      if (!state.esencias.general) { stockOwner = state.esencias[variant]; stockKey = item.indiceEsencia; }
     } else if ([4, 5].includes(product.id)) fail('Elegí la esencia de la latita.');
     if (typeof stockOwner[stockKey] === 'number') {
       if (stockOwner[stockKey] < item.cantidad) fail(`No hay stock suficiente de ${nombre}.`, 409);

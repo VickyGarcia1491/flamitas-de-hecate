@@ -29,7 +29,7 @@ function guardarEstadoServidor(cambios) {
   for (const key of Object.keys(copia)) {
    if (JSON.stringify(base[key]) !== JSON.stringify(datosServidor[key])) throw new Error('Estos datos cambiaron durante otro guardado.');
   }
-  const data = {productos: datosServidor.productos, esencias: datosServidor.esencias, pedidos: datosServidor.pedidos, vistos: datosServidor.vistos, ...copia};
+  const data = {productos: datosServidor.productos, esencias: datosServidor.esencias, esenciasCatalogo: datosServidor.esenciasCatalogo, pedidos: datosServidor.pedidos, vistos: datosServidor.vistos, ...copia};
   const result = await api('/api/admin/state', 'PUT', {version: datosServidor.version, data});
   datosServidor = {...datosServidor, ...structuredClone(data), version: result.version};
  } catch(error) {

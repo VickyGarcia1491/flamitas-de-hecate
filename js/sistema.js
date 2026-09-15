@@ -22,11 +22,24 @@ esenciasLatitaChica.push("Lavanda");
 
 
 function obtenerStockEsenciasGuardado() { return structuredClone(datosServidor.esencias); }
-function obtenerStockEsencia(tipo, indice) { return datosServidor.esencias[tipo]?.[indice] ?? 'Consultar'; }
+function indiceEsenciaGeneral(tipo, indice) {
+ const nombre = (tipo === 'mediana' ? esenciasLatitaMediana : esenciasLatitaChica)[indice];
+ const catalogo = datosServidor.esenciasCatalogo;
+ return Array.isArray(catalogo) ? catalogo.findIndex(esencia => esencia.nombre === nombre) : -1;
+}
+function obtenerStockEsencia(tipo, indice) {
+ if (datosServidor.esencias.general) return datosServidor.esencias.general[indiceEsenciaGeneral(tipo,indice)] ?? 'Consultar';
+ return datosServidor.esencias[tipo]?.[indice] ?? 'Consultar';
+}
 async function guardarProductosVelas() { await guardarEstadoServidor({productos: velas}); }
 async function guardarStockVelas() { await guardarProductosVelas(); }
 async function guardarStockEsencias(stock) { await guardarEstadoServidor({esencias: stock}); }
 async function actualizarStockEsencia(tipo, indice, cantidad) {
- const stock = obtenerStockEsenciasGuardado(); stock[tipo][indice] = cantidad;
+ const stock = obtenerStockEsenciasGuardado();
+ if (stock.general) {
+  const general = indiceEsenciaGeneral(tipo,indice);
+  if (general < 0) throw new Error('Esta esencia no existe en el catálogo general. No se modificó el stock.');
+  stock.general[general] = cantidad;
+ } else { stock[tipo][indice] = cantidad; }
  await guardarStockEsencias(stock);
 }
