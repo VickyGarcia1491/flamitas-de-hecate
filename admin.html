@@ -157,57 +157,36 @@
         <!-- Sección para crear, editar o eliminar productos y controlar stock. -->
         <section class="admin-bloque admin-seccion" id="seccionProductos">
             <h2>Productos y stock</h2>
-            <p class="admin-ayuda">Editá productos y stock desde esta vista rápida. El cliente solo verá foto, nombre, detalle y precio.</p>
+            <p class="admin-ayuda">Cargá productos nuevos o editá los existentes. El cliente verá foto, nombre, detalle y precio; el stock queda solo para administración.</p>
 
-            <!-- Desplegable para cargar productos nuevos sin ocupar espacio cuando no se usa. -->
-            <details class="producto-admin-nuevo">
-                <summary>Agregar producto nuevo</summary>
+            <!-- Formulario para agregar productos nuevos al catálogo. -->
+            <form class="form-producto-admin" id="formProductoAdmin">
+                <label for="nombreProductoAdmin">Nombre</label>
+                <input type="text" id="nombreProductoAdmin" required>
 
-                <!-- Alta rápida: permite elegir si se suma una vela vendible o una esencia interna. -->
-                <form class="form-producto-admin" id="formProductoAdmin">
-                    <label for="tipoAltaProducto">Qué querés agregar</label>
-                    <select id="tipoAltaProducto">
-                        <option value="vela">Vela nueva</option>
-                        <option value="esencia">Esencia nueva</option>
-                    </select>
+                <label for="detalleProductoAdmin">Detalle (opcional)</label>
+                <textarea id="detalleProductoAdmin" rows="4"></textarea>
 
-                    <label for="nombreProductoAdmin">Nombre</label>
-                    <input type="text" id="nombreProductoAdmin" required>
+                <label for="fotoProductoAdmin">Foto (opcional)</label>
+                <input type="file" id="fotoProductoAdmin" accept="image/jpeg,image/png,image/webp,image/gif">
 
-                    <label for="detalleProductoAdmin">Detalle</label>
-                    <textarea id="detalleProductoAdmin" rows="4" required></textarea>
+                <label for="precioProductoAdmin">Precio</label>
+                <input type="text" id="precioProductoAdmin" placeholder="Ej: 350 o Consultar" required>
 
-                    <label for="fotoProductoAdmin" class="campo-vela-alta">Foto</label>
-                    <input type="file" id="fotoProductoAdmin" class="campo-vela-alta" accept="image/*" required>
+                <label for="stockProductoAdminNuevo">Stock</label>
+                <input type="text" id="stockProductoAdminNuevo" placeholder="Ej: 5 o Consultar" required>
 
-                    <label for="precioProductoAdmin" class="campo-vela-alta">Precio</label>
-                    <input type="text" id="precioProductoAdmin" class="campo-vela-alta" placeholder="Ej: 350 o Consultar" required>
-
-                    <label for="stockProductoAdminNuevo" class="campo-vela-alta">Stock</label>
-                    <input type="text" id="stockProductoAdminNuevo" class="campo-vela-alta" placeholder="Ej: 5 o Consultar" required>
-
-                    <label for="stockEsenciaNueva" class="campo-esencia-alta">Stock</label>
-                    <select id="stockEsenciaNueva" class="campo-esencia-alta">
-                        <option value="Sí">Sí</option>
-                        <option value="No">No</option>
-                        <option value="Queda poco">Queda poco</option>
-                    </select>
-
-                    <label class="campo-esencia-alta">Estado</label>
-                    <span class="stock-estado stock-verde campo-esencia-alta" id="estadoEsenciaNueva">Stock OK</span>
-
-                    <input type="submit" value="Agregar producto">
-                    <p class="mensaje-formulario" id="mensajeProductoAdmin"></p>
-                </form>
-            </details>
+                <input type="submit" value="Agregar producto">
+                <p class="mensaje-formulario" id="mensajeProductoAdmin"></p>
+            </form>
 
             <div id="contenedorProductosAdmin">
             </div>
 
-            <!-- Modulo para controlar el stock individual de esencias de latitas. -->
+            <!-- Tablas para controlar el stock individual de esencias de latitas. -->
             <div class="stock-esencias-admin">
                 <h3>Stock por esencia</h3>
-                <p class="admin-ayuda">Elegí una esencia para modificar nombre, detalle y disponibilidad. Si queda poco o no hay stock, el dashboard te avisa cuándo comprar más.</p>
+                <p class="admin-ayuda">Usá esta parte para controlar las latitas por aroma. Si una esencia queda en 0, en la tienda aparecerá como agotada.</p>
                 <div id="contenedorStockEsencias"></div>
             </div>
         </section>
@@ -219,8 +198,21 @@
 
             <!-- Formulario para registrar una venta manual y guardarla como pedido. -->
             <form class="form-producto-admin" id="formVentaManual">
+<div class="venta-productos"><h3>1. Agregá los productos</h3><label for="buscarProductoVentaManual">Buscar por nombre</label><input type="search" id="buscarProductoVentaManual" placeholder="Ej.: osito, miel, latita" autocomplete="off">
+                <label for="productoVentaManual">Producto</label>
+                <select id="productoVentaManual"></select>
+
+                <label for="precioVentaManual">Precio unitario</label>
+                <input type="number" min="0" id="precioVentaManual" step="0.01" inputmode="decimal">
+
+                <label for="cantidadVentaManual">Cantidad</label>
+                <input type="number" min="1" value="1" id="cantidadVentaManual" step="1" inputmode="numeric">
+
+                <input type="button" value="Agregar producto a la venta" id="btnAgregarVentaManual" class="btn-form-admin">
+                <div id="listaVentaManual"></div>
+</div><h3 class="venta-titulo">2. Completá la venta</h3>
                 <label for="clienteVentaManual">Cliente</label>
-                <input type="text" id="clienteVentaManual" required>
+                <input type="text" id="clienteVentaManual" placeholder="Consumidor final si lo dejás vacío">
 
                 <label for="telefonoVentaManual">Teléfono</label>
                 <input type="text" id="telefonoVentaManual">
@@ -253,7 +245,7 @@
                     <option value="Envío">Envío</option>
                 </select>
 
-                <label for="departamentoVentaManual">Departamento</label>
+<div id="camposEnvioManual" class="venta-envio" hidden>                <label for="departamentoVentaManual">Departamento</label>
                 <select id="departamentoVentaManual">
                     <option value="">Solo si es envío</option>
                     <option value="Artigas">Artigas</option>
@@ -286,20 +278,10 @@
                 <label for="codigoPostalVentaManual">Código postal</label>
                 <input type="text" id="codigoPostalVentaManual" placeholder="Solo si es envío">
 
-                <label for="productoVentaManual">Producto</label>
-                <select id="productoVentaManual"></select>
-
-                <label for="precioVentaManual">Precio unitario</label>
-                <input type="number" min="0" id="precioVentaManual" required>
-
-                <label for="cantidadVentaManual">Cantidad</label>
-                <input type="number" min="1" value="1" id="cantidadVentaManual">
-
-                <input type="button" value="Agregar producto a la venta" id="btnAgregarVentaManual" class="btn-form-admin">
-                <div id="listaVentaManual"></div>
+</div>
                 <h3 id="totalVentaManual">Total: $0</h3>
-                <input type="submit" value="Guardar venta manual">
-                <p class="mensaje-formulario" id="mensajeVentaManual"></p>
+                <input type="submit" id="guardarVentaManual" value="Guardar venta manual">
+                <p class="mensaje-formulario" id="mensajeVentaManual" role="status" aria-live="polite"></p>
             </form>
         </section>
     </main>

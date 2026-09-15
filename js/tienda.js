@@ -100,6 +100,7 @@ function obtenerTextoStockProducto(producto, usuario) {
 
 // Decide si una imagen viene de la carpeta img o fue cargada desde el admin.
 function obtenerRutaImagenProducto(imagen) {
+    if (!imagen) return './img/producto-sin-foto.svg';
     let ruta = "./img/" + imagen;
 
     if (imagen.includes("data:image")) {
@@ -111,46 +112,21 @@ function obtenerRutaImagenProducto(imagen) {
 
 // Agrega una unidad de un producto común al carrito y baja su stock temporal.
 function agregarAlCarrito(idVela) {
-    let producto = buscarVelaPorId(idVela);
 
-    if (producto !== null && descontarStockProductoTemporal(idVela, 1) === true) {
-        agregarProductoAlCarrito(producto, 1);
+    for (let i = 0; i < velas.length; i++) {
+
+        if (velas[i].id === idVela) {
+
+            if (velas[i].stock > 0) {
+                agregarProductoAlCarrito(velas[i], 1);
+                velas[i].stock = velas[i].stock - 1;
+            }
+
+        }
     }
 
     mostrarVelas();
     mostrarCarrito();
-}
-
-// Busca una vela o latita por id dentro del catálogo cargado.
-function buscarVelaPorId(idVela) {
-    for (let i = 0; i < velas.length; i++) {
-        if (velas[i].id === idVela) {
-            return velas[i];
-        }
-    }
-
-    return null;
-}
-
-// Baja stock temporal del producto vendible; las esencias son solo un control interno.
-function descontarStockProductoTemporal(idVela, cantidad) {
-    let producto = buscarVelaPorId(idVela);
-
-    if (producto !== null && typeof producto.stock === "number" && producto.stock >= cantidad) {
-        producto.stock = producto.stock - cantidad;
-        return true;
-    }
-
-    return false;
-}
-
-// Devuelve stock temporal cuando se quita una línea o se baja una cantidad del carrito.
-function devolverStockProductoTemporal(idVela, cantidad) {
-    let producto = buscarVelaPorId(idVela);
-
-    if (producto !== null && typeof producto.stock === "number") {
-        producto.stock = producto.stock + cantidad;
-    }
 }
 
 // Dibuja el panel del carrito con productos, cantidades, precios y total.
@@ -230,7 +206,13 @@ function quitarDelCarrito(posicion) {
         cantidad = velaQuitada.cantidad;
     }
 
-    devolverStockProductoTemporal(velaQuitada.idBaseStock || velaQuitada.id, cantidad);
+    for (let i = 0; i < velas.length; i++) {
+        if (velas[i].id === velaQuitada.id) {
+            if (typeof velas[i].stock === "number") {
+                velas[i].stock = velas[i].stock + cantidad;
+            }
+        }
+    }
 
     carrito.splice(posicion, 1);
 
@@ -264,7 +246,6 @@ function agregarProductoAlCarrito(producto, cantidad) {
             nombre: producto.nombre,
             precio: producto.precio,
             cantidad: cantidad,
-            idBaseStock: producto.idBaseStock,
             tipoLatita: producto.tipoLatita,
             indiceEsencia: producto.indiceEsencia
         };
@@ -288,7 +269,13 @@ function bajarCantidadCarrito(posicion) {
     if (cantidad > 1) {
         producto.cantidad = cantidad - 1;
 
-        devolverStockProductoTemporal(producto.idBaseStock || producto.id, 1);
+        for (let i = 0; i < velas.length; i++) {
+            if (velas[i].id === producto.id) {
+                if (typeof velas[i].stock === "number") {
+                    velas[i].stock = velas[i].stock + 1;
+                }
+            }
+        }
 
         mostrarVelas();
         mostrarCarrito();
@@ -297,16 +284,39 @@ function bajarCantidadCarrito(posicion) {
     }
 }
 
-// Sube una unidad del producto si queda stock de la vela o latita vendible.
+// Sube una unidad de un producto del carrito si hay stock disponible.
 function subirCantidadCarrito(posicion) {
 
     let producto = carrito[posicion];
     let cantidad = 1;
+    let puedeSumar = true;
+
     if (producto.cantidad !== undefined) {
         cantidad = producto.cantidad;
     }
 
-    if (descontarStockProductoTemporal(producto.idBaseStock || producto.id, 1) === true) {
+    if (producto.tipoLatita !== undefined) {
+        let stockEsencia = obtenerStockEsencia(producto.tipoLatita, producto.indiceEsencia);
+
+        if (typeof stockEsencia === "number" && cantidad + 1 > stockEsencia) {
+            puedeSumar = false;
+            alert("No hay stock suficiente de esa esencia.");
+        }
+    } else {
+        for (let i = 0; i < velas.length; i++) {
+            if (velas[i].id === producto.id) {
+                if (typeof velas[i].stock === "number") {
+                    if (velas[i].stock > 0) {
+                        velas[i].stock = velas[i].stock - 1;
+                    } else {
+                        puedeSumar = false;
+                    }
+                }
+            }
+        }
+    }
+
+    if (puedeSumar) {
         producto.cantidad = cantidad + 1;
         mostrarVelas();
         mostrarCarrito();
@@ -329,18 +339,20 @@ function abrirModalLatitas() {
     let html = "";
 
     for (let i = 0; i < esenciasLatitaMediana.length; i++) {
-        let detalle = obtenerDetalleEsencia("mediana", i);
-        let lineaDetalle = detalle === "" ? "" : `<p>${prepararTextoParaHTML(detalle)}</p>`;
+        let stock = obtenerStockEsencia("mediana", i);
+        let textoStock = obtenerTextoStockEsencia(stock);
+        let lineaStock = textoStock === "" ? "" : `<p>${textoStock}</p>`;
+        let deshabilitado = stock === 0 ? "disabled" : "";
 
         html += `
             <div class="tarjeta-esencia">
                 <h3>${esenciasLatitaMediana[i]}</h3>
                 <p>Latita mediana de 80gr</p>
-                ${lineaDetalle}
                 <p>$280</p>
+                ${lineaStock}
 
                 <label for="cantidadEsencia${i}">Cantidad:</label>
-                <input type="number" min="0" value="0" id="cantidadEsencia${i}">
+                <input type="number" min="0" value="0" id="cantidadEsencia${i}" ${deshabilitado}>
             </div>
         `;
     }
@@ -360,13 +372,14 @@ function agregarLatitasAlCarrito() {
     for (let i = 0; i < esenciasLatitaMediana.length; i++) {
 
         let cantidad = Number(document.querySelector("#cantidadEsencia" + i).value);
-        if (cantidad > 0 && descontarStockProductoTemporal(4, cantidad) === true) {
+        let stock = obtenerStockEsencia("mediana", i);
+
+        if (cantidad > 0 && puedeAgregarEsencia("mediana", i, cantidad, stock)) {
 
             let latitaElegida = {
                 id: "latita-mediana-" + i,
                 nombre: "Latita Mediana - " + esenciasLatitaMediana[i],
                 precio: velas.find(p => p.id === 4).precio,
-                idBaseStock: 4,
                 tipoLatita: "mediana",
                 indiceEsencia: i
             };
@@ -386,18 +399,20 @@ function abrirModalLatitasChicas() {
     let html = "";
 
     for (let i = 0; i < esenciasLatitaChica.length; i++) {
-        let detalle = obtenerDetalleEsencia("chica", i);
-        let lineaDetalle = detalle === "" ? "" : `<p>${prepararTextoParaHTML(detalle)}</p>`;
+        let stock = obtenerStockEsencia("chica", i);
+        let textoStock = obtenerTextoStockEsencia(stock);
+        let lineaStock = textoStock === "" ? "" : `<p>${textoStock}</p>`;
+        let deshabilitado = stock === 0 ? "disabled" : "";
 
         html += `
             <div class="tarjeta-esencia">
                 <h3>${esenciasLatitaChica[i]}</h3>
                 <p>Latita chica de 60gr</p>
-                ${lineaDetalle}
                 <p>$240</p>
+                ${lineaStock}
 
                 <label for="cantidadEsenciaChica${i}">Cantidad:</label>
-                <input type="number" min="0" value="0" id="cantidadEsenciaChica${i}">
+                <input type="number" min="0" value="0" id="cantidadEsenciaChica${i}" ${deshabilitado}>
             </div>
         `;
     }
@@ -417,13 +432,14 @@ function agregarLatitasChicasAlCarrito() {
     for (let i = 0; i < esenciasLatitaChica.length; i++) {
 
         let cantidad = Number(document.querySelector("#cantidadEsenciaChica" + i).value);
-        if (cantidad > 0 && descontarStockProductoTemporal(5, cantidad) === true) {
+        let stock = obtenerStockEsencia("chica", i);
+
+        if (cantidad > 0 && puedeAgregarEsencia("chica", i, cantidad, stock)) {
 
             let latitaElegida = {
                 id: "latita-chica-" + i,
                 nombre: "Latita Chica - " + esenciasLatitaChica[i],
                 precio: velas.find(p => p.id === 5).precio,
-                idBaseStock: 5,
                 tipoLatita: "chica",
                 indiceEsencia: i
             };
@@ -435,6 +451,47 @@ function agregarLatitasChicasAlCarrito() {
     cerrarModalLatitasChicas();
     mostrarCarrito();
     abrirCarrito();
+}
+
+// Traduce el stock de una esencia a un texto visible para el cliente.
+function obtenerTextoStockEsencia(stock) {
+    let usuario = obtenerUsuarioActivo();
+    let texto = "";
+
+    if (usuario !== null && usuario.rol === "admin") {
+        texto = "Stock disponible: " + stock;
+    }
+
+    if (stock === 0) {
+        texto = "Agotada";
+    }
+
+    return texto;
+}
+
+// Controla si se puede agregar una esencia según su stock.
+function puedeAgregarEsencia(tipoLatita, indiceEsencia, cantidad, stock) {
+    let puede = true;
+
+    if (typeof stock === "number" && cantidad + obtenerCantidadEsenciaEnCarrito(tipoLatita, indiceEsencia) > stock) {
+        alert("No hay stock suficiente de esa esencia.");
+        puede = false;
+    }
+
+    return puede;
+}
+
+// Cuenta cuántas unidades de una esencia ya hay en el carrito.
+function obtenerCantidadEsenciaEnCarrito(tipoLatita, indiceEsencia) {
+    let cantidad = 0;
+
+    for (let i = 0; i < carrito.length; i++) {
+        if (carrito[i].tipoLatita === tipoLatita && carrito[i].indiceEsencia === indiceEsencia) {
+            cantidad = carrito[i].cantidad;
+        }
+    }
+
+    return cantidad;
 }
 
 // Arma el mensaje de WhatsApp con todos los datos del pedido.

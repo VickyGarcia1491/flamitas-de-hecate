@@ -5,42 +5,17 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { hashPassword, verifyPassword, tokenHash, newToken, fail, text, email, password, validateTree } from './security.js';
-import { emptyState, validateState, checkout, defaultEssenceCatalog } from './business.js';
+import { emptyState, validateState, checkout } from './business.js';
 const root = fileURLToPath(new URL('../', import.meta.url));
-
-function getConfiguredAdmins(config) {
-  const admins = [];
-  if (config.ADMIN_USERS_JSON) {
-    const parsed = JSON.parse(config.ADMIN_USERS_JSON);
-    if (!Array.isArray(parsed)) fail('ADMIN_USERS_JSON debe ser una lista de administradoras.');
-    for (const item of parsed) admins.push({email: item.email, nombre: item.nombre, password: item.password});
-  } else if (config.ADMIN_EMAIL && config.ADMIN_PASSWORD) {
-    admins.push({email: config.ADMIN_EMAIL, nombre: config.ADMIN_NAME || 'Administradora Flamitas', password: config.ADMIN_PASSWORD});
-  }
-  return admins;
-}
-
-async function ensureAdminUsers(db, config) {
-  const admins = getConfiguredAdmins(config);
-  for (const admin of admins) {
-    const address = email(admin.email);
-    const nombre = text(admin.nombre || 'Administradora Flamitas');
-    const secret = password(admin.password);
-    await db.query(
-      `INSERT INTO users(email,nombre,password_hash,rol)
-       VALUES($1,$2,$3,'admin')
-       ON CONFLICT(email) DO UPDATE
-       SET nombre=EXCLUDED.nombre, password_hash=EXCLUDED.password_hash, rol='admin'`,
-      [address, nombre, await hashPassword(secret)]
-    );
-  }
-}
-
 export async function initialize(db, config) {
   await db.query(await readFile(new URL('schema.sql', import.meta.url), 'utf8'));
   const products = JSON.parse(await readFile(new URL('seed.json', import.meta.url), 'utf8'));
   await db.query('INSERT INTO business_state(id,data) VALUES(1,$1) ON CONFLICT DO NOTHING', [JSON.stringify(emptyState(products))]);
-  await ensureAdminUsers(db, config);
+  const admin = await db.query("SELECT id FROM users WHERE rol='admin' LIMIT 1");
+  if (!admin.rows.length) {
+    const address = email(config.ADMIN_EMAIL); const secret = password(config.ADMIN_PASSWORD);
+    await db.query("INSERT INTO users(email,nombre,password_hash,rol) VALUES($1,'Administradora Flamitas',$2,'admin') ON CONFLICT DO NOTHING", [address, await hashPassword(secret)]);
+  }
 }
 export function createApp(db, config = {}) {
   const app = express();
@@ -97,7 +72,7 @@ export function createApp(db, config = {}) {
   });
   app.get('/api/bootstrap', async (req, res) => {
     const {data, version} = (await db.query('SELECT * FROM business_state WHERE id=1')).rows[0];
-    res.json({usuario: req.user || null, version, productos: data.productos, esencias: data.esencias, esenciasCatalogo: data.esenciasCatalogo || defaultEssenceCatalog(), pedidos: req.user?.rol === 'admin' ? data.pedidos : data.pedidos.filter(p => req.user && p.cliente.email === req.user.email), vistos: req.user?.rol === 'admin' ? data.vistos : []});
+    res.json({usuario: req.user || null, version, productos: data.productos, esencias: data.esencias, pedidos: req.user?.rol === 'admin' ? data.pedidos : data.pedidos.filter(p => req.user && p.cliente.email === req.user.email), vistos: req.user?.rol === 'admin' ? data.vistos : []});
   });
   app.put('/api/admin/state', admin, async (req, res) => {
     validateState(req.body.data);

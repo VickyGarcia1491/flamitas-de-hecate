@@ -3,16 +3,8 @@ window.addEventListener("load", inicio);
 
 // Prepara el menú hamburguesa y cierra el menú cuando se toca un enlace.
 function inicio() {
-    if (typeof prepararMenuResponsive === "function") {
-        prepararMenuResponsive();
-        return;
-    }
 
     // BOTON MENU HAMBURGUESA
-    if (document.querySelector("#menuToggle") === null) {
-        return;
-    }
-
     document.querySelector("#menuToggle").addEventListener("click", toggleMenu);
 
     // LINKS DEL MENU

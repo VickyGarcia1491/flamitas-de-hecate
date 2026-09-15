@@ -30,6 +30,7 @@ export function password(value) {
 export function validateTree(value, key = '') {
   if (typeof value === 'string') {
     if (key === 'imagen') {
+      if (value === '') return; // Foto pendiente: el catálogo muestra un marcador visual.
       if (value.length > 2800000 || !(/^[^<>"\\/:]+\.(jpeg|jpg|png|webp|gif)$/i.test(value) || /^data:image\/(png|jpeg|webp|gif);base64,[a-zA-Z0-9+/=]+$/.test(value))) fail('Usá una imagen JPG, PNG, WEBP o GIF de hasta 2 MB.');
     } else if (value.length > 10000 || /[<>\u0000]/.test(value)) fail('Hay caracteres no permitidos en los datos.');
   } else if (Array.isArray(value)) value.forEach(v => validateTree(v, key));

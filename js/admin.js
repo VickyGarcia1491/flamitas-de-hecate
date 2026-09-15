@@ -9,12 +9,6 @@ let pedidoEditandoId = null;
 let productosPedidoEditando = [];
 // Indica si el historial está mostrando solo pedidos nuevos y pendientes.
 let filtroPedidosPendientesActivo = false;
-// Recuerda qué producto está abierto en la edición compacta de stock.
-let productoAdminSeleccionadoId = null;
-// Recuerda si el bloque de modificación de stock está abierto.
-let edicionProductoAdminAbierta = false;
-// Recuerda qué esencia está abierta en el módulo editable de stock.
-let esenciaSeleccionadaIndice = 0;
 
 // Prepara seguridad, pedidos, productos, stock, venta manual y eventos del admin.
 function iniciarAdmin() {
@@ -26,14 +20,15 @@ function iniciarAdmin() {
     mostrarProductosAdmin();
     mostrarStockEsenciasAdmin();
     cargarSelectVentaManual();
+    document.querySelector('#buscarProductoVentaManual').addEventListener('input', cargarSelectVentaManual);
+    document.querySelector('#entregaVentaManual').addEventListener('change', actualizarCamposEnvioManual);
+    actualizarCamposEnvioManual();
     mostrarVentaManual();
 
     document.querySelector("#btnVaciarPedidos").addEventListener("click", vaciarPedidos);
     document.querySelector("#btnBandejaPedidos").addEventListener("click", mostrarPedidosPendientesDesdeBandeja);
     document.querySelector("#btnExportarPedidos").addEventListener("click", exportarPedidosCSV);
     document.querySelector("#formProductoAdmin").addEventListener("submit", agregarProductoAdmin);
-    document.querySelector("#tipoAltaProducto").addEventListener("change", actualizarFormularioAltaProducto);
-    document.querySelector("#stockEsenciaNueva").addEventListener("change", actualizarEstadoEsenciaNueva);
     document.querySelector("#btnAgregarVentaManual").addEventListener("click", agregarProductoVentaManual);
     document.querySelector("#formVentaManual").addEventListener("submit", guardarVentaManual);
     document.querySelector("#filtroFechaPedidos").addEventListener("change", mostrarPedidosAdmin);
@@ -46,7 +41,6 @@ function iniciarAdmin() {
     document.querySelector("#btnAgregarProductoEditarPedido").addEventListener("click", agregarProductoAlPedidoEditando);
     document.querySelector("#productoNuevoEditarPedido").addEventListener("change", actualizarPrecioNuevoPedidoEditando);
     document.querySelector("#editarMedioPagoPedido").addEventListener("change", mostrarProductosPedidoEditando);
-    actualizarFormularioAltaProducto();
 }
 
 // Permite entrar al panel solo si el usuario activo es administrador.
@@ -115,7 +109,6 @@ function mostrarPedidosAdmin() {
                     </div>
 
                     <p><strong>Origen:</strong> ${origenPedido}</p>
-                    ${mostrarCargadoPor(pedido)}
                     ${mostrarDatosPago(pedido)}
 
                     <div class="estado-pedido">
@@ -168,17 +161,6 @@ function mostrarPedidosAdmin() {
             await eliminarPedido(pedidosFiltrados[i].id);
         });
     }
-}
-
-// Muestra quién cargó la venta cuando el pedido trae ese dato.
-function mostrarCargadoPor(pedido) {
-    let html = "";
-
-    if (pedido.cargadoPor !== undefined && pedido.cargadoPor.nombre !== undefined) {
-        html = `<p><strong>Cargado por:</strong> ${pedido.cargadoPor.nombre}</p>`;
-    }
-
-    return html;
 }
 
 // Devuelve solo los pedidos que coinciden con el filtro de día o mes.
@@ -749,7 +731,7 @@ function prepararProductosPedidoEditado() {
 // Exporta a CSV los pedidos visibles según el filtro activo.
 function exportarPedidosCSV() {
     let pedidos = filtrarPedidos(obtenerPedidos());
-    let csv = "Fecha,Origen,Cargado por,Cliente,Telefono,Producto,Cantidad,Precio unitario,Subtotal,Medio de pago,Estado del pago,Ajuste Mercado Pago,Total,Estado,Entrega,Departamento,Direccion,Ciudad o barrio,Codigo postal\n";
+    let csv = "Fecha,Origen,Cliente,Telefono,Producto,Cantidad,Precio unitario,Subtotal,Medio de pago,Estado del pago,Ajuste Mercado Pago,Total,Estado,Entrega,Departamento,Direccion,Ciudad o barrio,Codigo postal\n";
 
     for (let i = 0; i < pedidos.length; i++) {
         for (let j = 0; j < pedidos[i].productos.length; j++) {
@@ -768,7 +750,6 @@ function armarLineaCSV(pedido, producto) {
     return [
         pedido.fecha,
         origen,
-        obtenerNombreCargadoPor(pedido),
         pedido.cliente.nombre,
         mostrarDatoOpcional(pedido.cliente.telefono, ""),
         producto.nombre,
@@ -786,17 +767,6 @@ function armarLineaCSV(pedido, producto) {
         mostrarDatoOpcional(pedido.entrega.ciudad, ""),
         mostrarDatoOpcional(pedido.entrega.codigoPostal, "")
     ].map(escaparCSV).join(",") + "\n";
-}
-
-// Devuelve el nombre de quien cargó la venta para mostrarlo o exportarlo.
-function obtenerNombreCargadoPor(pedido) {
-    let nombre = "";
-
-    if (pedido.cargadoPor !== undefined && pedido.cargadoPor.nombre !== undefined) {
-        nombre = pedido.cargadoPor.nombre;
-    }
-
-    return nombre;
 }
 
 // Devuelve datos de pago seguros para exportar aunque falten campos.
@@ -891,7 +861,7 @@ async function marcarPedidosPendientesComoVistos() {
         }
     }
 
-    await guardarPedidosVistos(vistos);
+    if (vistos.length !== datosServidor.vistos.length) await guardarPedidosVistos(vistos);
 }
 
 // Abre el historial mostrando solo pedidos nuevos y pendientes.
@@ -1004,43 +974,17 @@ function obtenerPedidosPendientes(pedidos) {
     return pendientes;
 }
 
-// Devuelve productos y esencias que necesitan atención de stock.
+// Devuelve productos con stock numérico bajo o agotado.
 function obtenerProductosBajoStock() {
-    let alertas = [];
+    let productos = [];
 
     for (let i = 0; i < velas.length; i++) {
         if (typeof velas[i].stock === "number" && velas[i].stock <= 3) {
-            alertas.push({
-                nombre: velas[i].nombre,
-                detalle: "Stock disponible: " + velas[i].stock,
-                estado: obtenerEstadoStock(velas[i].stock)
-            });
+            productos.push(velas[i]);
         }
     }
 
-    agregarAlertasStockEsencias(alertas);
-
-    return alertas;
-}
-
-// Agrega al dashboard las esencias agotadas o con poco stock.
-function agregarAlertasStockEsencias(alertas) {
-    let esencias = esenciasLatitaMediana;
-
-    for (let i = 0; i < esencias.length; i++) {
-        let stock = obtenerStockEsencia("general", i);
-
-        if (esenciaTieneStockBajo(stock) === true) {
-            let estado = obtenerEstadoStockEsencia(stock);
-            let detalle = estado.texto === "Sin stock" ? "Sin stock disponible." : "Comprar más esencia.";
-
-            alertas.push({
-                nombre: "Esencia: " + esencias[i],
-                detalle: detalle,
-                estado: estado
-            });
-        }
-    }
+    return productos;
 }
 
 // Arma una lista breve de los últimos pedidos pendientes.
@@ -1074,21 +1018,23 @@ function armarPedidosPendientesDashboard(pedidos) {
     return html;
 }
 
-// Arma una lista breve de productos y esencias que necesitan atención.
-function armarStockBajoDashboard(alertas) {
-    let html = "<p class='admin-vacio'>No hay stock bajo por ahora.</p>";
+// Arma una lista breve de productos que necesitan atención de stock.
+function armarStockBajoDashboard(productos) {
+    let html = "<p class='admin-vacio'>No hay productos con stock bajo.</p>";
 
-    if (alertas.length > 0) {
+    if (productos.length > 0) {
         html = "<div class='dashboard-lista'>";
 
-        for (let i = 0; i < alertas.length && i < 4; i++) {
+        for (let i = 0; i < productos.length && i < 4; i++) {
+            let estado = obtenerEstadoStock(productos[i].stock);
+
             html += `
                 <article class="dashboard-item">
                     <div>
-                        <strong>${alertas[i].nombre}</strong>
-                        <span>${alertas[i].detalle}</span>
+                        <strong>${productos[i].nombre}</strong>
+                        <span>Stock disponible: ${productos[i].stock}</span>
                     </div>
-                    <span class="stock-estado ${alertas[i].estado.clase}">${alertas[i].estado.texto}</span>
+                    <span class="stock-estado ${estado.clase}">${estado.texto}</span>
                 </article>
             `;
         }
@@ -1099,107 +1045,59 @@ function armarStockBajoDashboard(alertas) {
     return html;
 }
 
-// Muestra una edición compacta para modificar un producto por vez.
+// Muestra la tabla editable de productos y stock.
 async function mostrarProductosAdmin() {
-    let html = "<p class='admin-vacio'>Todavía no hay productos cargados.</p>";
+    let html = `
+        <table class="tabla-admin tabla-productos-admin">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Detalle</th>
+                    <th>Precio</th>
+                    <th>Stock</th>
+                    <th>Estado</th>
+                    <th>Foto</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
 
-    if (velas.length > 0) {
-        if (productoAdminSeleccionadoId === null || buscarProductoPorId(productoAdminSeleccionadoId) === null) {
-            productoAdminSeleccionadoId = velas[0].id;
-        }
+    for (let i = 0; i < velas.length; i++) {
+        let estado = obtenerEstadoStock(velas[i].stock);
 
-        html = `
-            <details class="producto-admin-nuevo producto-admin-edicion" ${edicionProductoAdminAbierta === true ? "open" : ""}>
-                <summary>Modificación de stock</summary>
-                <div class="producto-admin-selector">
-                    <label for="selectorProductoAdmin">Elegí un producto</label>
-                    <select id="selectorProductoAdmin">
-                        ${armarOpcionesProductosAdmin()}
-                    </select>
-                </div>
-                <div id="productoSeleccionadoAdmin">
-                    ${armarProductoSeleccionadoAdmin(productoAdminSeleccionadoId)}
-                </div>
-            </details>
+        html += `
+            <tr>
+                <td><input type="text" value="${prepararTextoParaInput(velas[i].nombre)}" id="nombreEditar${velas[i].id}" class="input-tabla-admin"></td>
+                <td><textarea id="detalleEditar${velas[i].id}" class="textarea-tabla-admin">${velas[i].descripcion}</textarea></td>
+                <td><input type="text" value="${velas[i].precio}" id="precioEditar${velas[i].id}" class="input-tabla-admin input-precio-admin"></td>
+                <td><input type="text" value="${velas[i].stock}" id="stockEditar${velas[i].id}" class="input-tabla-admin input-stock-admin"></td>
+                <td><span class="stock-estado ${estado.clase}">${estado.texto}</span></td>
+                <td><input type="file" id="fotoEditar${velas[i].id}" class="input-foto-tabla" accept="image/*"></td>
+                <td class="acciones-tabla-admin">
+                    <input type="button" value="Guardar" id="guardarProducto${velas[i].id}" class="btn-tabla-admin">
+                    <input type="button" value="Eliminar" id="eliminarProducto${velas[i].id}" class="btn-tabla-admin btn-eliminar-admin">
+                </td>
+            </tr>
         `;
     }
 
+    html += `
+            </tbody>
+        </table>
+    `;
+
     document.querySelector("#contenedorProductosAdmin").innerHTML = html;
 
-    if (velas.length > 0) {
-        conectarEventosProductoSeleccionadoAdmin(productoAdminSeleccionadoId);
-        document.querySelector(".producto-admin-edicion").addEventListener("toggle", function () {
-            edicionProductoAdminAbierta = this.open;
-        });
-
-        document.querySelector("#selectorProductoAdmin").addEventListener("change", function () {
-            edicionProductoAdminAbierta = true;
-            productoAdminSeleccionadoId = Number(this.value);
-            document.querySelector("#productoSeleccionadoAdmin").innerHTML = armarProductoSeleccionadoAdmin(productoAdminSeleccionadoId);
-            conectarEventosProductoSeleccionadoAdmin(productoAdminSeleccionadoId);
-        });
-    }
-}
-
-// Arma el combo con los productos disponibles para editar.
-function armarOpcionesProductosAdmin() {
-    let html = "";
-
     for (let i = 0; i < velas.length; i++) {
-        let seleccionado = velas[i].id === productoAdminSeleccionadoId ? "selected" : "";
-        html += `<option value="${velas[i].id}" ${seleccionado}>${velas[i].nombre}</option>`;
+        document.querySelector("#guardarProducto" + velas[i].id).addEventListener("click", async function () {
+            await editarProductoAdmin(velas[i].id);
+        });
+
+        document.querySelector("#eliminarProducto" + velas[i].id).addEventListener("click", async function () {
+            await eliminarProductoAdmin(velas[i].id);
+        });
     }
-
-    return html;
-}
-
-// Arma la tarjeta de edición del producto elegido.
-function armarProductoSeleccionadoAdmin(idProducto) {
-    let producto = buscarProductoPorId(idProducto);
-
-    if (producto === null) {
-        return "<p class='admin-vacio'>Elegí un producto para modificar.</p>";
-    }
-
-    let estado = obtenerEstadoStock(producto.stock);
-
-    return `
-        <div class="producto-admin-edicion-card">
-            <label for="nombreEditar${producto.id}">Nombre</label>
-            <input type="text" value="${prepararTextoParaInput(producto.nombre)}" id="nombreEditar${producto.id}" class="input-tabla-admin">
-
-            <label for="detalleEditar${producto.id}">Detalle</label>
-            <textarea id="detalleEditar${producto.id}" class="textarea-tabla-admin">${producto.descripcion}</textarea>
-
-            <label for="precioEditar${producto.id}">Precio</label>
-            <input type="text" value="${producto.precio}" id="precioEditar${producto.id}" class="input-tabla-admin input-precio-admin">
-
-            <label for="stockEditar${producto.id}">Stock</label>
-            <input type="text" value="${producto.stock}" id="stockEditar${producto.id}" class="input-tabla-admin input-stock-admin">
-
-            <label>Estado</label>
-            <span class="stock-estado ${estado.clase}">${estado.texto}</span>
-
-            <label for="fotoEditar${producto.id}">Foto</label>
-            <input type="file" id="fotoEditar${producto.id}" class="input-foto-tabla" accept="image/*">
-
-            <div class="acciones-tabla-admin producto-admin-acciones">
-                <input type="button" value="Guardar" id="guardarProducto${producto.id}" class="btn-tabla-admin">
-                <input type="button" value="Eliminar" id="eliminarProducto${producto.id}" class="btn-tabla-admin btn-eliminar-admin">
-            </div>
-        </div>
-    `;
-}
-
-// Conecta los botones de guardar y eliminar del producto elegido.
-function conectarEventosProductoSeleccionadoAdmin(idProducto) {
-    document.querySelector("#guardarProducto" + idProducto).addEventListener("click", async function () {
-        await editarProductoAdmin(idProducto);
-    });
-
-    document.querySelector("#eliminarProducto" + idProducto).addEventListener("click", async function () {
-        await eliminarProductoAdmin(idProducto);
-    });
 }
 
 // Evita que las comillas rompan los campos de texto.
@@ -1207,58 +1105,15 @@ function prepararTextoParaInput(texto) {
     return String(texto).replace(/"/g, "&quot;");
 }
 
-// Evita que el contenido guardado rompa las areas de texto.
-function prepararTextoParaTextarea(texto) {
-    return String(texto).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
-// Ajusta el formulario de alta según se agregue una vela vendible o una esencia interna.
-function actualizarFormularioAltaProducto() {
-    let tipo = document.querySelector("#tipoAltaProducto").value;
-    let camposVela = document.querySelectorAll(".campo-vela-alta");
-    let camposEsencia = document.querySelectorAll(".campo-esencia-alta");
-    let mostrarVela = tipo === "vela";
-
-    for (let i = 0; i < camposVela.length; i++) {
-        camposVela[i].classList.toggle("campo-oculto", mostrarVela === false);
-        camposVela[i].disabled = mostrarVela === false;
-    }
-
-    for (let i = 0; i < camposEsencia.length; i++) {
-        camposEsencia[i].classList.toggle("campo-oculto", mostrarVela === true);
-        camposEsencia[i].disabled = mostrarVela === true;
-    }
-
-    document.querySelector("#fotoProductoAdmin").required = mostrarVela;
-    document.querySelector("#precioProductoAdmin").required = mostrarVela;
-    document.querySelector("#stockProductoAdminNuevo").required = mostrarVela;
-    actualizarEstadoEsenciaNueva();
-}
-
-// Actualiza la etiqueta visual del stock elegido para una esencia nueva.
-function actualizarEstadoEsenciaNueva() {
-    let estadoElemento = document.querySelector("#estadoEsenciaNueva");
-    let estado = obtenerEstadoStockEsencia(document.querySelector("#stockEsenciaNueva").value);
-
-    estadoElemento.textContent = estado.texto;
-    estadoElemento.className = "stock-estado campo-esencia-alta " + estado.clase;
-    if (document.querySelector("#tipoAltaProducto").value === "vela") estadoElemento.classList.add("campo-oculto");
-}
-
-// Toma los datos del formulario para crear una vela o una esencia.
+// Toma los datos del formulario para crear un producto.
 async function agregarProductoAdmin(evento) {
     evento.preventDefault();
-
-    if (document.querySelector("#tipoAltaProducto").value === "esencia") {
-        await guardarNuevaEsenciaAdmin();
-        return;
-    }
 
     let foto = document.querySelector("#fotoProductoAdmin").files[0];
     let mensaje = document.querySelector("#mensajeProductoAdmin");
 
     if (foto === undefined) {
-        mensaje.innerHTML = "Seleccioná una foto para el producto.";
+        await guardarNuevoProductoAdmin('');
     } else {
         let lector = new FileReader();
 
@@ -1268,31 +1123,6 @@ async function agregarProductoAdmin(evento) {
 
         lector.readAsDataURL(foto);
     }
-}
-
-// Guarda una esencia nueva dentro del catálogo interno compartido.
-async function guardarNuevaEsenciaAdmin() {
-    let catalogo = obtenerCatalogoEsenciasGuardado();
-    let stock = obtenerStockEsenciasGuardado();
-    let indice = catalogo.length;
-    let mensaje = document.querySelector("#mensajeProductoAdmin");
-
-    if (stock.general === undefined) stock.general = {};
-
-    catalogo.push({
-        nombre: document.querySelector("#nombreProductoAdmin").value,
-        detalle: document.querySelector("#detalleProductoAdmin").value
-    });
-    stock.general[indice] = document.querySelector("#stockEsenciaNueva").value;
-    esenciaSeleccionadaIndice = indice;
-
-    await guardarEstadoServidor({esenciasCatalogo: catalogo, esencias: stock});
-    sincronizarCatalogoEsencias();
-    actualizarVistaProductos();
-
-    document.querySelector("#formProductoAdmin").reset();
-    actualizarFormularioAltaProducto();
-    mensaje.innerHTML = "Esencia agregada al stock interno.";
 }
 
 // Guarda un producto nuevo con imagen, precio y stock.
@@ -1311,7 +1141,6 @@ async function guardarNuevoProductoAdmin(imagenProducto) {
     );
 
     velas.push(nuevoProducto);
-    productoAdminSeleccionadoId = nuevoProducto.id;
     await guardarProductosVelas();
     actualizarVistaProductos();
 
@@ -1352,7 +1181,6 @@ async function guardarEdicionProductoAdmin(idProducto, imagenNueva) {
     }
 
     await guardarProductosVelas();
-    edicionProductoAdminAbierta = true;
     actualizarVistaProductos();
 }
 
@@ -1368,8 +1196,6 @@ async function eliminarProductoAdmin(idProducto) {
         }
 
         await guardarProductosVelas();
-        productoAdminSeleccionadoId = velas.length > 0 ? velas[0].id : null;
-        edicionProductoAdminAbierta = velas.length > 0;
         actualizarVistaProductos();
     }
 }
@@ -1383,140 +1209,73 @@ function actualizarVistaProductos() {
     mostrarDashboardAdmin();
 }
 
-// Muestra un único módulo para editar nombre, detalle y stock de cada esencia.
+// Muestra tablas para controlar stock por esencia de latitas.
 function mostrarStockEsenciasAdmin() {
     let html = `
         <div class="stock-esencias-grid">
-            ${armarModuloEsenciasAdmin()}
+            <div>
+                <h4>Latitas medianas</h4>
+                ${armarTablaEsenciasAdmin("mediana", esenciasLatitaMediana)}
+            </div>
+            <div>
+                <h4>Latitas chicas</h4>
+                ${armarTablaEsenciasAdmin("chica", esenciasLatitaChica)}
+            </div>
         </div>
     `;
 
     document.querySelector("#contenedorStockEsencias").innerHTML = html;
 
-    conectarEventosModuloEsencias();
+    agregarEventosStockEsencias("mediana", esenciasLatitaMediana);
+    agregarEventosStockEsencias("chica", esenciasLatitaChica);
 }
 
-// Arma el módulo desplegable para elegir y modificar una esencia.
-function armarModuloEsenciasAdmin() {
-    let esencias = esenciasLatitaMediana;
-    let indice = obtenerIndiceEsenciaSeleccionada(esencias);
-    let html = "<p class='admin-vacio'>No hay esencias cargadas.</p>";
+// Arma la tabla de stock de esencias para un tipo de latita.
+function armarTablaEsenciasAdmin(tipoLatita, esencias) {
+    let html = `
+        <table class="tabla-admin">
+            <thead>
+                <tr>
+                    <th>Esencia</th>
+                    <th>Stock</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
 
-    if (esencias.length > 0) {
-        html = `
-            <details class="producto-admin-nuevo producto-admin-edicion esencia-admin-edicion" open>
-                <summary>Modificar stock de esencia</summary>
-                <div class="producto-admin-selector">
-                    <label for="selectorEsenciaAdmin">Elegí una esencia</label>
-                    <select id="selectorEsenciaAdmin">
-                        ${armarOpcionesEsenciasAdmin(esencias, indice)}
-                    </select>
-                </div>
-                <div id="esenciaSeleccionadaAdmin">
-                    ${armarEsenciaSeleccionadaAdmin(indice)}
-                </div>
-            </details>
+    for (let i = 0; i < esencias.length; i++) {
+        let stock = obtenerStockEsencia(tipoLatita, i);
+        let estado = obtenerEstadoStock(stock);
+
+        html = html + `
+            <tr>
+                <td>${esencias[i]}</td>
+                <td><input type="text" value="${stock}" id="stockEsencia${tipoLatita}${i}" class="input-tabla-admin input-stock-admin"></td>
+                <td><span class="stock-estado ${estado.clase}">${estado.texto}</span></td>
+                <td><input type="button" value="Guardar" id="guardarEsencia${tipoLatita}${i}" class="btn-tabla-admin"></td>
+            </tr>
         `;
     }
 
-    return html;
-}
-
-// Mantiene seleccionado un índice válido de la lista única de esencias.
-function obtenerIndiceEsenciaSeleccionada(esencias) {
-    if (esenciaSeleccionadaIndice >= esencias.length) {
-        esenciaSeleccionadaIndice = 0;
-    }
-
-    return esenciaSeleccionadaIndice;
-}
-
-// Arma el combo con las esencias disponibles.
-function armarOpcionesEsenciasAdmin(esencias, indiceSeleccionado) {
-    let html = "";
-
-    for (let i = 0; i < esencias.length; i++) {
-        let seleccionado = i === indiceSeleccionado ? "selected" : "";
-        html += `<option value="${i}" ${seleccionado}>${esencias[i]}</option>`;
-    }
-
-    return html;
-}
-
-// Arma la ficha editable de la esencia elegida.
-function armarEsenciaSeleccionadaAdmin(indice) {
-    let catalogo = obtenerCatalogoEsenciasGuardado();
-    let esencia = catalogo[indice];
-    let stock = obtenerStockEsencia("general", indice);
-    let estado = obtenerEstadoStockEsencia(stock);
-    let valorSeleccionado = normalizarStockEsenciaParaSelector(stock);
-
-    return `
-        <div class="producto-admin-edicion-card">
-            <label for="nombreEsencia${indice}">Nombre</label>
-            <input type="text" value="${prepararTextoParaInput(esencia.nombre)}" id="nombreEsencia${indice}" class="input-tabla-admin">
-
-            <label for="detalleEsencia${indice}">Detalle</label>
-            <textarea id="detalleEsencia${indice}" class="textarea-tabla-admin">${prepararTextoParaTextarea(esencia.detalle || "")}</textarea>
-
-            <label for="stockEsencia${indice}">Stock</label>
-            <select id="stockEsencia${indice}" class="input-tabla-admin input-stock-admin">
-                <option value="Sí" ${valorSeleccionado === "Sí" ? "selected" : ""}>Sí</option>
-                <option value="No" ${valorSeleccionado === "No" ? "selected" : ""}>No</option>
-                <option value="Queda poco" ${valorSeleccionado === "Queda poco" ? "selected" : ""}>Queda poco</option>
-            </select>
-
-            <label>Estado</label>
-            <span class="stock-estado ${estado.clase}">${estado.texto}</span>
-
-            <div class="acciones-tabla-admin producto-admin-acciones">
-                <input type="button" value="Guardar" id="guardarEsencia${indice}" class="btn-tabla-admin">
-            </div>
-        </div>
+    html = html + `
+            </tbody>
+        </table>
     `;
+
+    return html;
 }
 
-// Conecta el selector y los botones del módulo de esencias.
-function conectarEventosModuloEsencias() {
-    let esencias = esenciasLatitaMediana;
-
-    if (esencias.length === 0) {
-        return;
+// Conecta los botones de guardar stock de cada esencia.
+async function agregarEventosStockEsencias(tipoLatita, esencias) {
+    for (let i = 0; i < esencias.length; i++) {
+        document.querySelector("#guardarEsencia" + tipoLatita + i).addEventListener("click", async function () {
+            let valor = document.querySelector("#stockEsencia" + tipoLatita + i).value;
+            await actualizarStockEsencia(tipoLatita, i, convertirNumeroSiCorresponde(valor));
+            mostrarStockEsenciasAdmin();
+        });
     }
-
-    let selector = document.querySelector("#selectorEsenciaAdmin");
-    let indice = obtenerIndiceEsenciaSeleccionada(esencias);
-
-    selector.addEventListener("change", function () {
-        let nuevoIndice = Number(this.value);
-        esenciaSeleccionadaIndice = nuevoIndice;
-        document.querySelector("#esenciaSeleccionadaAdmin").innerHTML = armarEsenciaSeleccionadaAdmin(nuevoIndice);
-        conectarBotonesEsenciaSeleccionada(nuevoIndice);
-    });
-
-    conectarBotonesEsenciaSeleccionada(indice);
-}
-
-// Conecta guardar para la esencia seleccionada.
-function conectarBotonesEsenciaSeleccionada(indice) {
-    document.querySelector("#guardarEsencia" + indice).addEventListener("click", async function () {
-        await guardarEsenciaAdmin(indice);
-    });
-}
-
-// Guarda nombre, detalle y stock de la esencia seleccionada.
-async function guardarEsenciaAdmin(indice) {
-    let catalogo = obtenerCatalogoEsenciasGuardado();
-    let stock = obtenerStockEsenciasGuardado();
-
-    catalogo[indice].nombre = document.querySelector("#nombreEsencia" + indice).value;
-    catalogo[indice].detalle = document.querySelector("#detalleEsencia" + indice).value;
-    stock.general[indice] = document.querySelector("#stockEsencia" + indice).value;
-
-    await guardarEstadoServidor({esenciasCatalogo: catalogo, esencias: stock});
-    sincronizarCatalogoEsencias();
-    mostrarStockEsenciasAdmin();
-    mostrarDashboardAdmin();
 }
 
 // Calcula el siguiente id disponible para un producto nuevo.
@@ -1564,53 +1323,21 @@ function obtenerEstadoStock(stock) {
     return estado;
 }
 
-// Normaliza el stock de esencia antiguo al nuevo selector simple.
-function normalizarStockEsenciaParaSelector(stock) {
-    let valor = "Sí";
-
-    if (stock === 0 || stock === "0" || stock === "No") {
-        valor = "No";
-    } else if (stock === "Queda poco" || (typeof stock === "number" && stock <= 3)) {
-        valor = "Queda poco";
-    }
-
-    return valor;
-}
-
-// Devuelve el estado visual del stock por esencia.
-function obtenerEstadoStockEsencia(stock) {
-    let valor = normalizarStockEsenciaParaSelector(stock);
-    let estado = {
-        texto: "Stock OK",
-        clase: "stock-verde"
-    };
-
-    if (valor === "No") {
-        estado.texto = "Sin stock";
-        estado.clase = "stock-rojo";
-    } else if (valor === "Queda poco") {
-        estado.texto = "Queda poco";
-        estado.clase = "stock-amarillo";
-    }
-
-    return estado;
-}
-
-// Indica si una esencia debe mostrarse como alerta del dashboard.
-function esenciaTieneStockBajo(stock) {
-    let valor = normalizarStockEsenciaParaSelector(stock);
-    return valor === "No" || valor === "Queda poco";
-}
-
 // Carga los productos en el selector de venta manual.
 function cargarSelectVentaManual() {
     let html = "";
+    const selector = document.querySelector('#productoVentaManual');
+    const anterior = selector.value;
+    const normalizar = valor => valor.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const busqueda = normalizar(document.querySelector('#buscarProductoVentaManual').value.trim());
 
     for (let i = 0; i < velas.length; i++) {
-        html += `<option value="${velas[i].id}">${velas[i].nombre} - ${mostrarPrecioAdmin(velas[i].precio)}</option>`;
+        if (!normalizar(velas[i].nombre).includes(busqueda)) continue;
+        html += `<option value="${velas[i].id}">${velas[i].nombre} - ${mostrarPrecioAdmin(velas[i].precio)} · Stock: ${velas[i].stock}</option>`;
     }
 
-    document.querySelector("#productoVentaManual").innerHTML = html;
+    selector.innerHTML = html || '<option value="">No hay productos que coincidan</option>';
+    if ([...selector.options].some(opcion => opcion.value === anterior)) selector.value = anterior;
     actualizarPrecioVentaManual();
 }
 
@@ -1635,9 +1362,9 @@ function agregarProductoVentaManual() {
     let producto = buscarProductoPorId(idProducto);
     let mensaje = document.querySelector("#mensajeVentaManual");
 
-    if (producto === null || cantidad <= 0) {
+    if (producto === null || !Number.isInteger(cantidad) || cantidad <= 0) {
         mensaje.innerHTML = "Elegí un producto y una cantidad válida.";
-    } else if (isNaN(precioUnitario) === true || precioUnitario <= 0) {
+    } else if (!Number.isFinite(precioUnitario) || precioUnitario <= 0) {
         mensaje.innerHTML = "Ingresá un precio unitario válido.";
     } else if (typeof producto.stock === "number" && cantidad + obtenerCantidadEnVentaManual(producto.id) > producto.stock) {
         mensaje.innerHTML = "No hay stock suficiente para esa cantidad.";
@@ -1655,7 +1382,7 @@ function obtenerCantidadEnVentaManual(idProducto) {
 
     for (let i = 0; i < productosVentaManual.length; i++) {
         if (productosVentaManual[i].id === idProducto) {
-            cantidad = productosVentaManual[i].cantidad;
+            cantidad += productosVentaManual[i].cantidad;
         }
     }
 
@@ -1787,24 +1514,47 @@ function armarResumenVentaManual(subtotal, ajuste, total) {
 }
 
 // Guarda la venta manual como pedido y descuenta stock.
+let guardandoVentaManual = false;
+function actualizarCamposEnvioManual() {
+    document.querySelector('#camposEnvioManual').hidden = document.querySelector('#entregaVentaManual').value !== 'Envío';
+}
 async function guardarVentaManual(evento) {
     evento.preventDefault();
+    if (guardandoVentaManual) return;
 
     let mensaje = document.querySelector("#mensajeVentaManual");
 
     if (productosVentaManual.length === 0) {
         mensaje.innerHTML = "Agregá al menos un producto a la venta.";
     } else {
+        const boton = document.querySelector('#guardarVentaManual');
+        const stockAnterior = structuredClone(velas);
+        guardandoVentaManual = true;
+        boton.disabled = true;
+        boton.value = 'Guardando…';
+        mensaje.textContent = 'Guardando la venta. Esperá la confirmación.';
+        try {
         descontarStockVentaManual();
         await crearPedidoVentaManual();
         productosVentaManual = [];
         document.querySelector("#formVentaManual").reset();
         document.querySelector("#cantidadVentaManual").value = 1;
+        actualizarCamposEnvioManual();
         actualizarVistaProductos();
         mostrarPedidosAdmin();
         mostrarDashboardAdmin();
         actualizarBandejaPedidos();
         mensaje.innerHTML = "Venta manual guardada en pedidos.";
+        } catch (error) {
+            velas = stockAnterior;
+            mensaje.textContent = 'No se pudo confirmar el guardado. ' + error.message;
+            mensaje.scrollIntoView?.({block:'nearest'});
+        } finally {
+            guardandoVentaManual = false;
+            boton.value = 'Guardar venta manual';
+            // Si la API bloqueó el formulario por conflicto, mantenerlo bloqueado.
+            boton.disabled = document.querySelector('#clienteVentaManual').disabled;
+        }
     }
 }
 
@@ -1827,7 +1577,6 @@ function descontarStockVentaManual() {
 async function crearPedidoVentaManual() {
     let pedidos = obtenerPedidos();
     let productos = [];
-    let usuario = obtenerUsuarioActivo();
 
     for (let i = 0; i < productosVentaManual.length; i++) {
         productos.push({
@@ -1844,13 +1593,8 @@ async function crearPedidoVentaManual() {
         fechaISO: obtenerFechaLocalISO(),
         estado: "Nuevo",
         origen: document.querySelector("#origenVentaManual").value,
-        cargadoPor: {
-            nombre: usuario.nombre,
-            email: usuario.email,
-            rol: usuario.rol
-        },
         cliente: {
-            nombre: document.querySelector("#clienteVentaManual").value,
+            nombre: document.querySelector("#clienteVentaManual").value.trim() || 'Consumidor final',
             email: "Venta manual",
             telefono: document.querySelector("#telefonoVentaManual").value
         },
