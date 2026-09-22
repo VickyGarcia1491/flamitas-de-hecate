@@ -21,6 +21,7 @@ function iniciarAdmin() {
     if (!obtenerUsuarioActivo() || obtenerUsuarioActivo().rol !== "admin") { window.location = "login.html"; return; }
     if (adminIniciado) return;
     adminIniciado = true;
+    if (typeof iniciarNotificaciones === 'function') iniciarNotificaciones();
     actualizarFormularioAltaProducto();
     document.querySelector("#tipoAltaProducto").addEventListener("change", actualizarFormularioAltaProducto);
     document.querySelector("#stockEsenciaNueva").addEventListener("change", actualizarEstadoEsenciaNueva);
@@ -53,6 +54,14 @@ function iniciarAdmin() {
     document.querySelector("#btnAgregarProductoEditarPedido").addEventListener("click", agregarProductoAlPedidoEditando);
     document.querySelector("#productoNuevoEditarPedido").addEventListener("change", actualizarPrecioNuevoPedidoEditando);
     document.querySelector("#editarMedioPagoPedido").addEventListener("change", mostrarProductosPedidoEditando);
+    const pedidoAvisado = Number(new URLSearchParams(window.location.search).get('pedido'));
+    if (pedidoAvisado) {
+        document.querySelector('#filtroEstadoPedidos').value='todos';
+        const index=obtenerPedidos().slice().reverse().findIndex(p=>p.id===pedidoAvisado);
+        paginaPedidos=index<0?1:Math.floor(index/pedidosPorPagina)+1;
+        mostrarPedidosAdmin(); mostrarSeccionAdmin('pedidos');
+        document.querySelector('#estadoPedido'+pedidoAvisado)?.scrollIntoView?.({block:'center'});
+    }
 }
 
 // Permite entrar al panel solo si el usuario activo es administrador.
@@ -836,6 +845,10 @@ function prepararMenuAdmin() {
 function actualizarBandejaPedidos() {
     let contador = document.querySelector("#contadorPedidosAdmin");
     let pendientes = obtenerPedidosPendientesNoVistos();
+    if (typeof navigator !== 'undefined') {
+        const badge=pendientes.length ? navigator.setAppBadge?.(pendientes.length) : navigator.clearAppBadge?.();
+        badge?.catch(()=>{});
+    }
 
     if (contador !== null) {
         contador.innerHTML = pendientes.length;

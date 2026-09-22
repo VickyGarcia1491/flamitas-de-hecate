@@ -29,3 +29,19 @@ CREATE TABLE IF NOT EXISTS imports (
  id INTEGER PRIMARY KEY CHECK (id = 1),
  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- Claves de notificación privadas: persistentes, nunca se publican en el frontend.
+CREATE TABLE IF NOT EXISTS push_config (id INTEGER PRIMARY KEY CHECK (id=1), keys JSONB NOT NULL);
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+ endpoint TEXT PRIMARY KEY,
+ user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ session_hash TEXT NOT NULL,
+ subscription JSONB NOT NULL
+);
+CREATE TABLE IF NOT EXISTS push_jobs (
+ id BIGSERIAL PRIMARY KEY,
+ order_id BIGINT NOT NULL,
+ endpoint TEXT NOT NULL REFERENCES push_subscriptions(endpoint) ON DELETE CASCADE,
+ attempts INTEGER NOT NULL DEFAULT 0,
+ next_attempt TIMESTAMPTZ NOT NULL DEFAULT now(),
+ UNIQUE(order_id, endpoint)
+);

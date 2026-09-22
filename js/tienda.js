@@ -649,7 +649,7 @@ async function enviarPedidoWhatsApp(evento) {
  try {
   const pedido = await guardarPedido(datos);
   const mensaje = armarMensajePedidoGuardado(pedido);
-  const enlace = document.createElement('a'); enlace.href = 'https://wa.me/?text=' + mensaje; enlace.target = '_blank'; enlace.rel = 'noopener'; enlace.textContent = 'Abrir WhatsApp para enviar el pedido #' + pedido.id;
+  const enlace = document.createElement('a'); enlace.href = 'https://wa.me/59897605718?text=' + mensaje; enlace.target = '_blank'; enlace.rel = 'noopener'; enlace.textContent = 'Enviar pedido #' + pedido.id + ' al WhatsApp de Flamitas';
   document.querySelector('#formEntrega').prepend(enlace);
   carrito = []; solicitudPedido = crypto.randomUUID(); mostrarCarrito(); cerrarCarrito();
   alert('Pedido #' + pedido.id + ' guardado. Tocá el enlace de WhatsApp para enviarlo.');

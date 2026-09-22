@@ -50,6 +50,7 @@
     </section>
 
     <!-- Contenedor principal del panel con menú lateral y secciones internas. -->
+    <div id="avisoPedidoNuevo" role="status" hidden>Tenés un pedido nuevo. Guardá tus cambios antes de recargar. <button id="recargarPorPedido" type="button">Recargar pedidos</button></div>
     <main class="admin-panel">
         <!-- Menú lateral para cambiar entre pedidos, productos y venta manual. -->
         <aside class="admin-menu-lateral">
@@ -105,6 +106,13 @@
                 </section>
             </div>
 
+            <section class="notificaciones-admin" aria-label="Avisos en el celular">
+                <h3>Avisos de pedidos en tu celular</h3>
+                <p>Activá los avisos en cada Android para enterarte de pedidos nuevos aunque Flamitas esté cerrada.</p>
+                <button type="button" id="activarNotificaciones" class="btn-form-admin">Activar notificaciones</button>
+                <button type="button" id="desactivarNotificaciones" class="btn-form-admin" hidden>Desactivar en este dispositivo</button>
+                <p id="estadoNotificaciones" role="status"></p>
+            </section>
             <div class="dashboard-acciones-admin">
                 <input type="button" value="Cargar venta manual" class="btn-form-admin dashboard-atajo" data-ir-seccion="ventaManual">
                 <input type="button" value="Agregar producto" class="btn-form-admin dashboard-atajo" data-ir-seccion="productos">
@@ -429,6 +437,7 @@
     <script src="./js/usuarios.js"></script>
     <script src="./js/sistema.js"></script>
     <script src="./js/admin.js"></script>
+    <script src="./js/notificaciones.js"></script>
     <script src="./js/iniciar.js"></script>
 </body>
 

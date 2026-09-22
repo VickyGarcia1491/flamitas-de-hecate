@@ -6,9 +6,11 @@ import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { hashPassword, verifyPassword, tokenHash, newToken, fail, text, email, password, validateTree } from './security.js';
 import { emptyState, validateState, checkout } from './business.js';
+import {initializePush, createPushService, validateSubscription} from './push.js';
 const root = fileURLToPath(new URL('../', import.meta.url));
 export async function initialize(db, config) {
   await db.query(await readFile(new URL('schema.sql', import.meta.url), 'utf8'));
+  await initializePush(db);
   const products = JSON.parse(await readFile(new URL('seed.json', import.meta.url), 'utf8'));
   await db.query('INSERT INTO business_state(id,data) VALUES(1,$1) ON CONFLICT DO NOTHING', [JSON.stringify(emptyState(products))]);
   const admin = await db.query("SELECT id FROM users WHERE rol='admin' LIMIT 1");
@@ -17,8 +19,10 @@ export async function initialize(db, config) {
     await db.query("INSERT INTO users(email,nombre,password_hash,rol) VALUES($1,'Administradora Flamitas',$2,'admin') ON CONFLICT DO NOTHING", [address, await hashPassword(secret)]);
   }
 }
-export function createApp(db, config = {}) {
+export function createApp(db, config = {}, dependencies = {}) {
   const app = express();
+  const push = createPushService(db, dependencies.sendPush);
+  app.locals.deliverPush = () => push.deliver().catch(() => console.error('No se pudo procesar la cola de notificaciones.'));
   app.set('trust proxy', 1);
   app.use(helmet({contentSecurityPolicy: {directives: {"script-src": ["'self'"], "img-src": ["'self'", 'data:'], "style-src": ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'], "font-src": ["'self'", 'https://fonts.gstatic.com'], "upgrade-insecure-requests": config.NODE_ENV === 'production' ? [] : null}}}));
   app.use('/api', rateLimit({windowMs: 60000, limit: 180}));
@@ -38,6 +42,19 @@ export function createApp(db, config = {}) {
   });
   const auth = (req, res, next) => req.user ? next() : res.status(401).json({error: 'Iniciá sesión para continuar.'});
   const admin = (req, res, next) => req.user?.rol === 'admin' ? next() : res.status(403).json({error: 'Acceso exclusivo de administración.'});
+  app.get('/api/admin/push/key', admin, async (req,res) => res.json({publicKey:await push.publicKey()}));
+  app.post('/api/admin/push/subscription', admin, async (req,res) => {
+    const subscription=validateSubscription(req.body);
+    const count=(await db.query('SELECT count(*)::int AS count FROM push_subscriptions WHERE user_id=$1',[req.user.id])).rows[0].count;
+    const existing=(await db.query('SELECT endpoint FROM push_subscriptions WHERE endpoint=$1',[subscription.endpoint])).rows[0];
+    if (!existing && count>=20) fail('Llegaste al máximo de dispositivos. Desactivá uno antes de agregar otro.');
+    await db.query('INSERT INTO push_subscriptions(endpoint,user_id,session_hash,subscription) VALUES($1,$2,$3,$4) ON CONFLICT(endpoint) DO UPDATE SET user_id=EXCLUDED.user_id,session_hash=EXCLUDED.session_hash,subscription=EXCLUDED.subscription',[subscription.endpoint,req.user.id,req.sessionHash,JSON.stringify(subscription)]);
+    res.json({ok:true});
+  });
+  app.post('/api/admin/push/unsubscribe', admin, async (req,res) => {
+    await db.query('DELETE FROM push_subscriptions WHERE endpoint=$1 AND user_id=$2',[text(req.body.endpoint,2048),req.user.id]);
+    res.json({ok:true});
+  });
   async function transact(work) {
     const client = await db.connect();
     try { await client.query('BEGIN'); const result = await work(client); await client.query('COMMIT'); return result; }
@@ -67,6 +84,7 @@ export function createApp(db, config = {}) {
     res.json(await session(req, res, result.rows[0]));
   });
   app.post('/api/logout', async (req, res) => {
+    if (req.sessionHash) await db.query('DELETE FROM push_subscriptions WHERE session_hash=$1',[req.sessionHash]);
     if (req.sessionHash) await db.query('DELETE FROM sessions WHERE token_hash=$1', [req.sessionHash]);
     res.clearCookie('flamitas_session', {path: '/'}).json({ok: true});
   });
@@ -87,15 +105,18 @@ export function createApp(db, config = {}) {
   });
   app.post('/api/orders', auth, async (req, res) => {
     const key = text(req.body.requestId, 100);
-    res.status(201).json(await transact(async client => {
+    const order = await transact(async client => {
       const state = (await client.query('SELECT data FROM business_state WHERE id=1 FOR UPDATE')).rows[0].data;
       const previous = state.pedidos.find(p => p.requestId === key && p.cliente.email === req.user.email);
       if (previous) return previous;
       const id = Number((await client.query("SELECT nextval('order_ids') AS id")).rows[0].id);
       const order = checkout(state, req.body, req.user, id); order.requestId = key;
       await client.query('UPDATE business_state SET data=$1,version=version+1 WHERE id=1', [JSON.stringify(state)]);
+      await client.query("INSERT INTO push_jobs(order_id,endpoint) SELECT $1,s.endpoint FROM push_subscriptions s JOIN users u ON u.id=s.user_id WHERE u.rol='admin' ON CONFLICT DO NOTHING",[id]);
       return order;
-    }));
+    });
+    await app.locals.deliverPush();
+    res.status(201).json(order);
   });
   app.post('/api/contact', rateLimit({windowMs: 3600000, limit: 15}), async (req, res) => {
     const data = {nombre: text(req.body.nombre), email: email(req.body.email), telefono: text(req.body.telefono || '', 100, false), mensaje: text(req.body.mensaje?.replace(/\r?\n/g, ' '), 5000), fecha: new Date().toISOString()};

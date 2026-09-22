@@ -2206,6 +2206,9 @@ html {
 .filtros-pedidos-admin { grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); }
 .filtros-pedidos-admin > div, .filtros-pedidos-admin select, .filtros-pedidos-admin input { min-width: 0; max-width: 100%; box-sizing: border-box; }
 .pedido-admin { overflow-wrap: anywhere; }
+.notificaciones-admin { margin-top: 24px; padding: 18px; border-radius: 18px; background: #f4edf9; }
+.notificaciones-admin button[hidden], #avisoPedidoNuevo[hidden] { display:none; }
+#avisoPedidoNuevo { padding: 16px; margin: 12px 20px; background: #f4edf9; border: 1px solid #9c7bbe; border-radius: 16px; }
 
 #avisoConexion { background: #f4edf9; color: #513f58; border-bottom: 1px solid #d8c6e7; padding: 12px 20px; text-align: center; font-family: inherit; }
 #avisoConexion p { margin: 0; font-size: 15px; line-height: 1.5; }
