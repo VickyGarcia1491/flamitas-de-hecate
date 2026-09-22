@@ -66,3 +66,19 @@ test('API: una escritura fallida se envía una sola vez', async t => {
  await assert.rejects(vm.runInContext("api('/api/orders','POST',{productos:[]})",dom.getInternalVMContext()), /Sin conexión/);
  assert.equal(calls,1);
 });
+
+test('Contacto: doble clic no duplica consultas y el fallo conserva el mensaje', async t => {
+ const dom=new JSDOM('<form id="formContacto"><input id="nombreContacto" value="Ana"><input id="telefonoContacto"><input id="emailContacto" value="ana@example.com"><textarea id="mensajeContacto">Consulta de prueba</textarea><button type="submit">Enviar</button></form><p id="mensajeContactoEstado"></p>', {url:'https://flamitas.example/contacto.html',runScripts:'outside-only'});
+ const win=dom.window; t.after(()=>win.close());
+ let calls=0, reject;
+ win.api=()=>{calls++; return new Promise((resolve,no)=>{reject=no;});};
+ vm.runInContext(await readFile('js/contacto.js','utf8'),dom.getInternalVMContext());
+ const event={preventDefault(){},target:win.document.querySelector('form')};
+ const first=win.enviarConsultaContacto(event);
+ await win.enviarConsultaContacto(event);
+ assert.equal(calls,1);
+ reject(new Error('Sin conexión')); await first;
+ assert.equal(win.document.querySelector('#mensajeContacto').value,'Consulta de prueba');
+ assert.equal(win.document.querySelector('button').disabled,false);
+ assert.match(win.document.querySelector('#mensajeContactoEstado').textContent,/Sin conexión/);
+});

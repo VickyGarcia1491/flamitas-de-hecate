@@ -9,8 +9,10 @@ function iniciarContacto() {
 }
 
 // Guarda la consulta en PostgreSQL y abre el correo con el mensaje preparado.
+let consultaEnviandose = false;
 async function enviarConsultaContacto(evento) {
     evento.preventDefault();
+    if (consultaEnviandose) return;
 
     let nombre = document.querySelector("#nombreContacto").value;
     let telefono = document.querySelector("#telefonoContacto").value;
@@ -26,6 +28,10 @@ async function enviarConsultaContacto(evento) {
         fecha: new Date().toLocaleString()
     };
 
+    const boton = evento.target.querySelector('[type="submit"]');
+    consultaEnviandose = true;
+    if (boton) boton.disabled = true;
+    try {
     await api('/api/contact', 'POST', consulta);
 
     let asunto = encodeURIComponent("Consulta desde la web de Flamitas");
@@ -39,5 +45,10 @@ async function enviarConsultaContacto(evento) {
     estado.innerHTML = "Tu consulta quedó guardada. También podés enviarla por mail.";
     document.querySelector("#formContacto").reset();
     window.location.href = "mailto:flamitasdehecate@gmail.com?subject=" + asunto + "&body=" + cuerpo;
+    } catch (error) {
+        estado.textContent = 'No pudimos confirmar el envío. ' + error.message;
+    } finally {
+        consultaEnviandose = false;
+        if (boton) boton.disabled = false;
+    }
 }
-

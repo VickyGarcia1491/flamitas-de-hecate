@@ -7,6 +7,55 @@ import { checkout, emptyState } from '../server/business.js';
 import { validateState } from '../server/business.js';
 const seed = JSON.parse(await readFile('server/seed.json','utf8'));
 const pedidoNotificacion = {id:90,estado:'Nuevo',fechaISO:'2026-09-21',cliente:{nombre:'Prueba',email:'prueba@example.com'},productos:[],entrega:{metodo:'Retiro'},total:0};
+test('Pedidos: cambios rápidos de dos pedidos se guardan en secuencia sin pisarse', async () => {
+ const ui=await page('admin',{nombre:'Admin',rol:'admin'},{pedidos:[pedidoNotificacion,{...pedidoNotificacion,id:91}]});
+ try {
+  const original=ui.win.fetch; let liberar;
+  const espera=new Promise(resolve=>liberar=resolve); let calls=0;
+  ui.win.fetch=async(...args)=>{if(++calls===1)await espera;return original(...args);};
+  const primero=ui.win.cambiarEstadoPedido(90,'Entregado');
+  const segundo=ui.win.cambiarEstadoPedido(91,'Cancelado');
+  await Promise.resolve(); liberar(); await Promise.all([primero,segundo]);
+  assert.deepEqual(ui.win.obtenerPedidos().map(p=>p.estado),['Entregado','Cancelado']);
+  assert.equal(ui.win.document.querySelector('#avisoGuardadoServidor'),null);
+  assert.equal(ui.win.document.querySelectorAll('.pedido-admin').length,0);
+  const filtro=ui.win.document.querySelector('#filtroEstadoPedidos');
+  filtro.value='Entregado'; filtro.dispatchEvent(new ui.win.Event('change'));
+  assert.match(ui.win.document.querySelector('#contenedorPedidos').textContent,/Pedido #90/);
+  assert.equal(ui.win.document.querySelectorAll('.pedido-admin').length,1);
+  filtro.value='Cancelado'; filtro.dispatchEvent(new ui.win.Event('change'));
+  assert.match(ui.win.document.querySelector('#contenedorPedidos').textContent,/Pedido #91/);
+ } finally {ui.close();}
+});
+test('Pedidos: pagina diez tarjetas y conserva todo el historial', async () => {
+ const ui=await page('admin',{nombre:'Admin',rol:'admin'},{pedidos:Array.from({length:23},(_,i)=>({...pedidoNotificacion,id:100+i}))});
+ try {
+  assert.equal(ui.win.document.querySelectorAll('.pedido-admin').length,10);
+  ui.win.document.querySelector('#pedidosSiguiente').click();
+  assert.equal(ui.win.document.querySelectorAll('.pedido-admin').length,10);
+  ui.win.document.querySelector('#pedidosSiguiente').click();
+  assert.equal(ui.win.document.querySelectorAll('.pedido-admin').length,3);
+  assert.equal(ui.win.obtenerPedidos().length,23);
+  assert.equal(ui.writes.length,0);
+ } finally {ui.close();}
+});
+test('Estado: refresca tras conflicto externo sin sobrescribir otro estado del mismo pedido', async () => {
+ for(const changed of [false,true]) {
+  const ui=await page('admin',{nombre:'Admin',rol:'admin'},{pedidos:[pedidoNotificacion]});
+  try {
+   let puts=0;
+   const original=ui.win.fetch;
+   ui.win.fetch=async(url,options)=>{
+    if(options.method==='PUT' && ++puts===1)return {ok:false,status:409,json:async()=>({error:'Versión anterior'})};
+    if(options.method==='GET')return {ok:true,json:async()=>({usuario:{rol:'admin'},version:8,productos:seed,esencias:{mediana:{},chica:{}},vistos:[],pedidos:[{...pedidoNotificacion,estado:changed?'Cancelado':'Nuevo'}]})};
+    return original(url,options);
+   };
+   await ui.win.cambiarEstadoPedido(90,'Entregado');
+   assert.equal(puts,changed?1:2);
+   assert.equal(ui.win.obtenerPedidos()[0].estado,changed?'Cancelado':'Entregado');
+  } finally {ui.close();}
+ }
+});
 test('Bandeja: abre aun si falla marcar leído y mantiene las notificaciones', async () => {
  const ui=await page('admin',{nombre:'Admin',rol:'admin'},{pedidos:[pedidoNotificacion]});
  try {

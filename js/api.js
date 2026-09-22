@@ -26,25 +26,36 @@ let estadoNecesitaRevision = false;
 let ultimoErrorGuardado = '';
 function guardarEstadoServidor(cambios) {
  // Capturar la intención antes de esperar, sin compartir objetos mutables con el formulario.
- const copia = structuredClone(cambios);
- const base = structuredClone(datosServidor);
+ const calcular = typeof cambios === 'function' ? cambios : null;
+ const copia = calcular ? null : structuredClone(cambios);
+ // No copiar fotos e historial completos para una edición de otro campo.
+ const base = calcular ? null : Object.fromEntries(Object.keys(copia).map(key => [key, JSON.stringify(datosServidor[key])]));
  const operacion = colaGuardados.then(async () => {
  if (estadoNecesitaRevision) throw new Error(ultimoErrorGuardado + ' Revisá los datos del servidor con el botón Recargar panel antes de guardar de nuevo.');
  try {
   // No mezclar dos ediciones distintas de la misma colección basadas en datos viejos.
-  for (const key of Object.keys(copia)) {
-   if (JSON.stringify(base[key]) !== JSON.stringify(datosServidor[key])) throw new Error('Estos datos cambiaron durante otro guardado.');
+  for (const key of Object.keys(copia || {})) {
+   if (base[key] !== JSON.stringify(datosServidor[key])) throw Object.assign(new Error('Este dato cambió mientras esperabas. Revisá su valor actual antes de editarlo.'), {sinEnvio: true});
   }
-  const data = {productos: datosServidor.productos, esencias: datosServidor.esencias, esenciasCatalogo: datosServidor.esenciasCatalogo, pedidos: datosServidor.pedidos, vistos: datosServidor.vistos, ...copia};
+  let data = calcular ? structuredClone(calcular(datosServidor)) : copia;
   // El servidor combina estos campos con el estado actual dentro de la transacción.
   // Marcar leído o cambiar un pedido no debe volver a subir las fotos del catálogo.
-  const result = await api('/api/admin/state', 'PUT', {version: datosServidor.version, data: copia});
-  datosServidor = {...datosServidor, ...structuredClone(data), version: result.version};
+  let result;
+  try { result = await api('/api/admin/state', 'PUT', {version: datosServidor.version, data}); }
+  catch (error) {
+   // Un 409 confirma que no se guardó. Solo las operaciones por intención pueden
+   // recalcularse sobre la versión nueva, y deben detectar cambios en el mismo dato.
+   if (error.status !== 409 || !calcular) throw error;
+   await cargarDatosServidor();
+   data = structuredClone(calcular(datosServidor));
+   result = await api('/api/admin/state', 'PUT', {version: datosServidor.version, data});
+  }
+  datosServidor = {...datosServidor, ...data, version: result.version};
   ultimoErrorGuardado = '';
   document.querySelector('#avisoGuardadoServidor')?.remove();
  } catch(error) {
   ultimoErrorGuardado = error.message;
-  estadoNecesitaRevision = ![400, 401, 403, 413, 422, 429].includes(error.status);
+  estadoNecesitaRevision = !error.sinEnvio && ![400, 401, 403, 413, 422, 429].includes(error.status);
   mostrarAvisoGuardado(error.message);
   throw new Error(error.message + (estadoNecesitaRevision ? ' Revisá los datos guardados antes de repetir el cambio.' : ' El servidor rechazó el cambio.'));
  }
@@ -60,7 +71,7 @@ function mostrarAvisoGuardado(mensaje) {
  }
  aviso.replaceChildren();
  const texto = document.createElement('p');
- texto.textContent = mensaje + ' El formulario sigue visible. Antes de recargar, anotá los datos de la venta; después comprobá si ya figura en Pedidos para no duplicarla.';
+ texto.textContent = mensaje + ' Tus campos siguen visibles. Si tenés una venta sin confirmar, conservá sus datos y comprobá el historial antes de repetirla.';
  const boton = document.createElement('button'); boton.type='button'; boton.textContent='Recargar panel';
  boton.addEventListener('click',()=>window.location.reload());
  aviso.append(texto,boton);

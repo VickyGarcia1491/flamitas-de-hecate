@@ -1,4 +1,4 @@
-const CACHE_NAME = "flamitas-app-v2";
+const CACHE_NAME = "flamitas-app-v3";
 
 const APP_SHELL = [
   "/",
@@ -44,7 +44,7 @@ self.addEventListener("activate", event => {
 self.addEventListener("fetch", event => {
   const url = new URL(event.request.url);
 
-  if (event.request.method !== "GET" || url.pathname.startsWith("/api/")) {
+  if (event.request.method !== "GET" || url.origin !== self.location.origin || url.pathname.startsWith("/api/")) {
     return;
   }
 
@@ -57,6 +57,12 @@ self.addEventListener("fetch", event => {
         }
         return response;
       })
-      .catch(() => caches.match(event.request).then(response => response || caches.match("/index.html")))
+      .catch(async () => {
+        const cached = await caches.match(event.request);
+        if (cached) return cached;
+        // Nunca devolver HTML de inicio como si fuera un script o una imagen.
+        if (event.request.mode === 'navigate') return (await caches.match('/index.html')) || Response.error();
+        return Response.error();
+      })
   );
 });

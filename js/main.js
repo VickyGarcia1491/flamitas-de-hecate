@@ -5,7 +5,7 @@ window.addEventListener("load", inicio);
 function inicio() {
 
     // BOTON MENU HAMBURGUESA
-    document.querySelector("#menuToggle").addEventListener("click", toggleMenu);
+    document.querySelector("#menuToggle")?.addEventListener("click", toggleMenu);
 
     // LINKS DEL MENU
     let links = document.querySelectorAll("#menuLinks a");

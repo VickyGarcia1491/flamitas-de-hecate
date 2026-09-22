@@ -11,12 +11,16 @@ let productosVentaManual = [];
 let pedidoEditandoId = null;
 // Guarda temporalmente los productos del pedido que se está editando.
 let productosPedidoEditando = [];
-// Indica si el historial está mostrando solo pedidos nuevos y pendientes.
-let filtroPedidosPendientesActivo = false;
+let paginaPedidos = 1;
+const pedidosPorPagina = 10;
+let adminIniciado = false;
+const estadosEnGuardado = new Set();
 
 // Prepara seguridad, pedidos, productos, stock, venta manual y eventos del admin.
 function iniciarAdmin() {
     if (!obtenerUsuarioActivo() || obtenerUsuarioActivo().rol !== "admin") { window.location = "login.html"; return; }
+    if (adminIniciado) return;
+    adminIniciado = true;
     actualizarFormularioAltaProducto();
     document.querySelector("#tipoAltaProducto").addEventListener("change", actualizarFormularioAltaProducto);
     document.querySelector("#stockEsenciaNueva").addEventListener("change", actualizarEstadoEsenciaNueva);
@@ -40,6 +44,7 @@ function iniciarAdmin() {
     document.querySelector("#formVentaManual").addEventListener("submit", guardarVentaManual);
     document.querySelector("#filtroFechaPedidos").addEventListener("change", mostrarPedidosAdmin);
     document.querySelector("#filtroMesPedidos").addEventListener("change", mostrarPedidosAdmin);
+    document.querySelector('#filtroEstadoPedidos').addEventListener('change', () => { paginaPedidos = 1; mostrarPedidosAdmin(); });
     document.querySelector("#btnLimpiarFiltrosPedidos").addEventListener("click", limpiarFiltrosPedidos);
     document.querySelector("#productoVentaManual").addEventListener("change", actualizarPrecioVentaManual);
     document.querySelector("#medioPagoVentaManual").addEventListener("change", mostrarVentaManual);
@@ -73,20 +78,14 @@ function mostrarPedidosAdmin() {
     let pedidosFiltrados = filtrarPedidos(pedidos);
     let html = "";
 
-    if (filtroPedidosPendientesActivo === true) {
-        pedidosFiltrados = obtenerPedidosPendientes(pedidosFiltrados);
-        html = `
-            <div class="aviso-pedidos-pendientes">
-                <span>Mostrando pedidos nuevos y pendientes.</span>
-                <input type="button" value="Ver todos" id="btnVerTodosPedidos" class="btn-form-admin">
-            </div>
-        `;
-    }
-
     mostrarResumenVentas(pedidos, pedidosFiltrados);
+    const totalFiltrados = pedidosFiltrados.length;
+    const paginas = Math.max(1, Math.ceil(totalFiltrados / pedidosPorPagina));
+    paginaPedidos = Math.min(paginaPedidos, paginas);
+    pedidosFiltrados = pedidosFiltrados.slice().reverse().slice((paginaPedidos - 1) * pedidosPorPagina, paginaPedidos * pedidosPorPagina).reverse();
 
     if (pedidosFiltrados.length === 0) {
-        html = html + "<p class='admin-vacio'>Todavía no hay pedidos registrados.</p>";
+        html = html + "<p class='admin-vacio'>Todavía no hay pedidos en esta categoría y fecha.</p>";
     } else {
         for (let i = pedidosFiltrados.length - 1; i >= 0; i--) {
             let pedido = pedidosFiltrados[i];
@@ -120,7 +119,7 @@ function mostrarPedidosAdmin() {
 
                     <div class="estado-pedido">
                         <label for="estadoPedido${pedido.id}">Estado</label>
-                        <select id="estadoPedido${pedido.id}">
+                        <select id="estadoPedido${pedido.id}" ${estadosEnGuardado.has(pedido.id) ? 'disabled' : ''}>
                             <option value="Nuevo" ${estadoPedido === "Nuevo" ? "selected" : ""}>Nuevo</option>
                             <option value="En preparación" ${estadoPedido === "En preparación" ? "selected" : ""}>En preparación</option>
                             <option value="Listo para retirar/enviar" ${estadoPedido === "Listo para retirar/enviar" ? "selected" : ""}>Listo para retirar/enviar</option>
@@ -150,10 +149,9 @@ function mostrarPedidosAdmin() {
     }
 
     document.querySelector("#contenedorPedidos").innerHTML = html;
-
-    if (document.querySelector("#btnVerTodosPedidos") !== null) {
-        document.querySelector("#btnVerTodosPedidos").addEventListener("click", mostrarTodosLosPedidos);
-    }
+    document.querySelector('#paginacionPedidos').innerHTML = `<button type="button" id="pedidosAnterior" ${paginaPedidos === 1 ? 'disabled' : ''}>Anterior</button><span aria-live="polite">${totalFiltrados} pedidos · Página ${paginaPedidos} de ${paginas}</span><button type="button" id="pedidosSiguiente" ${paginaPedidos === paginas ? 'disabled' : ''}>Siguiente</button>`;
+    document.querySelector('#pedidosAnterior').onclick = () => { paginaPedidos--; mostrarPedidosAdmin(); };
+    document.querySelector('#pedidosSiguiente').onclick = () => { paginaPedidos++; mostrarPedidosAdmin(); };
 
     for (let i = 0; i < pedidosFiltrados.length; i++) {
         document.querySelector("#estadoPedido" + pedidosFiltrados[i].id).addEventListener("change", async function () {
@@ -172,6 +170,7 @@ function mostrarPedidosAdmin() {
 
 // Devuelve solo los pedidos que coinciden con el filtro de día o mes.
 function filtrarPedidos(pedidos) {
+    const grupo = document.querySelector('#filtroEstadoPedidos').value;
     let fechaElegida = document.querySelector("#filtroFechaPedidos").value;
     let mesElegido = document.querySelector("#filtroMesPedidos").value;
     let pedidosFiltrados = [];
@@ -179,6 +178,7 @@ function filtrarPedidos(pedidos) {
     for (let i = 0; i < pedidos.length; i++) {
         let fechaPedido = obtenerFechaPedido(pedidos[i]);
         let incluir = true;
+        if (grupo === 'pendientes' ? ['Entregado','Cancelado'].includes(pedidos[i].estado) : grupo !== 'todos' && pedidos[i].estado !== grupo) incluir = false;
 
         if (fechaElegida !== "" && fechaPedido !== fechaElegida) {
             incluir = false;
@@ -334,27 +334,29 @@ function mostrarDatoOpcional(dato, textoVacio) {
 function limpiarFiltrosPedidos() {
     document.querySelector("#filtroFechaPedidos").value = "";
     document.querySelector("#filtroMesPedidos").value = "";
-    filtroPedidosPendientesActivo = false;
+    paginaPedidos = 1;
     mostrarPedidosAdmin();
 }
 
 // Cambia el estado de un pedido desde el historial.
 async function cambiarEstadoPedido(idPedido, nuevoEstado) {
-    let pedidos = obtenerPedidos();
-
-    for (let i = 0; i < pedidos.length; i++) {
-        if (pedidos[i].id === idPedido) {
-            pedidos[i].estado = nuevoEstado;
-        }
-    }
-
+    if (estadosEnGuardado.has(idPedido)) return;
+    const anterior = datosServidor.pedidos.find(p => p.id === idPedido)?.estado || 'Nuevo';
+    estadosEnGuardado.add(idPedido);
+    const selector = document.querySelector('#estadoPedido' + idPedido);
+    if (selector) selector.disabled = true;
     try {
-        await guardarPedidos(pedidos);
+        await guardarEstadoServidor(actual => {
+            const pedido = actual.pedidos.find(p => p.id === idPedido);
+            if (!pedido || ![anterior, nuevoEstado].includes(pedido.estado || 'Nuevo')) throw Object.assign(new Error('Otra sesión cambió este pedido. Revisá su estado antes de modificarlo.'), {sinEnvio: true});
+            return {pedidos: actual.pedidos.map(p => p.id === idPedido ? {...p, estado: nuevoEstado} : p)};
+        });
         mostrarDashboardAdmin();
         actualizarBandejaPedidos();
     } catch (error) {
         mostrarAvisoGuardado(error.message);
     } finally {
+        estadosEnGuardado.delete(idPedido);
         // Mostrar el estado confirmado, no dejar "Entregado" si no se guardó.
         mostrarPedidosAdmin();
     }
@@ -850,7 +852,7 @@ function actualizarBandejaPedidos() {
 function obtenerPedidosVistos() { return [...datosServidor.vistos]; }
 
 // Guarda los ids de pedidos que ya no deben mostrarse como notificación nueva.
-async function guardarPedidosVistos(vistos) { await guardarEstadoServidor({vistos}); }
+async function guardarPedidosVistos(vistos) { await guardarEstadoServidor(actual => ({vistos: [...new Set([...actual.vistos, ...vistos])]})); }
 
 // Devuelve los pedidos pendientes que todavía no fueron abiertos desde la bandeja.
 function obtenerPedidosPendientesNoVistos() {
@@ -883,7 +885,8 @@ async function marcarPedidosPendientesComoVistos() {
 
 // Abre el historial mostrando solo pedidos nuevos y pendientes.
 async function mostrarPedidosPendientesDesdeBandeja() {
-    filtroPedidosPendientesActivo = true;
+    document.querySelector('#filtroEstadoPedidos').value = 'pendientes';
+    paginaPedidos = 1;
     document.querySelector("#filtroFechaPedidos").value = "";
     document.querySelector("#filtroMesPedidos").value = "";
     mostrarSeccionAdmin("pedidos");
@@ -894,12 +897,6 @@ async function mostrarPedidosPendientesDesdeBandeja() {
     } catch (error) {
         mostrarAvisoGuardado('Los pedidos están visibles, pero no pudimos marcarlos como leídos. ' + error.message);
     }
-}
-
-// Quita el filtro de pendientes para volver al historial completo.
-function mostrarTodosLosPedidos() {
-    filtroPedidosPendientesActivo = false;
-    mostrarPedidosAdmin();
 }
 
 // Activa los botones rápidos del dashboard.
@@ -1791,8 +1788,6 @@ async function guardarVentaManual(evento) {
         actualizarCamposEnvioManual();
         actualizarVistaProductos();
         mostrarPedidosAdmin();
-        mostrarDashboardAdmin();
-        actualizarBandejaPedidos();
         mensaje.innerHTML = "Venta manual guardada en pedidos.";
         } catch (error) {
             velas = stockAnterior;

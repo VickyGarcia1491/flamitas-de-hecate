@@ -123,6 +123,15 @@
 
             <div class="filtros-pedidos-admin">
                 <div>
+                    <label for="filtroEstadoPedidos">Ver pedidos</label>
+                    <select id="filtroEstadoPedidos">
+                        <option value="pendientes">Pendientes</option>
+                        <option value="Entregado">Pedidos entregados</option>
+                        <option value="Cancelado">Pedidos cancelados</option>
+                        <option value="todos">Todo el historial</option>
+                    </select>
+                </div>
+                <div>
                     <label for="filtroFechaPedidos">Filtrar por día</label>
                     <input type="date" id="filtroFechaPedidos">
                 </div>
@@ -152,6 +161,7 @@
 
             <div id="contenedorPedidos">
             </div>
+            <nav id="paginacionPedidos" aria-label="Páginas de pedidos"></nav>
         </section>
 
         <!-- Sección para crear, editar o eliminar productos y controlar stock. -->
