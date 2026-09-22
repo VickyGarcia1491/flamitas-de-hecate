@@ -1,3 +1,7 @@
+let productoAdminSeleccionadoId = null;
+let edicionProductoAdminAbierta = false;
+let esenciaSeleccionadaIndice = 0;
+let edicionEsenciaAdminAbierta = false;
 // Inicia el panel administrador cuando la página termina de cargar.
 
 
@@ -13,6 +17,9 @@ let filtroPedidosPendientesActivo = false;
 // Prepara seguridad, pedidos, productos, stock, venta manual y eventos del admin.
 function iniciarAdmin() {
     if (!obtenerUsuarioActivo() || obtenerUsuarioActivo().rol !== "admin") { window.location = "login.html"; return; }
+    actualizarFormularioAltaProducto();
+    document.querySelector("#tipoAltaProducto").addEventListener("change", actualizarFormularioAltaProducto);
+    document.querySelector("#stockEsenciaNueva").addEventListener("change", actualizarEstadoEsenciaNueva);
     prepararMenuAdmin();
     prepararAtajosDashboard();
     mostrarDashboardAdmin();
@@ -725,6 +732,10 @@ function prepararProductosPedidoEditado() {
         });
     }
 
+    for (const [indice, esencia] of obtenerCatalogoEsenciasGuardado().entries()) {
+        const stock = obtenerStockEsencia('general', indice);
+        if (esenciaTieneStockBajo(stock)) productos.push({nombre: 'Esencia: ' + esencia.nombre, stock, estadoEsencia: obtenerEstadoStockEsencia(stock)});
+    }
     return productos;
 }
 
@@ -1026,7 +1037,7 @@ function armarStockBajoDashboard(productos) {
         html = "<div class='dashboard-lista'>";
 
         for (let i = 0; i < productos.length && i < 4; i++) {
-            let estado = obtenerEstadoStock(productos[i].stock);
+            let estado = productos[i].estadoEsencia || obtenerEstadoStock(productos[i].stock);
 
             html += `
                 <article class="dashboard-item">
@@ -1045,69 +1056,160 @@ function armarStockBajoDashboard(productos) {
     return html;
 }
 
-// Muestra la tabla editable de productos y stock.
+// Muestra el desplegable para editar un producto por vez.
 async function mostrarProductosAdmin() {
-    let html = `
-        <table class="tabla-admin tabla-productos-admin">
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th>Detalle</th>
-                    <th>Precio</th>
-                    <th>Stock</th>
-                    <th>Estado</th>
-                    <th>Foto</th>
-                    <th>Acción</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
+    let html = "<p class='admin-vacio'>Todavía no hay productos cargados.</p>";
 
-    for (let i = 0; i < velas.length; i++) {
-        let estado = obtenerEstadoStock(velas[i].stock);
+    if (velas.length > 0) {
+        if (productoAdminSeleccionadoId === null || buscarProductoPorId(productoAdminSeleccionadoId) === null) {
+            productoAdminSeleccionadoId = velas[0].id;
+        }
 
-        html += `
-            <tr>
-                <td><input type="text" value="${prepararTextoParaInput(velas[i].nombre)}" id="nombreEditar${velas[i].id}" class="input-tabla-admin"></td>
-                <td><textarea id="detalleEditar${velas[i].id}" class="textarea-tabla-admin">${velas[i].descripcion}</textarea></td>
-                <td><input type="text" value="${velas[i].precio}" id="precioEditar${velas[i].id}" class="input-tabla-admin input-precio-admin"></td>
-                <td><input type="text" value="${velas[i].stock}" id="stockEditar${velas[i].id}" class="input-tabla-admin input-stock-admin"></td>
-                <td><span class="stock-estado ${estado.clase}">${estado.texto}</span></td>
-                <td><input type="file" id="fotoEditar${velas[i].id}" class="input-foto-tabla" accept="image/*"></td>
-                <td class="acciones-tabla-admin">
-                    <input type="button" value="Guardar" id="guardarProducto${velas[i].id}" class="btn-tabla-admin">
-                    <input type="button" value="Eliminar" id="eliminarProducto${velas[i].id}" class="btn-tabla-admin btn-eliminar-admin">
-                </td>
-            </tr>
+        html = `
+            <details class="producto-admin-nuevo producto-admin-edicion" ${edicionProductoAdminAbierta === true ? "open" : ""}>
+                <summary>Modificación de stock</summary>
+                <div class="producto-admin-selector">
+                    <label for="selectorProductoAdmin">Elegí un producto</label>
+                    <select id="selectorProductoAdmin">
+                        ${armarOpcionesProductosAdmin()}
+                    </select>
+                </div>
+                <div id="productoSeleccionadoAdmin">
+                    ${armarProductoSeleccionadoAdmin(productoAdminSeleccionadoId)}
+                </div>
+            </details>
         `;
     }
 
-    html += `
-            </tbody>
-        </table>
-    `;
-
     document.querySelector("#contenedorProductosAdmin").innerHTML = html;
 
-    for (let i = 0; i < velas.length; i++) {
-        document.querySelector("#guardarProducto" + velas[i].id).addEventListener("click", async function () {
-            await editarProductoAdmin(velas[i].id);
+    if (velas.length > 0) {
+        conectarEventosProductoSeleccionadoAdmin(productoAdminSeleccionadoId);
+        document.querySelector(".producto-admin-edicion").addEventListener("toggle", function () {
+            edicionProductoAdminAbierta = this.open;
         });
 
-        document.querySelector("#eliminarProducto" + velas[i].id).addEventListener("click", async function () {
-            await eliminarProductoAdmin(velas[i].id);
+        document.querySelector("#selectorProductoAdmin").addEventListener("change", function () {
+            edicionProductoAdminAbierta = true;
+            productoAdminSeleccionadoId = Number(this.value);
+            document.querySelector("#productoSeleccionadoAdmin").innerHTML = armarProductoSeleccionadoAdmin(productoAdminSeleccionadoId);
+            conectarEventosProductoSeleccionadoAdmin(productoAdminSeleccionadoId);
         });
     }
+}
+
+// Arma el combo con los productos disponibles para editar.
+function armarOpcionesProductosAdmin() {
+    let html = "";
+
+    for (let i = 0; i < velas.length; i++) {
+        let seleccionado = velas[i].id === productoAdminSeleccionadoId ? "selected" : "";
+        html += `<option value="${velas[i].id}" ${seleccionado}>${prepararTextoParaTextarea(velas[i].nombre)}</option>`;
+    }
+
+    return html;
+}
+
+// Arma la tarjeta de edición del producto elegido.
+function armarProductoSeleccionadoAdmin(idProducto) {
+    let producto = buscarProductoPorId(idProducto);
+
+    if (producto === null) {
+        return "<p class='admin-vacio'>Elegí un producto para modificar.</p>";
+    }
+
+    let estado = obtenerEstadoStock(producto.stock);
+
+    return `
+        <div class="producto-admin-edicion-card">
+            <label for="nombreEditar${producto.id}">Nombre</label>
+            <input type="text" value="${prepararTextoParaInput(producto.nombre)}" id="nombreEditar${producto.id}" class="input-tabla-admin">
+
+            <label for="detalleEditar${producto.id}">Detalle</label>
+            <textarea id="detalleEditar${producto.id}" class="textarea-tabla-admin">${prepararTextoParaTextarea(producto.descripcion)}</textarea>
+
+            <label for="precioEditar${producto.id}">Precio</label>
+            <input type="text" value="${producto.precio}" id="precioEditar${producto.id}" class="input-tabla-admin input-precio-admin">
+
+            <label for="stockEditar${producto.id}">Stock</label>
+            <input type="text" value="${producto.stock}" id="stockEditar${producto.id}" class="input-tabla-admin input-stock-admin">
+
+            <label>Estado</label>
+            <span class="stock-estado ${estado.clase}">${estado.texto}</span>
+
+            <label for="fotoEditar${producto.id}">Foto</label>
+            <input type="file" id="fotoEditar${producto.id}" class="input-foto-tabla" accept="image/*">
+
+            <div class="acciones-tabla-admin producto-admin-acciones">
+                <input type="button" value="Guardar" id="guardarProducto${producto.id}" class="btn-tabla-admin">
+                <input type="button" value="Eliminar" id="eliminarProducto${producto.id}" class="btn-tabla-admin btn-eliminar-admin">
+            </div>
+        </div>
+    `;
+}
+
+// Conecta los botones de guardar y eliminar del producto elegido.
+function conectarEventosProductoSeleccionadoAdmin(idProducto) {
+    document.querySelector("#guardarProducto" + idProducto).addEventListener("click", async function () {
+        await editarProductoAdmin(idProducto);
+    });
+
+    document.querySelector("#eliminarProducto" + idProducto).addEventListener("click", async function () {
+        await eliminarProductoAdmin(idProducto);
+    });
 }
 
 // Evita que las comillas rompan los campos de texto.
 function prepararTextoParaInput(texto) {
-    return String(texto).replace(/"/g, "&quot;");
+    return String(texto).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-// Toma los datos del formulario para crear un producto.
+// Evita que el contenido guardado rompa las areas de texto.
+function prepararTextoParaTextarea(texto) {
+    return String(texto).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// Ajusta el formulario de alta según se agregue una vela vendible o una esencia interna.
+function actualizarFormularioAltaProducto() {
+    let tipo = document.querySelector("#tipoAltaProducto").value;
+    let camposVela = document.querySelectorAll(".campo-vela-alta");
+    let camposEsencia = document.querySelectorAll(".campo-esencia-alta");
+    let mostrarVela = tipo === "vela";
+
+    for (let i = 0; i < camposVela.length; i++) {
+        camposVela[i].classList.toggle("campo-oculto", mostrarVela === false);
+        camposVela[i].disabled = mostrarVela === false;
+    }
+
+    for (let i = 0; i < camposEsencia.length; i++) {
+        camposEsencia[i].classList.toggle("campo-oculto", mostrarVela === true);
+        camposEsencia[i].disabled = mostrarVela === true;
+    }
+
+    document.querySelector("#fotoProductoAdmin").required = false;
+    document.querySelector("#precioProductoAdmin").required = mostrarVela;
+    document.querySelector("#stockProductoAdminNuevo").required = mostrarVela;
+    actualizarEstadoEsenciaNueva();
+}
+
+// Actualiza la etiqueta visual del stock elegido para una esencia nueva.
+function actualizarEstadoEsenciaNueva() {
+    let estadoElemento = document.querySelector("#estadoEsenciaNueva");
+    let estado = obtenerEstadoStockEsencia(document.querySelector("#stockEsenciaNueva").value);
+
+    estadoElemento.textContent = estado.texto;
+    estadoElemento.className = "stock-estado campo-esencia-alta " + estado.clase;
+    if (document.querySelector("#tipoAltaProducto").value === "vela") estadoElemento.classList.add("campo-oculto");
+}
+
+// Toma los datos del formulario para crear una vela o una esencia.
 async function agregarProductoAdmin(evento) {
     evento.preventDefault();
+
+    if (document.querySelector("#tipoAltaProducto").value === "esencia") {
+        await guardarNuevaEsenciaAdmin();
+        return;
+    }
 
     let foto = document.querySelector("#fotoProductoAdmin").files[0];
     let mensaje = document.querySelector("#mensajeProductoAdmin");
@@ -1123,6 +1225,31 @@ async function agregarProductoAdmin(evento) {
 
         lector.readAsDataURL(foto);
     }
+}
+
+// Guarda una esencia nueva dentro del catálogo interno compartido.
+async function guardarNuevaEsenciaAdmin() {
+    let catalogo = obtenerCatalogoEsenciasGuardado();
+    let stock = obtenerStockInternoEsenciasGuardado();
+    let indice = catalogo.length;
+    let mensaje = document.querySelector("#mensajeProductoAdmin");
+
+    if (stock.general === undefined) stock.general = {};
+
+    catalogo.push({
+        nombre: document.querySelector("#nombreProductoAdmin").value,
+        detalle: document.querySelector("#detalleProductoAdmin").value
+    });
+    stock.general[indice] = document.querySelector("#stockEsenciaNueva").value;
+    esenciaSeleccionadaIndice = indice;
+
+    await guardarEstadoServidor({esenciasCatalogo: catalogo, esencias: stock});
+
+    actualizarVistaProductos();
+
+    document.querySelector("#formProductoAdmin").reset();
+    actualizarFormularioAltaProducto();
+    mensaje.innerHTML = "Esencia agregada al stock interno.";
 }
 
 // Guarda un producto nuevo con imagen, precio y stock.
@@ -1141,6 +1268,7 @@ async function guardarNuevoProductoAdmin(imagenProducto) {
     );
 
     velas.push(nuevoProducto);
+    productoAdminSeleccionadoId = nuevoProducto.id;
     await guardarProductosVelas();
     actualizarVistaProductos();
 
@@ -1181,6 +1309,7 @@ async function guardarEdicionProductoAdmin(idProducto, imagenNueva) {
     }
 
     await guardarProductosVelas();
+    edicionProductoAdminAbierta = true;
     actualizarVistaProductos();
 }
 
@@ -1196,6 +1325,8 @@ async function eliminarProductoAdmin(idProducto) {
         }
 
         await guardarProductosVelas();
+        productoAdminSeleccionadoId = velas.length > 0 ? velas[0].id : null;
+        edicionProductoAdminAbierta = velas.length > 0;
         actualizarVistaProductos();
     }
 }
@@ -1209,73 +1340,142 @@ function actualizarVistaProductos() {
     mostrarDashboardAdmin();
 }
 
-// Muestra tablas para controlar stock por esencia de latitas.
+// Muestra un único módulo para editar nombre, detalle y stock de cada esencia.
 function mostrarStockEsenciasAdmin() {
     let html = `
         <div class="stock-esencias-grid">
-            <div>
-                <h4>Latitas medianas</h4>
-                ${armarTablaEsenciasAdmin("mediana", esenciasLatitaMediana)}
-            </div>
-            <div>
-                <h4>Latitas chicas</h4>
-                ${armarTablaEsenciasAdmin("chica", esenciasLatitaChica)}
-            </div>
+            ${armarModuloEsenciasAdmin()}
         </div>
     `;
 
     document.querySelector("#contenedorStockEsencias").innerHTML = html;
 
-    agregarEventosStockEsencias("mediana", esenciasLatitaMediana);
-    agregarEventosStockEsencias("chica", esenciasLatitaChica);
+    conectarEventosModuloEsencias();
+    document.querySelector(".esencia-admin-edicion")?.addEventListener("toggle", function () { edicionEsenciaAdminAbierta = this.open; });
 }
 
-// Arma la tabla de stock de esencias para un tipo de latita.
-function armarTablaEsenciasAdmin(tipoLatita, esencias) {
-    let html = `
-        <table class="tabla-admin">
-            <thead>
-                <tr>
-                    <th>Esencia</th>
-                    <th>Stock</th>
-                    <th>Estado</th>
-                    <th>Acción</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
+// Arma el módulo desplegable para elegir y modificar una esencia.
+function armarModuloEsenciasAdmin() {
+    let esencias = obtenerCatalogoEsenciasGuardado().map(esencia => esencia.nombre);
+    let indice = obtenerIndiceEsenciaSeleccionada(esencias);
+    let html = "<p class='admin-vacio'>No hay esencias cargadas.</p>";
 
-    for (let i = 0; i < esencias.length; i++) {
-        let stock = obtenerStockEsencia(tipoLatita, i);
-        let estado = obtenerEstadoStock(stock);
-
-        html = html + `
-            <tr>
-                <td>${esencias[i]}</td>
-                <td><input type="text" value="${stock}" id="stockEsencia${tipoLatita}${i}" class="input-tabla-admin input-stock-admin"></td>
-                <td><span class="stock-estado ${estado.clase}">${estado.texto}</span></td>
-                <td><input type="button" value="Guardar" id="guardarEsencia${tipoLatita}${i}" class="btn-tabla-admin"></td>
-            </tr>
+    if (esencias.length > 0) {
+        html = `
+            <details class="producto-admin-nuevo producto-admin-edicion esencia-admin-edicion" ${edicionEsenciaAdminAbierta ? "open" : ""}>
+                <summary>Modificar stock de esencia</summary>
+                <div class="producto-admin-selector">
+                    <label for="selectorEsenciaAdmin">Elegí una esencia</label>
+                    <select id="selectorEsenciaAdmin">
+                        ${armarOpcionesEsenciasAdmin(esencias, indice)}
+                    </select>
+                </div>
+                <div id="esenciaSeleccionadaAdmin">
+                    ${armarEsenciaSeleccionadaAdmin(indice)}
+                </div>
+            </details>
         `;
     }
-
-    html = html + `
-            </tbody>
-        </table>
-    `;
 
     return html;
 }
 
-// Conecta los botones de guardar stock de cada esencia.
-async function agregarEventosStockEsencias(tipoLatita, esencias) {
-    for (let i = 0; i < esencias.length; i++) {
-        document.querySelector("#guardarEsencia" + tipoLatita + i).addEventListener("click", async function () {
-            let valor = document.querySelector("#stockEsencia" + tipoLatita + i).value;
-            await actualizarStockEsencia(tipoLatita, i, convertirNumeroSiCorresponde(valor));
-            mostrarStockEsenciasAdmin();
-        });
+// Mantiene seleccionado un índice válido de la lista única de esencias.
+function obtenerIndiceEsenciaSeleccionada(esencias) {
+    if (esenciaSeleccionadaIndice >= esencias.length) {
+        esenciaSeleccionadaIndice = 0;
     }
+
+    return esenciaSeleccionadaIndice;
+}
+
+// Arma el combo con las esencias disponibles.
+function armarOpcionesEsenciasAdmin(esencias, indiceSeleccionado) {
+    let html = "";
+
+    for (let i = 0; i < esencias.length; i++) {
+        let seleccionado = i === indiceSeleccionado ? "selected" : "";
+        html += `<option value="${i}" ${seleccionado}>${prepararTextoParaTextarea(esencias[i])}</option>`;
+    }
+
+    return html;
+}
+
+// Arma la ficha editable de la esencia elegida.
+function armarEsenciaSeleccionadaAdmin(indice) {
+    let catalogo = obtenerCatalogoEsenciasGuardado();
+    let esencia = catalogo[indice];
+    let stock = obtenerStockEsencia("general", indice);
+    let estado = obtenerEstadoStockEsencia(stock);
+    let valorSeleccionado = String(stock);
+
+    return `
+        <div class="producto-admin-edicion-card">
+            <label for="nombreEsencia${indice}">Nombre</label>
+            <input type="text" value="${prepararTextoParaInput(esencia.nombre)}" id="nombreEsencia${indice}" class="input-tabla-admin">
+
+            <label for="detalleEsencia${indice}">Detalle</label>
+            <textarea id="detalleEsencia${indice}" class="textarea-tabla-admin">${prepararTextoParaTextarea(esencia.detalle || "")}</textarea>
+
+            <label for="stockEsencia${indice}">Stock</label>
+            <select id="stockEsencia${indice}" class="input-tabla-admin input-stock-admin">
+                ${!["Sí", "No", "Queda poco"].includes(String(stock)) ? `<option value="${prepararTextoParaInput(stock)}" selected>${prepararTextoParaTextarea(stock)} (actual)</option>` : ""}
+                <option value="Sí" ${valorSeleccionado === "Sí" ? "selected" : ""}>Sí</option>
+                <option value="No" ${valorSeleccionado === "No" ? "selected" : ""}>No</option>
+                <option value="Queda poco" ${valorSeleccionado === "Queda poco" ? "selected" : ""}>Queda poco</option>
+            </select>
+
+            <label>Estado</label>
+            <span class="stock-estado ${estado.clase}">${estado.texto}</span>
+
+            <div class="acciones-tabla-admin producto-admin-acciones">
+                <input type="button" value="Guardar" id="guardarEsencia${indice}" class="btn-tabla-admin">
+            </div>
+        </div>
+    `;
+}
+
+// Conecta el selector y los botones del módulo de esencias.
+function conectarEventosModuloEsencias() {
+    let esencias = obtenerCatalogoEsenciasGuardado().map(esencia => esencia.nombre);
+
+    if (esencias.length === 0) {
+        return;
+    }
+
+    let selector = document.querySelector("#selectorEsenciaAdmin");
+    let indice = obtenerIndiceEsenciaSeleccionada(esencias);
+
+    selector.addEventListener("change", function () {
+        let nuevoIndice = Number(this.value);
+        esenciaSeleccionadaIndice = nuevoIndice;
+        document.querySelector("#esenciaSeleccionadaAdmin").innerHTML = armarEsenciaSeleccionadaAdmin(nuevoIndice);
+        conectarBotonesEsenciaSeleccionada(nuevoIndice);
+    });
+
+    conectarBotonesEsenciaSeleccionada(indice);
+}
+
+// Conecta guardar para la esencia seleccionada.
+function conectarBotonesEsenciaSeleccionada(indice) {
+    document.querySelector("#guardarEsencia" + indice).addEventListener("click", async function () {
+        await guardarEsenciaAdmin(indice);
+    });
+}
+
+// Guarda nombre, detalle y stock de la esencia seleccionada.
+async function guardarEsenciaAdmin(indice) {
+    let catalogo = obtenerCatalogoEsenciasGuardado();
+    let stock = obtenerStockInternoEsenciasGuardado();
+
+    catalogo[indice].nombre = document.querySelector("#nombreEsencia" + indice).value;
+    catalogo[indice].detalle = document.querySelector("#detalleEsencia" + indice).value;
+    stock.general[indice] = convertirNumeroSiCorresponde(document.querySelector("#stockEsencia" + indice).value);
+
+    await guardarEstadoServidor({esenciasCatalogo: catalogo, esencias: stock});
+
+    mostrarStockEsenciasAdmin();
+    mostrarDashboardAdmin();
 }
 
 // Calcula el siguiente id disponible para un producto nuevo.
@@ -1321,6 +1521,45 @@ function obtenerEstadoStock(stock) {
     }
 
     return estado;
+}
+
+// Carga los productos en el selector de venta manual.
+function normalizarStockEsenciaParaSelector(stock) {
+    let valor = "Sí";
+
+    if (stock === 0 || stock === "0" || stock === "No") {
+        valor = "No";
+    } else if (stock === "Queda poco" || (typeof stock === "number" && stock <= 3)) {
+        valor = "Queda poco";
+    }
+
+    return valor;
+}
+
+// Devuelve el estado visual del stock por esencia.
+function obtenerEstadoStockEsencia(stock) {
+    if (!["Sí", "No", "Queda poco"].includes(String(stock))) return obtenerEstadoStock(stock);
+    let valor = normalizarStockEsenciaParaSelector(stock);
+    let estado = {
+        texto: "Stock OK",
+        clase: "stock-verde"
+    };
+
+    if (valor === "No") {
+        estado.texto = "Sin stock";
+        estado.clase = "stock-rojo";
+    } else if (valor === "Queda poco") {
+        estado.texto = "Queda poco";
+        estado.clase = "stock-amarillo";
+    }
+
+    return estado;
+}
+
+// Indica si una esencia debe mostrarse como alerta del dashboard.
+function esenciaTieneStockBajo(stock) {
+    let valor = normalizarStockEsenciaParaSelector(stock);
+    return valor === "No" || valor === "Queda poco";
 }
 
 // Carga los productos en el selector de venta manual.

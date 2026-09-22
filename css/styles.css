@@ -2203,3 +2203,23 @@ html {
 #avisoConexion button { margin-top: 10px; padding: 10px 18px; border: 0; border-radius: 24px; background: #9e7db8; color: white; cursor: pointer; font: inherit; }
 #avisoConexion button[hidden] { display: none; }
 button:disabled, input[type="submit"]:disabled { opacity: .6; cursor: wait; }
+
+/* Panel compacto recuperado: alta, edición de producto y stock interno. */
+.producto-admin-nuevo { max-width: 860px; margin: 22px auto; background: rgba(156,123,190,.1); border-radius: 18px; overflow: hidden; }
+.producto-admin-nuevo summary { cursor: pointer; padding: 15px 18px; font-weight: 600; color: white; background: #9c7bbe; text-align: center; }
+.producto-admin-nuevo summary:focus-visible { outline: 3px solid #513f58; outline-offset: -4px; }
+.producto-admin-nuevo .form-producto-admin { margin: 0; padding: 20px; }
+.producto-admin-selector, .producto-admin-edicion-card { display: grid; grid-template-columns: 160px minmax(0,1fr); gap: 12px 18px; align-items: center; padding: 20px; }
+.producto-admin-selector { padding-bottom: 0; }
+.producto-admin-selector label, .producto-admin-edicion-card label { color: #7b5ba6; font-size: .88rem; font-weight: 600; }
+.producto-admin-selector select, .producto-admin-edicion-card input:not([type="button"]), .producto-admin-edicion-card textarea, .producto-admin-edicion-card select { box-sizing: border-box; width: 100%; min-width: 0; border: 1px solid rgba(74,59,53,.18); border-radius: 14px; padding: 11px 13px; font: inherit; }
+.producto-admin-edicion-card textarea { min-height: 100px; resize: vertical; }
+.producto-admin-acciones { grid-column: 2; display: flex; flex-wrap: wrap; gap: 10px; }
+.campo-oculto { display: none !important; }
+#contenedorStockEsencias .stock-esencias-grid { display: block; max-width: 860px; margin: auto; }
+.esencia-admin-edicion { width: 100%; }
+@media (max-width: 700px) {
+ .producto-admin-selector, .producto-admin-edicion-card { grid-template-columns: minmax(0,1fr); padding: 16px; }
+ .producto-admin-acciones { grid-column: 1; }
+ .producto-admin-edicion-card input, .producto-admin-edicion-card select { min-height: 44px; font-size: 16px; }
+}

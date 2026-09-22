@@ -6,6 +6,65 @@ import vm from 'node:vm';
 import { checkout, emptyState } from '../server/business.js';
 import { validateState } from '../server/business.js';
 const seed = JSON.parse(await readFile('server/seed.json','utf8'));
+test('Productos: tres desplegables, alta por tipo y edición de un solo producto', async () => {
+ const ui = await page('admin',{nombre:'Admin',email:'admin@example.com',rol:'admin'});
+ try {
+  const doc=ui.win.document;
+  assert.equal(doc.querySelectorAll('#seccionProductos table').length,0);
+  assert.equal(doc.querySelectorAll('#seccionProductos details').length,3);
+  assert.ok([...doc.querySelectorAll('#seccionProductos details')].every(item=>!item.open));
+  const selector=doc.querySelector('#selectorProductoAdmin');
+  assert.equal(selector.options.length,seed.length);
+  selector.value='2'; selector.dispatchEvent(new ui.win.Event('change'));
+  assert.equal(doc.querySelector('#nombreEditar1'),null);
+  doc.querySelector('#stockEditar2').value='12';
+  await ui.win.guardarEdicionProductoAdmin(2,null);
+  assert.equal(ui.writes.at(-1).data.productos.find(p=>p.id===2).stock,12);
+  assert.equal(doc.querySelector('#selectorProductoAdmin').value,'2');
+  assert.equal(doc.querySelector('.producto-admin-edicion').open,true);
+  const type=doc.querySelector('#tipoAltaProducto');
+  type.value='esencia'; type.dispatchEvent(new ui.win.Event('change'));
+  assert.equal(doc.querySelector('#precioProductoAdmin').disabled,true);
+  assert.equal(doc.querySelector('#stockEsenciaNueva').disabled,false);
+  doc.querySelector('#nombreProductoAdmin').value='Cedro nuevo';
+  doc.querySelector('#stockEsenciaNueva').value='Queda poco';
+  await ui.win.agregarProductoAdmin({preventDefault(){}});
+  const data=ui.writes.at(-1).data;
+  assert.equal(data.productos.length,seed.length);
+  assert.equal(data.esenciasCatalogo.at(-1).nombre,'Cedro nuevo');
+  assert.equal(data.esencias.general[11],'Queda poco');
+  validateState(data);
+  assert.equal(doc.querySelector('#selectorEsenciaAdmin').value,'11');
+  assert.equal(type.value,'vela');
+  assert.equal(doc.querySelector('#precioProductoAdmin').disabled,false);
+ } finally {ui.close();}
+});
+
+test('Esencias: abrir no guarda; editar nombre conserva cantidades y datos de ambos formatos', async () => {
+ for (const initial of [
+  {esencias:{mediana:{0:8},chica:{0:3}}},
+  {esenciasCatalogo:[{nombre:'Bamboo',detalle:'Natural'},{nombre:'Lavanda',detalle:''}],esencias:{general:{0:8,1:'No'}}}
+ ]) {
+  const ui=await page('admin',{nombre:'Admin',email:'admin@example.com',rol:'admin'},initial);
+  try {
+   assert.equal(ui.writes.length,0);
+   const doc=ui.win.document;
+   assert.equal(doc.querySelector('#stockEsencia0').value,'8');
+   doc.querySelector('#nombreEsencia0').value='Bamboo actualizado';
+   await ui.win.guardarEsenciaAdmin(0);
+   const data=ui.writes.at(-1).data;
+   assert.equal(data.esencias.general[0],8);
+   assert.equal(data.esenciasCatalogo[0].nombre,'Bamboo actualizado');
+   if (initial.esencias.chica) {
+    assert.equal(data.esencias.general[7],3);
+    assert.deepEqual(data.esencias.chica,initial.esencias.chica);
+   } else assert.equal(data.esencias.general[1],'No');
+   assert.deepEqual(data.productos,seed);
+   validateState(data);
+  } finally {ui.close();}
+ }
+});
+
 test('Admin: una venta espera al guardado de la bandeja y usa la nueva versión', async () => {
  const ui=await page('admin',{nombre:'Admin',email:'admin@example.com',telefono:'',rol:'admin'});
  try {
@@ -92,13 +151,13 @@ test('Mercado Pago: resumen, servidor y WhatsApp coinciden; cambiar medio elimin
   }
  } finally {ui.close();}
 });
-async function page(name,user) {
+async function page(name,user,initial = {}) {
  const html = await readFile(name+'.html','utf8');
  const dom = new JSDOM(html,{url:'http://localhost/'+name+'.html',runScripts:'outside-only'});
  const win = dom.window, errors = [], writes = [];
  win.structuredClone = structuredClone;
  win.alert = message => errors.push(message); win.confirm = () => true;
- let state = {usuario:user,productos:structuredClone(seed),esencias:{mediana:{},chica:{}},pedidos:[],vistos:[],version:1};
+ let state = {usuario:user,productos:structuredClone(seed),esencias:{mediana:{},chica:{}},pedidos:[],vistos:[],version:1,...initial};
  win.fetch = async (url,options) => {
   if (url === '/api/admin/state') {const body=JSON.parse(options.body); writes.push(body); state = {...state,...body.data,version:state.version+1}; return {ok:true,json:async()=>({version:state.version})};}
   return {ok:true,json:async()=>structuredClone(state)};
