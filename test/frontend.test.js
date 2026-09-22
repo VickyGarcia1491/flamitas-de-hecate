@@ -6,6 +6,36 @@ import vm from 'node:vm';
 import { checkout, emptyState } from '../server/business.js';
 import { validateState } from '../server/business.js';
 const seed = JSON.parse(await readFile('server/seed.json','utf8'));
+const pedidoNotificacion = {id:90,estado:'Nuevo',fechaISO:'2026-09-21',cliente:{nombre:'Prueba',email:'prueba@example.com'},productos:[],entrega:{metodo:'Retiro'},total:0};
+test('Bandeja: abre aun si falla marcar leído y mantiene las notificaciones', async () => {
+ const ui=await page('admin',{nombre:'Admin',rol:'admin'},{pedidos:[pedidoNotificacion]});
+ try {
+  ui.win.fetch=async()=>{throw new Error('Fallo de conexión de prueba');};
+  await ui.win.mostrarPedidosPendientesDesdeBandeja();
+  assert.match(ui.win.document.querySelector('#contenedorPedidos').textContent,/Pedido #90/);
+  assert.equal(ui.win.obtenerPedidosPendientesNoVistos().length,1);
+  assert.match(ui.win.document.querySelector('#avisoGuardadoServidor').textContent,/Fallo de conexión de prueba/);
+  await ui.win.cambiarEstadoPedido(90,'Entregado');
+  assert.equal(ui.win.obtenerPedidos()[0].estado,'Nuevo');
+  assert.equal(ui.win.document.querySelector('#contenedorPedidos select').value,'Nuevo');
+  assert.match(ui.win.document.querySelector('#avisoGuardadoServidor').textContent,/Fallo de conexión de prueba/);
+ } finally {ui.close();}
+});
+test('Bandeja y estado envían solo lo editado; un rechazo explícito no bloquea cambios siguientes', async () => {
+ const ui=await page('admin',{nombre:'Admin',rol:'admin'},{pedidos:[pedidoNotificacion]});
+ try {
+  const fetchOriginal=ui.win.fetch;
+  ui.win.fetch=async()=>({ok:false,status:413,json:async()=>({error:'Solicitud demasiado grande'})});
+  await ui.win.mostrarPedidosPendientesDesdeBandeja();
+  ui.win.fetch=fetchOriginal;
+  await ui.win.mostrarPedidosPendientesDesdeBandeja();
+  assert.deepEqual(Object.keys(ui.writes.at(-1).sentData),['vistos']);
+  await ui.win.cambiarEstadoPedido(90,'Entregado');
+  assert.deepEqual(Object.keys(ui.writes.at(-1).sentData),['pedidos']);
+  assert.equal(ui.win.obtenerPedidos()[0].estado,'Entregado');
+  assert.deepEqual(ui.writes.at(-1).data.productos,seed);
+ } finally {ui.close();}
+});
 test('Productos: tres desplegables, alta por tipo y edición de un solo producto', async () => {
  const ui = await page('admin',{nombre:'Admin',email:'admin@example.com',rol:'admin'});
  try {
@@ -159,7 +189,7 @@ async function page(name,user,initial = {}) {
  win.alert = message => errors.push(message); win.confirm = () => true;
  let state = {usuario:user,productos:structuredClone(seed),esencias:{mediana:{},chica:{}},pedidos:[],vistos:[],version:1,...initial};
  win.fetch = async (url,options) => {
-  if (url === '/api/admin/state') {const body=JSON.parse(options.body); writes.push(body); state = {...state,...body.data,version:state.version+1}; return {ok:true,json:async()=>({version:state.version})};}
+  if (url === '/api/admin/state') {const body=JSON.parse(options.body); state = {...state,...body.data,version:state.version+1}; writes.push({...body,sentData:body.data,data:structuredClone(state)}); return {ok:true,json:async()=>({version:state.version})};}
   return {ok:true,json:async()=>structuredClone(state)};
  };
  win.addEventListener('error',event=>errors.push(event.error?.message));

@@ -348,10 +348,16 @@ async function cambiarEstadoPedido(idPedido, nuevoEstado) {
         }
     }
 
-    await guardarPedidos(pedidos);
-    mostrarDashboardAdmin();
-    actualizarBandejaPedidos();
-    mostrarPedidosAdmin();
+    try {
+        await guardarPedidos(pedidos);
+        mostrarDashboardAdmin();
+        actualizarBandejaPedidos();
+    } catch (error) {
+        mostrarAvisoGuardado(error.message);
+    } finally {
+        // Mostrar el estado confirmado, no dejar "Entregado" si no se guardó.
+        mostrarPedidosAdmin();
+    }
 }
 
 // Muestra dirección, ciudad y referencia solo si el pedido es con envío.
@@ -880,10 +886,14 @@ async function mostrarPedidosPendientesDesdeBandeja() {
     filtroPedidosPendientesActivo = true;
     document.querySelector("#filtroFechaPedidos").value = "";
     document.querySelector("#filtroMesPedidos").value = "";
-    await marcarPedidosPendientesComoVistos();
-    actualizarBandejaPedidos();
     mostrarSeccionAdmin("pedidos");
     mostrarPedidosAdmin();
+    try {
+        await marcarPedidosPendientesComoVistos();
+        actualizarBandejaPedidos();
+    } catch (error) {
+        mostrarAvisoGuardado('Los pedidos están visibles, pero no pudimos marcarlos como leídos. ' + error.message);
+    }
 }
 
 // Quita el filtro de pendientes para volver al historial completo.

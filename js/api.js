@@ -4,7 +4,10 @@ async function api(url, method = 'GET', body, timeoutMs = 75000) {
  const timeout = setTimeout(() => controller.abort(), timeoutMs);
  try {
  const response = await fetch(url, {method, signal: controller.signal, credentials: 'same-origin', headers: {'Content-Type': 'application/json', 'X-Flamitas': '1'}, ...(body === undefined ? {} : {body: JSON.stringify(body)})});
- const data = await response.json().catch(() => { throw new Error('La tienda todavía no está disponible. Intentá nuevamente en un momento.'); });
+ const data = await response.json().catch(() => {
+  const mensajes = {401: 'La sesión venció o el sitio requiere acceso. Volvé a ingresar.', 403: 'El servidor no autorizó este cambio.', 413: 'El cambio supera el tamaño que admite el servidor.', 429: 'Hay demasiadas solicitudes. Esperá un momento antes de intentar otra vez.'};
+  throw Object.assign(new Error(mensajes[response.status] || 'La tienda todavía no está disponible. Intentá nuevamente en un momento.'), {status: response.status});
+ });
  if (!response.ok) throw Object.assign(new Error(data.error || 'No se pudo completar la operación.'), {status: response.status});
  return data;
  } catch(error) {
@@ -20,24 +23,30 @@ async function cargarDatosServidor(timeoutMs) {
 }
 let colaGuardados = Promise.resolve();
 let estadoNecesitaRevision = false;
+let ultimoErrorGuardado = '';
 function guardarEstadoServidor(cambios) {
  // Capturar la intención antes de esperar, sin compartir objetos mutables con el formulario.
  const copia = structuredClone(cambios);
  const base = structuredClone(datosServidor);
  const operacion = colaGuardados.then(async () => {
- if (estadoNecesitaRevision) throw new Error('Revisá los datos del servidor con el botón Recargar panel antes de guardar de nuevo.');
+ if (estadoNecesitaRevision) throw new Error(ultimoErrorGuardado + ' Revisá los datos del servidor con el botón Recargar panel antes de guardar de nuevo.');
  try {
   // No mezclar dos ediciones distintas de la misma colección basadas en datos viejos.
   for (const key of Object.keys(copia)) {
    if (JSON.stringify(base[key]) !== JSON.stringify(datosServidor[key])) throw new Error('Estos datos cambiaron durante otro guardado.');
   }
   const data = {productos: datosServidor.productos, esencias: datosServidor.esencias, esenciasCatalogo: datosServidor.esenciasCatalogo, pedidos: datosServidor.pedidos, vistos: datosServidor.vistos, ...copia};
-  const result = await api('/api/admin/state', 'PUT', {version: datosServidor.version, data});
+  // El servidor combina estos campos con el estado actual dentro de la transacción.
+  // Marcar leído o cambiar un pedido no debe volver a subir las fotos del catálogo.
+  const result = await api('/api/admin/state', 'PUT', {version: datosServidor.version, data: copia});
   datosServidor = {...datosServidor, ...structuredClone(data), version: result.version};
+  ultimoErrorGuardado = '';
+  document.querySelector('#avisoGuardadoServidor')?.remove();
  } catch(error) {
-  estadoNecesitaRevision = true;
+  ultimoErrorGuardado = error.message;
+  estadoNecesitaRevision = ![400, 401, 403, 413, 422, 429].includes(error.status);
   mostrarAvisoGuardado(error.message);
-  throw new Error(error.message + ' Revisá los pedidos guardados antes de repetir la venta.');
+  throw new Error(error.message + (estadoNecesitaRevision ? ' Revisá los datos guardados antes de repetir el cambio.' : ' El servidor rechazó el cambio.'));
  }
  });
  colaGuardados = operacion.catch(() => {});
