@@ -1,0 +1,6 @@
+[build]
+  command = "npm run build:static"
+  publish = "public-static"
+
+[build.environment]
+  NODE_VERSION = "22"
