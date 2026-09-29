@@ -12,5 +12,5 @@ for (const name of ['manifest.webmanifest', 'icon.svg', 'sw.js']) await copyFile
 for (const name of ['css', 'js', 'fonts', 'img']) await cp(path.join(root, name), path.join(output, name), {recursive: true});
 // Proxy del mismo origen: mantiene cookies HttpOnly sin cookies de terceros.
 await writeFile(path.join(output, '_redirects'), '/api/* https://flamitas-web.onrender.com/api/:splat 200!\n');
-await writeFile(path.join(output, '_headers'), '/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n  X-Frame-Options: SAMEORIGIN\n/sw.js\n  Cache-Control: no-cache\n');
+await writeFile(path.join(output, '_headers'), '/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n  X-Frame-Options: SAMEORIGIN\n/sw.js\n  Cache-Control: no-cache\n/manifest.webmanifest\n  Content-Type: application/manifest+json\n  Cache-Control: no-cache\n');
 console.log('Sitio público generado en public-static. Listo para publicar en Netlify.');

@@ -13,6 +13,9 @@ function inicio() {
     for (let i = 0; i < links.length; i++) {
         links[i].addEventListener("click", cerrarMenu);
     }
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape') cerrarMenu();
+    });
 }
 
 
@@ -28,6 +31,7 @@ function toggleMenu() {
     } else {
         menu.classList.add("active");
     }
+    document.querySelector('#menuToggle')?.setAttribute('aria-expanded', String(menu.classList.contains('active')));
 }
 
 
@@ -35,4 +39,5 @@ function toggleMenu() {
 function cerrarMenu() {
     let menu = document.querySelector("#menuLinks");
     menu.classList.remove("active");
+    document.querySelector('#menuToggle')?.setAttribute('aria-expanded', 'false');
 }

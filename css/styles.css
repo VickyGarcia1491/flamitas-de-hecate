@@ -2216,6 +2216,22 @@ html {
 #avisoConexion button[hidden] { display: none; }
 button:disabled, input[type="submit"]:disabled { opacity: .6; cursor: wait; }
 
+/* Inicio móvil: estas reglas prevalecen sobre el layout de escritorio. */
+@media (max-width: 768px) {
+  .about { grid-template-columns: minmax(0, 1fr); padding: 0; }
+  .about-texto { padding: 32px 24px; min-width: 0; text-align: left; }
+  .about-texto p { font-size: 1rem; line-height: 1.7; }
+  .about-imagen { min-height: 0; }
+  .about-imagen img { height: auto; min-height: 0; }
+  .menu nav:has(#menuToggle) { min-height: 44px; }
+  #menuToggle { top: 0; right: 8px; width: 44px; height: 44px; border: 0; padding: 9px; background: transparent; justify-content: center; }
+  .menu #menuLinks { display: none; position: absolute; top: 56px; right: 0; width: min(280px, calc(100vw - 16px)); box-sizing: border-box; padding: 16px; background: #faf5fc; border-radius: 0 0 16px 16px; box-shadow: 0 8px 18px #0002; flex-direction: column; gap: 4px; }
+  .menu #menuLinks.active { display: flex; }
+  .menu #menuLinks a { display: block; padding: 14px; }
+  #avisoConexion { padding: 10px 16px; }
+  #avisoConexion p { font-size: 13px; }
+}
+
 /* Panel compacto recuperado: alta, edición de producto y stock interno. */
 .producto-admin-nuevo { max-width: 860px; margin: 22px auto; background: rgba(156,123,190,.1); border-radius: 18px; overflow: hidden; }
 .producto-admin-nuevo summary { cursor: pointer; padding: 15px 18px; font-weight: 600; color: white; background: #9c7bbe; text-align: center; }
