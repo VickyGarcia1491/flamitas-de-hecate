@@ -2263,7 +2263,7 @@ button:disabled, input[type="submit"]:disabled { opacity: .6; cursor: wait; }
 /* Contacto directo, disponible incluso mientras conecta el servidor. */
 .whatsapp-flotante {
  position: fixed; right: max(18px, env(safe-area-inset-right));
- bottom: max(18px, env(safe-area-inset-bottom)); z-index: 90;
+ bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 90;
  display: flex; align-items: center; justify-content: center;
  width: 56px; height: 56px; border-radius: 50%;
  background: #128c4a; color: #fff; box-shadow: 0 4px 16px #0003;
@@ -2272,5 +2272,5 @@ button:disabled, input[type="submit"]:disabled { opacity: .6; cursor: wait; }
 .whatsapp-flotante svg { width: 30px; height: 30px; }
 .whatsapp-flotante:hover { background: #0b703a; }
 .whatsapp-flotante:focus-visible { outline: 3px solid #4a3b35; outline-offset: 4px; }
-body:has(.whatsapp-flotante) { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
+body:has(.whatsapp-flotante) { padding-bottom: calc(144px + env(safe-area-inset-bottom)); }
 body:has(.panel-carrito.active, .modal-latitas.active, .modal-entrega.active) .whatsapp-flotante { visibility: hidden; }
