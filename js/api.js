@@ -51,6 +51,12 @@ function guardarEstadoServidor(cambios) {
    result = await api('/api/admin/state', 'PUT', {version: datosServidor.version, data});
   }
   datosServidor = {...datosServidor, ...data, version: result.version};
+  if (result.productos) {
+   datosServidor.productos = result.productos;
+   datosServidor.esencias = result.esencias;
+   if (typeof velas !== 'undefined') velas = structuredClone(result.productos);
+   if (typeof actualizarVistaProductos === 'function') actualizarVistaProductos();
+  }
   ultimoErrorGuardado = '';
   document.querySelector('#avisoGuardadoServidor')?.remove();
  } catch(error) {

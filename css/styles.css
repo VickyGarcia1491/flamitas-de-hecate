@@ -2251,3 +2251,11 @@ button:disabled, input[type="submit"]:disabled { opacity: .6; cursor: wait; }
  .producto-admin-acciones { grid-column: 1; }
  .producto-admin-edicion-card input, .producto-admin-edicion-card select { min-height: 44px; font-size: 16px; }
 }
+
+/* Respetar el estado oculto incluso cuando el menú usa display:flex/block. */
+[hidden] { display: none !important; }
+.menu li:has(> [hidden]) { display: none; }
+/* Fotos cuadradas y tarjetas sin altura vacía reservada. */
+.gallery-grid .producto img { width: 100%; max-width: 190px; height: auto; aspect-ratio: 1 / 1; object-fit: cover; }
+.gallery-grid .producto { min-height: 0; }
+.gallery-grid .producto p:first-of-type { min-height: 0; }

@@ -98,6 +98,23 @@ test('PostgreSQL: sesiones, permisos, pedidos, concurrencia y persistencia', asy
   const data = (await request('/api/bootstrap','GET',null,adminCookie)).data;
   assert.equal(data.pedidos.length,2); assert.equal(data.productos[0].stock,0);
  });
+ await t.test('Cancelación y reactivación persisten stock atómicamente', async () => {
+  let state=(await request('/api/bootstrap','GET',null,adminCookie)).data;
+  const original=state.productos[0].stock;
+  const orders=structuredClone(state.pedidos);orders.find(p=>p.id===order.id).estado='Cancelado';
+  const saved=await request('/api/admin/state','PUT',{version:state.version,data:{pedidos:orders}},adminCookie);
+  assert.equal(saved.status,200);assert.equal(saved.data.productos[0].stock,original+2);
+  state=(await request('/api/bootstrap','GET',null,adminCookie)).data;
+  const repeated=await request('/api/admin/state','PUT',{version:state.version,data:{pedidos:state.pedidos}},adminCookie);assert.equal(repeated.status,200);
+  state=(await request('/api/bootstrap','GET',null,adminCookie)).data;assert.equal(state.productos[0].stock,original+2);
+  const bad=structuredClone(state.pedidos);const changed=bad.find(p=>p.id===order.id);changed.estado='Nuevo';changed.productos[0].cantidad=999;
+  assert.equal((await request('/api/admin/state','PUT',{version:state.version,data:{pedidos:bad}},adminCookie)).status,422);
+  const after=(await request('/api/bootstrap','GET',null,adminCookie)).data;assert.equal(after.version,state.version);assert.equal(after.pedidos.find(p=>p.id===order.id).estado,'Cancelado');
+  const restored=structuredClone(state.pedidos);restored.find(p=>p.id===order.id).estado='Nuevo';
+  assert.equal((await request('/api/admin/state','PUT',{version:state.version,data:{pedidos:restored}},adminCookie)).status,200);
+  assert.equal((await request('/api/bootstrap','GET',null,adminCookie)).data.productos[0].stock,original);
+ });
+
 });
 
 test('El panel conserva lecturas sincrónicas al usar la API', async () => {

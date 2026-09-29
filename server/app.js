@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { hashPassword, verifyPassword, tokenHash, newToken, fail, text, email, password, validateTree } from './security.js';
-import { emptyState, validateState, checkout } from './business.js';
+import { emptyState, validateState, checkout, reconcileOrderStock } from './business.js';
 import {initializePush, createPushService, validateSubscription} from './push.js';
 const root = fileURLToPath(new URL('../', import.meta.url));
 export async function initialize(db, config) {
@@ -98,9 +98,12 @@ export function createApp(db, config = {}, dependencies = {}) {
       if (current.version !== req.body.version) fail('Los datos cambiaron en otra sesión. Recargá la página y repetí el cambio.', 409);
       // Conservar campos introducidos por otras versiones que un cliente antiguo no envía.
       if (!req.body.data || typeof req.body.data !== 'object' || Array.isArray(req.body.data)) fail('Formato de datos inválido.');
-      const data = {...current.data, ...req.body.data};
+      const data = structuredClone({...current.data, ...req.body.data});
       validateState(data);
-      return (await client.query('UPDATE business_state SET data=$1,version=version+1 WHERE id=1 RETURNING version', [JSON.stringify(data)])).rows[0];
+      const stockChanged = reconcileOrderStock(current.data, data);
+      validateState(data);
+      const saved = (await client.query('UPDATE business_state SET data=$1,version=version+1 WHERE id=1 RETURNING version', [JSON.stringify(data)])).rows[0];
+      return {...saved, ...(stockChanged ? {productos: data.productos, esencias: data.esencias} : {})};
     }));
   });
   app.post('/api/orders', auth, async (req, res) => {

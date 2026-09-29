@@ -22,39 +22,25 @@ function iniciarUsuarios() {
 }
 // Muestra datos del usuario en el menú y ajusta links según el rol.
 function mostrarUsuarioEnMenu() {
-    let usuario = obtenerUsuarioActivo();
-
-    if (document.querySelector("#nombreUsuario") !== null && usuario !== null) {
-        document.querySelector("#nombreUsuario").textContent = usuario.nombre;
-    }
-
-    if (document.querySelector("#linkAdmin") !== null) {
-        if (usuario === null || usuario.rol !== "admin") {
-            document.querySelector("#linkAdmin").style.display = "none";
-        }
-    }
-
-    if (document.querySelector("#linkIngresar") !== null) {
-        if (usuario !== null) {
-            document.querySelector("#linkIngresar").style.display = "none";
-        }
-    }
-
-    if (document.querySelector("#linkContacto") !== null) {
-        if (usuario !== null && usuario.rol === "admin") {
-            document.querySelector("#linkContacto").style.display = "none";
-        }
-    }
-
-    if (document.querySelector("#linkMiCuenta") !== null) {
-        if (usuario === null || usuario.rol === "admin") {
-            document.querySelector("#linkMiCuenta").style.display = "none";
-        }
-    }
-
-    if (document.querySelector("#btnCerrarSesion") !== null) {
-        if (usuario === null) {
-            document.querySelector("#btnCerrarSesion").style.display = "none";
-        }
-    }
+ const usuario = obtenerUsuarioActivo();
+ const visible = (selector, mostrar) => document.querySelectorAll(selector).forEach(elemento => {
+  elemento.hidden = !mostrar;
+  if (elemento.parentElement?.tagName === 'LI') elemento.parentElement.hidden = !mostrar;
+ });
+ visible('a[href="login.html"]', !usuario);
+ visible('a[href="admin.html"]', usuario?.rol === 'admin');
+ visible('a[href="mi-cuenta.html"]', !!usuario && usuario.rol !== 'admin');
+ visible('#btnCerrarSesion', !!usuario);
+ visible('#linkContacto', usuario?.rol !== 'admin');
+ const nombre = document.querySelector('#nombreUsuario');
+ if (nombre) nombre.textContent = usuario?.nombre || '';
+ // Inicio y contacto también ofrecen un destino útil al usuario que ya ingresó.
+ const menu = document.querySelector('.menu-links');
+ const destino = usuario?.rol === 'admin' ? 'admin.html' : 'mi-cuenta.html';
+ if (usuario && menu && !menu.querySelector('a[href="' + destino + '"]')) {
+  const item = document.createElement('li');
+  const enlace = document.createElement('a');
+  enlace.href = destino; enlace.textContent = usuario.rol === 'admin' ? 'Admin' : 'Mi cuenta';
+  item.append(enlace); menu.append(item);
+ }
 }

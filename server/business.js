@@ -74,3 +74,51 @@ export function checkout(state, body, user, id) {
   state.pedidos.push(order);
   return order;
 }
+
+// Ajusta solo pedidos existentes: las ventas nuevas ya descuentan al crearse.
+// Borrar historial no equivale a cancelar una venta.
+export function reconcileOrderStock(previous, next) {
+ const deltas = new Map();
+ const oldOrders = new Map(previous.pedidos.map(order => [order.id, order]));
+ function add(order, sign) {
+  if (order.estado === 'Cancelado') return;
+  for (const line of order.productos) {
+   const identity = JSON.stringify([line.id ?? line.nombre, line.tipoLatita || '', line.indiceEsencia ?? '']);
+   const key = identity + (order.cliente.email === 'Venta manual' ? ':manual' : ':web');
+   const entry = deltas.get(key) || {line, manual: order.cliente.email === 'Venta manual', quantity: 0};
+   entry.quantity += sign * line.cantidad;
+   deltas.set(key, entry);
+  }
+ }
+ for (const order of next.pedidos) {
+  const old = oldOrders.get(order.id);
+  if (old) { add(old, 1); add(order, -1); }
+ }
+ const changes = new Map();
+ for (const {line, manual, quantity} of deltas.values()) {
+  if (!quantity) continue;
+  let product;
+  if (line.tipoLatita) product = next.productos.find(p => p.id === (line.tipoLatita === 'mediana' ? 4 : 5));
+  else if (line.id !== undefined) product = next.productos.find(p => p.id === line.id);
+  else {
+   const matches = next.productos.filter(p => p.nombre === line.nombre);
+   if (matches.length === 1) product = matches[0];
+  }
+  if (!product) fail('No se puede identificar el producto del pedido para ajustar su stock: ' + line.nombre, 422);
+  let owner = product, field = 'stock', key = 'producto:' + product.id;
+  if (line.tipoLatita && !manual && !previous.esencias.general) {
+   if (!aromas[line.tipoLatita]?.[line.indiceEsencia]) fail('Esencia inválida.', 422);
+   owner = next.esencias[line.tipoLatita]; field = line.indiceEsencia;
+   key = line.tipoLatita + ':' + field;
+  }
+  if (!owner || typeof owner[field] !== 'number') continue;
+  const change = changes.get(key) || {owner, field, quantity: 0, name: line.nombre};
+  change.quantity += quantity; changes.set(key, change);
+ }
+ // Validar todo antes de aplicar; la API guarda pedido y stock en una transacción.
+ for (const change of changes.values()) {
+  if (change.owner[change.field] + change.quantity < 0) fail('No hay stock suficiente de ' + change.name + '. No se modificó el pedido.', 422);
+ }
+ for (const change of changes.values()) change.owner[change.field] += change.quantity;
+ return changes.size > 0;
+}

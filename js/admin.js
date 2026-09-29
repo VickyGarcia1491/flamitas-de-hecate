@@ -1837,6 +1837,7 @@ async function crearPedidoVentaManual() {
 
     for (let i = 0; i < productosVentaManual.length; i++) {
         productos.push({
+            id: productosVentaManual[i].id,
             nombre: productosVentaManual[i].nombre,
             precio: productosVentaManual[i].precio,
             cantidad: productosVentaManual[i].cantidad,

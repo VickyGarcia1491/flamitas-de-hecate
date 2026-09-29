@@ -25,7 +25,7 @@ async function conectarTienda() {
  conexionEnCurso = true;
  reintentarConexion.hidden = true;
  avisoConexion.dataset.estado = 'conectando';
- textoConexion.textContent = 'Estamos conectando la tienda… Podés recorrer Flamitas mientras esperamos.';
+ textoConexion.textContent = 'Estamos conectando la tienda…';
  try {
   // Solo repetimos la lectura inicial; nunca una compra, registro o guardado.
   for (let intento = 0; ; intento++) {
