@@ -24,6 +24,11 @@ function iniciarUsuarios() {
 }
 // Muestra datos del usuario en el menú y ajusta links según el rol.
 function mostrarUsuarioEnMenu() {
+ // Netlify puede convertir enlaces HTML en rutas sin extensión.
+ document.querySelectorAll("a[href]").forEach(a => {
+  const match=/^(?:\.\/|\/)?(login|admin|mi-cuenta)(?:\.html)?\/?$/.exec(a.getAttribute("href"));
+  if(match)a.setAttribute("href",match[1]+".html");
+ });
  const usuario = obtenerUsuarioActivo();
  const visible = (selector, mostrar) => document.querySelectorAll(selector).forEach(elemento => {
   elemento.hidden = !mostrar;

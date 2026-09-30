@@ -28,3 +28,5 @@ test('Escape no falla sin menú desplegable y los enlaces dinámicos lo cierran'
   }finally{dom.window.close()}
  }
 });
+
+test('Menú admite enlaces sin extensión generados por Netlify',async()=>{for(const user of [null,{rol:'cliente',nombre:'Ana'},{rol:'admin',nombre:'Admin'}]){const dom=new JSDOM('<ul class="menu-links"><li><a href="/login">Ingresar</a></li><li><a href="/mi-cuenta" hidden>Cuenta</a></li><li><a href="/admin" hidden>Admin</a></li></ul>',{runScripts:'outside-only'});try{dom.window.datosServidor={usuario:user};vm.runInContext(await readFile('js/usuarios.js','utf8'),dom.getInternalVMContext());dom.window.mostrarUsuarioEnMenu();const d=dom.window.document;assert.equal(d.querySelector('a[href="login.html"]').hidden,!!user);assert.equal(d.querySelector('a[href="admin.html"]').hidden,user?.rol!=='admin');assert.equal(d.querySelectorAll('a[href="'+(user?.rol==='admin'?'admin.html':'mi-cuenta.html')+'"]').length,1);}finally{dom.window.close()}}});
