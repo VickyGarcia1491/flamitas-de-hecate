@@ -1,13 +1,3 @@
-// Compatibilidad con instalaciones antiguas que abrían directamente la tienda.
-(function abrirInicioApp(){
- const instalada=window.matchMedia?.('(display-mode: standalone)').matches||navigator.standalone===true;
- if(!instalada)return;
- try{
-  const iniciada=sessionStorage.getItem('flamitasAppAbierta');
-  sessionStorage.setItem('flamitasAppAbierta','1');
-  if(!iniciada&&!document.referrer&&/^\/tienda(?:\.html)?\/?$/.test(location.pathname))location.replace('/index.html');
- }catch{}
-})();
 // Espera a que cargue la página de inicio antes de activar el menú.
 window.addEventListener("load", inicio);
 

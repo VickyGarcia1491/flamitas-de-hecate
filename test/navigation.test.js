@@ -32,9 +32,9 @@ test('Escape no falla sin menú desplegable y los enlaces dinámicos lo cierran'
 test('Menú admite enlaces sin extensión generados por Netlify',async()=>{for(const user of [null,{rol:'cliente',nombre:'Ana'},{rol:'admin',nombre:'Admin'}]){const dom=new JSDOM('<ul class="menu-links"><li><a href="/login">Ingresar</a></li><li><a href="/mi-cuenta" hidden>Cuenta</a></li><li><a href="/admin" hidden>Admin</a></li></ul>',{runScripts:'outside-only'});try{dom.window.datosServidor={usuario:user};vm.runInContext(await readFile('js/usuarios.js','utf8'),dom.getInternalVMContext());dom.window.mostrarUsuarioEnMenu();const d=dom.window.document;assert.equal(d.querySelector('a[href="login.html"]').hidden,!!user);assert.equal(d.querySelector('a[href="admin.html"]').hidden,user?.rol!=='admin');assert.equal(d.querySelectorAll('a[href="'+(user?.rol==='admin'?'admin.html':'mi-cuenta.html')+'"]').length,1);}finally{dom.window.close()}}});
 
 test('Entrada instalada antigua abre Inicio sin impedir navegación a tienda ni notificaciones',async()=>{
- const source=(await readFile('js/main.js','utf8')).split('})();')[0]+'})();';
- for(const [installed,path,started,referrer,expected] of [[true,'/tienda.html',false,'','/index.html'],[true,'/tienda',false,'','/index.html'],[true,'/tienda.html',true,'',null],[false,'/tienda.html',false,'',null],[true,'/admin.html',false,'',null],[true,'/tienda.html',false,'https://flamitas.example/index.html',null]]){
-  let redirected=null;const context={window:{matchMedia:()=>({matches:installed})},navigator:{},document:{referrer},location:{pathname:path,replace:v=>redirected=v},sessionStorage:{getItem:()=>started?'1':null,setItem(){}}};vm.runInNewContext(source,context);assert.equal(redirected,expected);
+ const source=(await readFile('js/iniciar.js','utf8')).split('})();')[0]+'})();';
+ for(const [installed,path,started,referrer,expected] of [[true,'/tienda.html',false,'','/index.html'],[true,'/tienda',false,'','/index.html'],[true,'/tienda.html',true,'','/index.html'],[false,'/tienda.html',false,'','/index.html'],[true,'/admin.html',false,'',null],[true,'/tienda.html',false,'https://flamitas.example/index.html',null]]){
+  let redirected=null;const context={URL,window:{matchMedia:()=>({matches:installed})},navigator:{},document:{referrer},location:{origin:'https://flamitas.example',pathname:path,replace:v=>redirected=v},sessionStorage:{getItem:()=>started?'1':null,setItem(){}}};vm.runInNewContext(source,context);assert.equal(redirected,expected);
  }
 });
 test('Login de cliente, administrador y registro abren Inicio conservando carrito',async()=>{
@@ -44,3 +44,5 @@ test('Login de cliente, administrador y registro abren Inicio conservando carrit
  }
 });
 
+
+ test('Tienda carga el controlador de entrada compartido',async()=>{const html=await readFile('tienda.html','utf8');assert.match(html,/<script src="\.\/js\/iniciar\.js"><\/script>/);});

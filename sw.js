@@ -1,4 +1,4 @@
-const CACHE_NAME = "flamitas-app-v29";
+const CACHE_NAME = "flamitas-app-v30";
 
 const APP_SHELL = [
   "/",

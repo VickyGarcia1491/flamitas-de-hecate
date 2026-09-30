@@ -1,3 +1,11 @@
+// Las instalaciones antiguas y accesos directos pueden conservar Tienda como entrada.
+// Solo redirigir la entrada externa: los enlaces internos a Tienda siguen funcionando.
+(function abrirInicioApp(){
+ if(!/^\/tienda(?:\.html)?\/?$/.test(location.pathname))return;
+ let navegacionInterna=false;
+ try{navegacionInterna=!!document.referrer&&new URL(document.referrer).origin===location.origin;}catch{}
+ if(!navegacionInterna)location.replace('/index.html');
+})();
 // La página pública ya es visible mientras el servidor se conecta.
 let tiendaLista = false;
 let conexionEnCurso = false;
