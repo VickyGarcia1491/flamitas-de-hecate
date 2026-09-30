@@ -35,3 +35,14 @@
 #seccionGastos form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin:18px 0; }#seccionGastos label { display:flex; flex-direction:column; gap:6px; font-size:.9rem; }#seccionGastos input,#seccionGastos select { width:100%; padding:10px; }#seccionGastos button { min-height:44px; border:1px solid #72518a; border-radius:8px; background:#faf6fd; color:#604176; padding:10px 16px; cursor:pointer; font:inherit; margin:6px; }#seccionGastos form>p,#cuotasGasto { grid-column:1/-1; }.finanzas-bloque { padding:18px; margin:20px 0; border:1px solid #ded1e6; border-radius:12px; }.finanzas-bloque summary { cursor:pointer; font-weight:500; }#cuotasGasto fieldset { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; border:1px solid #ded1e6; border-radius:10px; margin:12px 0; }.finanzas-item { padding:16px; border-bottom:1px solid #ded1e6; overflow-wrap:anywhere; }.saldo-negativo { color:#a33e4a!important; }.finanzas-aviso { grid-column:1/-1; background:#fff3d9; padding:14px; border-radius:10px; }#resumenFinanzas { grid-template-columns:repeat(3,minmax(0,1fr)); }#resumenFinanzas .dashboard-card strong { font-size:1.3rem; }.administracion .admin-menu-lateral { grid-auto-rows:min-content; }@media(max-width:1000px){.administracion .admin-menu-lateral { grid-template-columns:repeat(3,minmax(0,1fr)); }}@media(max-width:600px){#seccionGastos form,#cuotasGasto fieldset { grid-template-columns:minmax(0,1fr); }#resumenFinanzas { grid-template-columns:repeat(2,minmax(0,1fr)); }.administracion .admin-menu-lateral { grid-template-columns:repeat(2,minmax(0,1fr)); }}
 
 #seccionCobros button,#seccionCobros select { padding:12px; min-height:44px; margin:8px; border:1px solid #72518a; border-radius:8px; background:#faf6fd; color:#604176; font:inherit; } #seccionCobros label { display:block; }
+
+/* Finanzas: navegación y registros compactos, también en celular. */
+.finanzas-tabs,.finanzas-filtros{display:flex;gap:.65rem;flex-wrap:wrap;margin:1rem 0}
+.finanzas-tabs button[aria-pressed="true"]{background:#624868;color:white}
+[data-fin-panel][hidden]{display:none!important}
+.finanzas-tabla{overflow-x:auto}.finanzas-tabla table{width:100%;border-collapse:collapse;font-size:.92rem}
+.finanzas-tabla td,.finanzas-tabla th{text-align:left;padding:.8rem;border-bottom:1px solid #ded3e3;vertical-align:top}
+.finanzas-tabla button{margin:.2rem}.fin-estado{display:inline-block;padding:.2rem .6rem;border-radius:1rem;background:#eee7f4}
+.fin-estado.vencida{background:#ffe4dd;color:#80311f}.fin-estado.pagada{background:#e2f1e4;color:#265b30}
+#historialFinanzas details{padding:.6rem;border-bottom:1px solid #ded3e3}#historialFinanzas pre{white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:600px){#resumenFinanzas{grid-template-columns:repeat(2,minmax(0,1fr))}.finanzas-tabs button{flex:1 1 40%}.finanzas-tabla td,.finanzas-tabla th{padding:.5rem}}

@@ -18,3 +18,9 @@ Despliegue: actualizar backend con server/finance.js y schema.sql, además del s
 ## Cobros automáticos
 Desde esta versión, un pedido nuevo pagado o una transición a Pagado genera su cobro de forma transaccional. No se importan pagos históricos automáticamente: su fecha real y su inclusión en saldo inicial deben revisarse. Volver a Pendiente revierte el cobro vinculado; cambiar el total de un pedido pagado ajusta ese cobro. Cancelar un pedido pagado conserva el ingreso: registrar una devolución cuando se devuelva el dinero.
 Recordatorios de seguimiento configurables por dispositivo cada 12, 24 o 48 horas dentro del panel abierto o al volver a entrar; no son avisos push con la app cerrada ni mensajes a clientes.
+
+## Finanzas: organización y trazabilidad
+Cuatro pestañas: Resumen, Gastos, Cuotas y Movimientos. Las cuatro cifras principales distinguen caja de cobros pendientes; la reserva cubre vencidas y próximos 30 días, con el total pendiente en el detalle. El saldo inicial está en Configuración.
+La auditoría se guarda en finance_audit dentro de la transacción, con cuenta, fecha y valores anteriores/nuevos. No se inventa autoría para registros previos. Para distinguir administradoras deben usar cuentas diferentes.
+Anular exige motivo y conserva registros: en gastos mantiene pagos realizados y libera obligaciones pendientes. Reintegros reales se registran aparte. Cobros vinculados a pedidos se corrigen desde el pedido.
+Movimientos incluye pagos de gastos sin duplicarlos. Exportación CSV mensual en UYU, con cobros, gastos pagados, devoluciones, reintegros, resultado de caja, aportes, retiros y detalle. No es un cálculo de ganancia contable.

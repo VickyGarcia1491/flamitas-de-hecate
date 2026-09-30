@@ -55,3 +55,5 @@ CREATE TABLE IF NOT EXISTS payment_receipts (
 
 CREATE TABLE IF NOT EXISTS finance_state (id INTEGER PRIMARY KEY CHECK(id=1),version INTEGER NOT NULL DEFAULT 1,data JSONB NOT NULL);
 INSERT INTO finance_state(id,data) VALUES(1,'{"start":null,"opening":null,"expenses":[],"movements":[]}') ON CONFLICT DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS finance_audit(id BIGSERIAL PRIMARY KEY, at TIMESTAMPTZ NOT NULL DEFAULT now(),actor TEXT NOT NULL,change JSONB NOT NULL);

@@ -1,4 +1,4 @@
-import {validateFinance, financeSummary, validDate, syncOrderPayments} from './finance.js';
+import {validateFinance, financeSummary, validDate, syncOrderPayments, auditFinance} from './finance.js';
 import express from 'express';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
@@ -106,7 +106,7 @@ export function createApp(db, config = {}, dependencies = {}) {
       }
       validateState(data);
       const stockChanged = reconcileOrderStock(current.data, data);
-      await syncOrderPayments(client,current.data.pedidos,data.pedidos);
+      await syncOrderPayments(client,current.data.pedidos,data.pedidos,req.user);
       validateState(data);
       const saved = (await client.query('UPDATE business_state SET data=$1,version=version+1 WHERE id=1 RETURNING version', [JSON.stringify(data)])).rows[0];
       return {...saved, ...(stockChanged ? {productos: data.productos, esencias: data.esencias} : {})};
@@ -168,7 +168,7 @@ export function createApp(db, config = {}, dependencies = {}) {
       if(!order||order.estado==='Cancelado'||order.pago?.medio!=='Transferencia bancaria')fail('El pedido no puede confirmarse.',409);
       const previous=structuredClone(current.data.pedidos);
       order.pago.estado='Pagado';
-      await syncOrderPayments(client,previous,current.data.pedidos);
+      await syncOrderPayments(client,previous,current.data.pedidos,req.user);
       await client.query('UPDATE business_state SET data=$1,version=version+1 WHERE id=1',[JSON.stringify(current.data)]);
       await client.query('UPDATE payment_receipts SET reviewed_at=now(),reviewed_by=$1 WHERE order_id=$2',[req.user.id,req.params.id]);
     });res.json({ok:true});
@@ -212,7 +212,7 @@ export function createApp(db, config = {}, dependencies = {}) {
     if(!order||order.estado==='Cancelado')fail('Pedido no disponible para cobrar.',409);
     if(req.body.total!==order.total)fail('El importe cambió. Actualizá y revisá el pedido.',409);
     const previous=structuredClone(current.data.pedidos);order.pago={...order.pago,estado:'Pagado'};
-    await syncOrderPayments(client,previous,current.data.pedidos);
+    await syncOrderPayments(client,previous,current.data.pedidos,req.user);
     await client.query('UPDATE business_state SET data=$1,version=version+1 WHERE id=1',[JSON.stringify(current.data)]);
     await client.query('UPDATE payment_receipts SET reviewed_at=now(),reviewed_by=$1 WHERE order_id=$2',[req.user.id,order.id]);
    });res.json({ok:true});
@@ -221,7 +221,10 @@ export function createApp(db, config = {}, dependencies = {}) {
    const current=(await db.query('SELECT data,version FROM finance_state WHERE id=1')).rows[0];
    const asOf=req.query.date||new Date().toLocaleDateString('en-CA',{timeZone:'America/Montevideo'});
    if(!validDate(asOf))fail('Fecha inválida.');
-   res.json({...current,summary:financeSummary(current.data,asOf)});
+   const history=(await db.query('SELECT id,at,actor,change FROM finance_audit ORDER BY id DESC')).rows;
+   const business=(await db.query('SELECT data FROM business_state WHERE id=1')).rows[0].data;
+   const toCollect=Math.round(business.pedidos.filter(p=>p.estado!=='Cancelado'&&p.pago?.estado!=='Pagado').reduce((n,p)=>n+p.total,0)*100)/100;
+   res.json({...current,history,toCollect,summary:financeSummary(current.data,asOf)});
   });
   app.put('/api/admin/finance',admin,async(req,res)=>{
    validateFinance(req.body.data);
@@ -236,6 +239,7 @@ export function createApp(db, config = {}, dependencies = {}) {
      const order=business.pedidos.find(p=>p.id===movement.orderId);
      if(!order||order.estado==='Cancelado'||order.pago?.estado!=='Pagado'||Math.round(order.total*100)!==Math.round(movement.amount*100))fail('Vinculá únicamente un pedido pagado, por su importe total. Para ajustes usá un movimiento separado.');
     }
+    await auditFinance(client,current.data,req.body.data,req.user);
     const result=(await client.query('UPDATE finance_state SET data=$1,version=version+1 WHERE id=1 RETURNING version',[JSON.stringify(req.body.data)])).rows[0];
     return result;
    }));
