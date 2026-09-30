@@ -1,3 +1,4 @@
+import { applyProductChanges } from '../server/business.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
@@ -91,7 +92,7 @@ test('Productos: tres desplegables, alta por tipo y edición de un solo producto
   const doc=ui.win.document;
   assert.equal(doc.querySelectorAll('#seccionProductos table').length,0);
   assert.equal(doc.querySelectorAll('#seccionProductos details').length,3);
-  assert.ok([...doc.querySelectorAll('#seccionProductos details')].every(item=>!item.open));
+  assert.equal(doc.querySelector('.producto-admin-edicion').open,true); assert.ok([...doc.querySelectorAll('#seccionProductos details:not(.producto-admin-edicion)')].every(item=>!item.open));
   const selector=doc.querySelector('#selectorProductoAdmin');
   assert.equal(selector.options.length,seed.length);
   selector.value='2'; selector.dispatchEvent(new ui.win.Event('change'));
@@ -238,7 +239,7 @@ async function page(name,user,initial = {}) {
  win.alert = message => errors.push(message); win.confirm = () => true;
  let state = {usuario:user,productos:structuredClone(seed),esencias:{mediana:{},chica:{}},pedidos:[],vistos:[],version:1,...initial};
  win.fetch = async (url,options) => {
-  if (url === '/api/admin/state') {const body=JSON.parse(options.body); state = {...state,...body.data,version:state.version+1}; writes.push({...body,sentData:body.data,data:structuredClone(state)}); return {ok:true,json:async()=>({version:state.version})};}
+  if (url.startsWith('/api/admin/state')) {const body=JSON.parse(options.body); if(body.productChanges) body.data.productos=applyProductChanges(state.productos,body.productChanges); state = {...state,...body.data,version:state.version+1}; writes.push({...body,sentData:body.data,data:structuredClone(state)}); return {ok:true,json:async()=>({version:state.version})};}
   return {ok:true,json:async()=>structuredClone(state)};
  };
  win.addEventListener('error',event=>errors.push(event.error?.message));
@@ -278,4 +279,122 @@ test('Pantallas: tienda y cuenta cargan desde el servidor',async()=>{
    if(name === 'tienda') { ui.win.agregarAlCarrito(1); assert.equal(ui.win.obtenerTotalCarrito(),350); }
   } finally {ui.close();}
  }
+});
+
+test('Editar un pedido no mezcla alertas de esencias con productos vendidos',async()=>{
+ const ui=await page('admin',{nombre:'Admin',rol:'admin'},{esencias:{general:{0:'No'}},esenciasCatalogo:[{nombre:'Bamboo',detalle:''}]});
+ try{
+  ui.run('productosPedidoEditando=[{id:1,nombre:"Vela",precio:350,cantidad:2}]');
+  const lines=ui.win.prepararProductosPedidoEditado();assert.equal(lines.length,1);assert.equal(lines[0].cantidad,2);assert.equal(lines[0].id,1);
+ }finally{ui.close()}
+});
+test('Venta manual no recorta a cero un stock insuficiente ni guarda la venta',async()=>{
+ const ui=await page('admin',{nombre:'Admin',rol:'admin'});
+ try{
+  ui.run('productosVentaManual=[{id:1,nombre:"Vela",precio:350,cantidad:2},{id:1,nombre:"Vela",precio:340,cantidad:4}]');
+  await ui.win.guardarVentaManual({preventDefault(){}});
+  assert.equal(ui.writes.length,0);assert.equal(ui.run('velas[0].stock'),5);
+  assert.match(ui.win.document.querySelector('#mensajeVentaManual').textContent,/stock suficiente/);
+ }finally{ui.close()}
+});
+test('Producto rechazado conserva los campos escritos sin contaminar el catálogo en memoria',async()=>{
+ const ui=await page('admin',{nombre:'Admin',rol:'admin'});
+ try{
+  ui.win.document.querySelector('#stockEditar1').value='-1';
+  ui.win.fetch=async()=>({ok:false,status:400,json:async()=>({error:'Stock inválido'})});
+  await assert.rejects(ui.win.guardarEdicionProductoAdmin(1,null),/Stock inválido/);
+  assert.equal(ui.run('velas[0].stock'),5);assert.equal(ui.win.document.querySelector('#stockEditar1').value,'-1');
+ }finally{ui.close()}
+});
+test('Carrito recuperado actualiza precios, limita cantidades y no inventa stock al quitar',async()=>{
+ const ui=await page('tienda',{nombre:'Ana',rol:'cliente'});
+ try{
+  ui.win.sessionStorage.setItem('carritoPendienteFlamitas',JSON.stringify([{id:1,nombre:'Viejo',precio:1,cantidad:99}]));
+  ui.win.recuperarCarritoPendiente();assert.equal(ui.run('carrito[0].cantidad'),5);assert.equal(ui.run('carrito[0].precio'),350);
+  ui.win.quitarDelCarrito(0);assert.equal(ui.run('velas[0].stock'),5);
+  ui.win.sessionStorage.setItem('carritoPendienteFlamitas','{roto');assert.doesNotThrow(()=>ui.win.recuperarCarritoPendiente());
+  assert.equal(ui.run('carrito.length'),0);
+ }finally{ui.close()}
+});
+test('Latitas muestran precio actual y comparten stock terminado entre esencias',async()=>{
+ const productos=structuredClone(seed);productos.find(p=>p.id===4).precio=390;productos.find(p=>p.id===4).stock=2;
+ const ui=await page('tienda',{nombre:'Ana',rol:'cliente'},{productos,esencias:{general:{0:99,1:99}},esenciasCatalogo:[{nombre:'Bamboo',detalle:''},{nombre:'Manzana y Canela',detalle:''}]});
+ try{
+  ui.win.abrirModalLatitas();assert.match(ui.win.document.querySelector('#contenedorEsenciasLatitas').textContent,/390/);
+  ui.win.agregarProductoAlCarrito({id:'latita-mediana-0',nombre:'Latita',precio:390,tipoLatita:'mediana',indiceEsencia:0},2);
+  assert.equal(ui.win.puedeAgregarEsencia('mediana',1,1,ui.win.obtenerStockEsencia('mediana',1)),false);
+  assert.equal(ui.win.puedeAgregarEsencia('mediana',1,0.5,99),false);
+ }finally{ui.close()}
+});
+test('Dirección de entrega y nombre entre comillas se muestran como texto',async()=>{
+ const productos=structuredClone(seed);productos[0].nombre='Vela " onload="alert(1)';
+ const ui=await page('tienda',{nombre:'Ana',rol:'cliente'},{productos});
+ try{
+  assert.equal(ui.win.document.querySelector('.producto img').getAttribute('onload'),null);
+  ui.win.document.querySelector('#metodoEntrega').value='Envío';
+  ui.win.document.querySelector('#direccionEntrega').value='<img src=x onerror=alert(1)>';
+  ui.win.actualizarResumenCheckout();assert.equal(ui.win.document.querySelector('#resumenPedidoCheckout img'),null);
+  assert.match(ui.win.document.querySelector('#resumenPedidoCheckout').textContent,/<img/);
+ }finally{ui.close()}
+});
+test('Identificador nuevo no reutiliza productos históricos ni IDs de latitas',async()=>{
+ const ui=await page('admin',{nombre:'Admin',rol:'admin'},{pedidos:[{...pedidoNotificacion,productos:[{id:55,nombre:'Anterior',cantidad:1}]}]});
+ try{assert.equal(ui.win.obtenerNuevoIdProducto(),56)}finally{ui.close()}
+});
+test('Pedido confirmado sigue confirmado aunque falle la actualización del catálogo',async()=>{
+ const ui=await page('tienda',{nombre:'Ana',rol:'cliente'});
+ try{
+  ui.win.agregarAlCarrito(1);const alerts=[];ui.win.alert=x=>alerts.push(x);
+  ui.win.fetch=async(url)=>{
+   if(url==='/api/orders')return {ok:true,json:async()=>({id:900,productos:[{nombre:'Vela',cantidad:1,subtotal:350}],total:350,pago:{subtotal:350,ajuste:0,medio:'Efectivo'},entrega:{metodo:'Retiro'}})};
+   throw Error('Servidor no responde');
+  };
+  ui.win.document.querySelector('#metodoEntrega').value='Retiro';
+  await ui.win.enviarPedidoWhatsApp({preventDefault(){},target:ui.win.document.querySelector('#formEntrega')});
+  assert.equal(ui.run('carrito.length'),0);assert.match(alerts.at(-1),/pedido quedó guardado/);
+  assert.ok(ui.win.document.querySelector('#formEntrega a[href^="https://wa.me/"]'));
+ }finally{ui.close()}
+});
+
+test('Administrador renovado: búsqueda, cambios pendientes y confirmación de guardado',async()=>{
+ const ui=await page('admin',{nombre:'Admin',rol:'admin'});
+ try {
+ const doc=ui.win.document;const search=doc.querySelector('#buscarProductoAdmin');
+ search.value='zz-no-existe';search.dispatchEvent(new ui.win.Event('input'));assert.equal(doc.querySelectorAll('.resultado-producto').length,0);
+ search.value='';search.dispatchEvent(new ui.win.Event('input'));assert.equal(doc.querySelectorAll('.resultado-producto').length,seed.length);
+ const input=doc.querySelector('#nombreEditar1');input.value='Nombre de prueba';input.dispatchEvent(new ui.win.Event('input',{bubbles:true}));
+ assert.match(doc.querySelector('#estadoEdicionProducto').textContent,/sin guardar/);
+ ui.win.confirm=()=>false;doc.querySelector('[data-producto="2"]').click();assert.equal(doc.querySelector('#selectorProductoAdmin').value,'1');assert.equal(input.value,'Nombre de prueba');
+ doc.querySelector('#guardarProducto1').click();assert.equal(input.disabled,true);
+ for(let i=0;i<30 && !doc.querySelector('#estadoEdicionProducto').textContent.includes('Cambios guardados');i++)await new Promise(r=>setTimeout(r,10));
+ assert.equal(doc.querySelector('#estadoEdicionProducto').textContent,'Cambios guardados');assert.equal(doc.querySelector('#nombreEditar1').disabled,false);assert.equal(ui.writes.at(-1).data.productos[0].nombre,'Nombre de prueba');
+ doc.querySelector('#nombreEditar1').value='Conservar ante fallo';ui.win.fetch=async()=>{throw new Error('Fallo simulado')};doc.querySelector('#guardarProducto1').click();
+ for(let i=0;i<30 && !doc.querySelector('#estadoEdicionProducto').textContent.includes('No se pudo guardar');i++)await new Promise(r=>setTimeout(r,10));
+ assert.match(doc.querySelector('#estadoEdicionProducto').textContent,/No se pudo guardar/);assert.equal(doc.querySelector('#nombreEditar1').value,'Conservar ante fallo');assert.equal(doc.querySelector('#guardarProducto1').disabled,false);
+ }finally{ui.close()}
+});
+
+test('Transferencia: datos exactos, enlaces opcionales y copia con alternativa ante error',async()=>{
+ const ui=await page('tienda',{nombre:'Ana',email:'ana@example.com',rol:'cliente'});
+ try {
+ const d=ui.win.document;ui.win.iniciarTransferencia();const medio=d.querySelector('#medioPagoEntrega');
+ assert.equal(d.querySelector('#datosTransferencia').hidden,true);
+ medio.value='Transferencia bancaria';medio.dispatchEvent(new ui.win.Event('change'));
+ assert.equal(d.querySelector('#datosTransferencia').hidden,false);assert.equal(d.querySelector('#cuentaTransferencia').textContent,'1001076725768');
+ const banco=d.querySelector('#bancoTransferencia');assert.equal(d.querySelector('#abrirBancoTransferencia').hasAttribute('href'),false);
+ banco.value='11';banco.dispatchEvent(new ui.win.Event('change'));assert.equal(d.querySelector('#abrirBancoTransferencia').href,'https://www.prexcard.com/');assert.equal(d.querySelector('#abrirBancoTransferencia').target,'_blank');
+ banco.value='otro';banco.dispatchEvent(new ui.win.Event('change'));assert.equal(d.querySelector('#abrirBancoTransferencia').hidden,true);assert.equal(d.querySelector('#abrirBancoTransferencia').hasAttribute('href'),false);
+ let copied;Object.defineProperty(ui.win.navigator,'clipboard',{configurable:true,value:{writeText:async text=>{copied=text}}});
+ await ui.win.copiarTransferencia(false);assert.equal(copied,'1001076725768');
+ await ui.win.copiarTransferencia(true);assert.match(copied,/Silvia Andrea Rosales Gatto/);assert.match(copied,/UYU/);
+ ui.win.navigator.clipboard.writeText=async()=>{throw Error('denied')};await ui.win.copiarTransferencia(false);assert.match(d.querySelector('#estadoCopiaTransferencia').textContent,/Seleccioná y copiá/);
+ medio.value='Efectivo';medio.dispatchEvent(new ui.win.Event('change'));assert.equal(d.querySelector('#datosTransferencia').hidden,true);assert.equal(d.querySelector('#estadoPagoEntrega').value,'Pendiente');assert.equal(ui.writes.length,0);
+ }finally{ui.close()}
+});
+test('Transferencia: conserva instrucciones tras guardar y reinicia referencia para otra compra',async()=>{
+ const ui=await page('tienda',{nombre:'Ana',rol:'cliente'});
+ try {const d=ui.win.document;const pedido={id:77,total:350,pago:{medio:'Transferencia bancaria',estado:'Pendiente'}};
+ ui.win.mostrarTransferenciaPedidoGuardado(pedido);assert.equal(d.querySelector('#transferenciaPedidoGuardado').hidden,false);assert.match(d.querySelector('#instruccionTransferencia').textContent,/Pedido #77/);assert.equal(pedido.pago.estado,'Pendiente');
+ ui.win.abrirModalEntrega();assert.equal(d.querySelector('#transferenciaPedidoGuardado').hidden,true);assert.ok(d.querySelector('#formEntrega #datosTransferencia'));assert.doesNotMatch(d.querySelector('#instruccionTransferencia').textContent,/#77/);
+ }finally{ui.close()}
 });

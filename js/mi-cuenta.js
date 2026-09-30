@@ -85,5 +85,6 @@ function obtenerTextoPagoCuenta(pedido) {
         }
     }
 
+    if (pedido.pago?.estado !== "Pagado" && pedido.estado !== "Cancelado" && datosServidor.comprobantes?.some(r => String(r.order_id) === String(pedido.id) && !r.reviewed_at)) texto = "Comprobante enviado · Pendiente de verificación";
     return texto;
 }

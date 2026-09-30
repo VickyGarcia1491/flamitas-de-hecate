@@ -12,12 +12,13 @@
     <link rel="manifest" href="./manifest.webmanifest">
 
     <link rel="stylesheet" href="./css/styles.css">
+    <link rel="stylesheet" href="./css/admin.css">
     <link
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Montserrat:wght@300;400;500&display=swap"
         rel="stylesheet">
 </head>
 
-<body>
+<body class="administracion">
     <!-- Menú superior para navegar entre inicio, tienda y panel admin. -->
     <header class="menu">
         <nav>
@@ -45,7 +46,7 @@
 
     <!-- Encabezado visual del panel administrador. -->
     <section class="header tienda-header admin-header">
-        <h1>Panel Administrador</h1>
+        <h1>Tu espacio Flamitas</h1>
         <p>Pedidos, stock y ventas de Flamitas</p>
     </section>
 
@@ -54,7 +55,7 @@
     <main class="admin-panel">
         <!-- Menú lateral para cambiar entre pedidos, productos y venta manual. -->
         <aside class="admin-menu-lateral">
-            <input type="button" value="Inicio admin" class="admin-menu-boton active" data-seccion="dashboard">
+            <input type="button" value="Resumen" class="admin-menu-boton active" data-seccion="dashboard">
             <input type="button" value="Pedidos" class="admin-menu-boton" data-seccion="pedidos">
             <input type="button" value="Productos y stock" class="admin-menu-boton" data-seccion="productos">
             <input type="button" value="Venta manual" class="admin-menu-boton" data-seccion="ventaManual">
@@ -63,7 +64,7 @@
         <!-- Sección inicial con resumen rápido del negocio. -->
         <section class="admin-bloque admin-seccion active" id="seccionDashboard">
             <div class="admin-titulo">
-                <h2>Inicio admin</h2>
+                <h2>Tu negocio hoy</h2><p class="admin-ayuda">Lo importante, a primera vista.</p>
             </div>
 
             <div class="dashboard-resumen-admin">
@@ -83,7 +84,7 @@
                 </article>
 
                 <article class="dashboard-card">
-                    <span>Stock a revisar</span>
+                    <span>Productos por reponer</span>
                     <strong id="dashboardStockBajo">0</strong>
                 </article>
             </div>
@@ -215,10 +216,11 @@
                     <span class="stock-estado stock-verde campo-esencia-alta" id="estadoEsenciaNueva">Stock OK</span>
 
                     <input type="submit" value="Agregar producto">
-                    <p class="mensaje-formulario" id="mensajeProductoAdmin"></p>
+                    <p class="mensaje-formulario" id="mensajeProductoAdmin" role="status" aria-live="polite"></p>
                 </form>
             </details>
 
+            <div class="admin-buscador"><label for="buscarProductoAdmin">Buscar producto</label><input type="search" id="buscarProductoAdmin" placeholder="Escribí el nombre de una vela…" autocomplete="off"><div id="resultadosProductosAdmin" aria-label="Productos encontrados"></div></div>
             <div id="contenedorProductosAdmin">
             </div>
 
@@ -438,6 +440,7 @@
     <script src="./js/sistema.js"></script>
     <script src="./js/admin.js"></script>
     <script src="./js/notificaciones.js"></script>
+    <script src="./js/comprobantes.js"></script>
     <script src="./js/iniciar.js"></script>
 </body>
 

@@ -45,3 +45,10 @@ CREATE TABLE IF NOT EXISTS push_jobs (
  next_attempt TIMESTAMPTZ NOT NULL DEFAULT now(),
  UNIQUE(order_id, endpoint)
 );
+
+CREATE TABLE IF NOT EXISTS payment_receipts (
+ order_id BIGINT PRIMARY KEY, user_id BIGINT NOT NULL REFERENCES users(id),
+ name TEXT NOT NULL, mime TEXT NOT NULL, content TEXT NOT NULL,
+ uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now(), reviewed_at TIMESTAMPTZ,
+ reviewed_by BIGINT REFERENCES users(id)
+);

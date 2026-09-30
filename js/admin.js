@@ -1,5 +1,6 @@
 let productoAdminSeleccionadoId = null;
-let edicionProductoAdminAbierta = false;
+let edicionProductoAdminAbierta = true;
+let productoAdminSucio = false;
 let esenciaSeleccionadaIndice = 0;
 let edicionEsenciaAdminAbierta = false;
 // Inicia el panel administrador cuando la página termina de cargar.
@@ -65,15 +66,7 @@ function iniciarAdmin() {
 }
 
 // Permite entrar al panel solo si el usuario activo es administrador.
-function protegerAdmin() {
-    let usuario = obtenerUsuarioActivo();
 
-    if (usuario === null) {
-        window.location = "login.html";
-    } else if (usuario.rol !== "admin") {
-        window.location = "tienda.html";
-    }
-}
 
 // Obtiene una copia de los pedidos cargados desde el servidor.
 function obtenerPedidos() { return structuredClone(datosServidor.pedidos); }
@@ -121,6 +114,7 @@ function mostrarPedidosAdmin() {
                     <div class="pedido-admin-encabezado">
                         <h3>Pedido #${pedido.id}</h3>
                         <span>${pedido.fecha}</span>
+                        <span class="etiqueta-pedido ${claseEstadoPedido(estadoPedido)}">${prepararTextoParaTextarea(estadoPedido)}</span>
                     </div>
 
                     <p><strong>Origen:</strong> ${origenPedido}</p>
@@ -749,10 +743,6 @@ function prepararProductosPedidoEditado() {
         });
     }
 
-    for (const [indice, esencia] of obtenerCatalogoEsenciasGuardado().entries()) {
-        const stock = obtenerStockEsencia('general', indice);
-        if (esenciaTieneStockBajo(stock)) productos.push({nombre: 'Esencia: ' + esencia.nombre, stock, estadoEsencia: obtenerEstadoStockEsencia(stock)});
-    }
     return productos;
 }
 
@@ -1087,7 +1077,7 @@ async function mostrarProductosAdmin() {
 
         html = `
             <details class="producto-admin-nuevo producto-admin-edicion" ${edicionProductoAdminAbierta === true ? "open" : ""}>
-                <summary>Modificación de stock</summary>
+                <summary>Editar producto</summary>
                 <div class="producto-admin-selector">
                     <label for="selectorProductoAdmin">Elegí un producto</label>
                     <select id="selectorProductoAdmin">
@@ -1102,6 +1092,8 @@ async function mostrarProductosAdmin() {
     }
 
     document.querySelector("#contenedorProductosAdmin").innerHTML = html;
+    document.querySelector("#buscarProductoAdmin").oninput = mostrarResultadosProductosAdmin;
+    mostrarResultadosProductosAdmin();
 
     if (velas.length > 0) {
         conectarEventosProductoSeleccionadoAdmin(productoAdminSeleccionadoId);
@@ -1110,6 +1102,8 @@ async function mostrarProductosAdmin() {
         });
 
         document.querySelector("#selectorProductoAdmin").addEventListener("change", function () {
+            if (productoAdminSucio && !confirm("Tenés cambios sin guardar. ¿Querés descartarlos y cambiar de producto?")) { this.value = productoAdminSeleccionadoId; return; }
+            productoAdminSucio = false;
             edicionProductoAdminAbierta = true;
             productoAdminSeleccionadoId = Number(this.value);
             document.querySelector("#productoSeleccionadoAdmin").innerHTML = armarProductoSeleccionadoAdmin(productoAdminSeleccionadoId);
@@ -1142,26 +1136,30 @@ function armarProductoSeleccionadoAdmin(idProducto) {
 
     return `
         <div class="producto-admin-edicion-card">
+            <div class="producto-admin-preview"><img src="${imagenProductoAdmin(producto.imagen)}" alt="${prepararTextoParaInput(producto.nombre)}"><div><strong>${prepararTextoParaTextarea(producto.nombre)}</strong><p>Información del producto</p></div></div>
             <label for="nombreEditar${producto.id}">Nombre</label>
             <input type="text" value="${prepararTextoParaInput(producto.nombre)}" id="nombreEditar${producto.id}" class="input-tabla-admin">
 
             <label for="detalleEditar${producto.id}">Detalle</label>
             <textarea id="detalleEditar${producto.id}" class="textarea-tabla-admin">${prepararTextoParaTextarea(producto.descripcion)}</textarea>
 
+            <h3 class="editor-grupo">Precio y disponibilidad</h3>
             <label for="precioEditar${producto.id}">Precio</label>
-            <input type="text" value="${producto.precio}" id="precioEditar${producto.id}" class="input-tabla-admin input-precio-admin">
+            <input type="text" value="${prepararTextoParaInput(producto.precio)}" id="precioEditar${producto.id}" class="input-tabla-admin input-precio-admin">
 
             <label for="stockEditar${producto.id}">Stock</label>
-            <input type="text" value="${producto.stock}" id="stockEditar${producto.id}" class="input-tabla-admin input-stock-admin">
+            <input type="text" value="${prepararTextoParaInput(producto.stock)}" id="stockEditar${producto.id}" class="input-tabla-admin input-stock-admin">
 
             <label>Estado</label>
             <span class="stock-estado ${estado.clase}">${estado.texto}</span>
 
-            <label for="fotoEditar${producto.id}">Foto</label>
+            <h3 class="editor-grupo">Fotografía</h3>
+            <label for="fotoEditar${producto.id}">Cambiar foto</label>
             <input type="file" id="fotoEditar${producto.id}" class="input-foto-tabla" accept="image/*">
 
+            <p id="estadoEdicionProducto" class="editor-estado" role="status" aria-live="polite">Sin cambios pendientes.</p>
             <div class="acciones-tabla-admin producto-admin-acciones">
-                <input type="button" value="Guardar" id="guardarProducto${producto.id}" class="btn-tabla-admin">
+                <input type="button" value="Guardar cambios" id="guardarProducto${producto.id}" class="btn-tabla-admin">
                 <input type="button" value="Eliminar" id="eliminarProducto${producto.id}" class="btn-tabla-admin btn-eliminar-admin">
             </div>
         </div>
@@ -1170,8 +1168,23 @@ function armarProductoSeleccionadoAdmin(idProducto) {
 
 // Conecta los botones de guardar y eliminar del producto elegido.
 function conectarEventosProductoSeleccionadoAdmin(idProducto) {
+    document.querySelector("#productoSeleccionadoAdmin").oninput = () => { productoAdminSucio = true; const aviso=document.querySelector("#estadoEdicionProducto"); aviso.textContent="Cambios sin guardar"; aviso.dataset.estado="pendiente"; };
+    const campoStock = document.querySelector('#stockEditar' + idProducto);
+    campoStock?.addEventListener('input', () => {
+        const estado = obtenerEstadoStock(convertirNumeroSiCorresponde(campoStock.value));
+        const etiqueta = campoStock.closest('.producto-admin-edicion-card')?.querySelector('.stock-estado');
+        if (etiqueta) { etiqueta.textContent = estado.texto + ' (sin guardar)'; etiqueta.className = 'stock-estado ' + estado.clase; }
+    });
+
     document.querySelector("#guardarProducto" + idProducto).addEventListener("click", async function () {
-        await editarProductoAdmin(idProducto);
+        const controles = [...document.querySelectorAll('#productoSeleccionadoAdmin input, #productoSeleccionadoAdmin textarea, #selectorProductoAdmin, #buscarProductoAdmin, #resultadosProductosAdmin button')];
+        if (this.disabled) return;
+        controles.forEach(c=>c.disabled=true);
+        let aviso=document.querySelector('#estadoEdicionProducto'); aviso.textContent='Guardando cambios…'; aviso.dataset.estado='guardando';
+        try { await editarProductoAdmin(idProducto); productoAdminSucio=false; aviso=document.querySelector('#estadoEdicionProducto'); aviso.textContent='Cambios guardados'; aviso.dataset.estado='ok'; }
+        catch(error) { aviso=document.querySelector('#estadoEdicionProducto'); aviso.textContent='No se pudo guardar. '+error.message+' Tus campos se conservaron.'; aviso.dataset.estado='error'; }
+        finally { controles.forEach(c=>c.disabled=false); }
+
     });
 
     document.querySelector("#eliminarProducto" + idProducto).addEventListener("click", async function () {
@@ -1298,19 +1311,10 @@ async function guardarNuevoProductoAdmin(imagenProducto) {
 
 // Edita un producto existente y permite cambiar su foto.
 async function editarProductoAdmin(idProducto) {
-    let foto = document.querySelector("#fotoEditar" + idProducto).files[0];
-
-    if (foto === undefined) {
-        await guardarEdicionProductoAdmin(idProducto, null);
-    } else {
-        let lector = new FileReader();
-
-        lector.addEventListener("load", async function () {
-            await guardarEdicionProductoAdmin(idProducto, lector.result);
-        });
-
-        lector.readAsDataURL(foto);
-    }
+ const foto=document.querySelector('#fotoEditar'+idProducto).files[0];
+ let imagen=null;
+ if(foto) imagen=await new Promise((resolve,reject)=>{const lector=new FileReader();lector.onload=()=>resolve(lector.result);lector.onerror=()=>reject(new Error('No pudimos leer la foto. Elegila de nuevo.'));lector.onabort=()=>reject(new Error('Se canceló la lectura de la foto.'));lector.readAsDataURL(foto)});
+ await guardarEdicionProductoAdmin(idProducto,imagen);
 }
 
 // Guarda los cambios de nombre, detalle, precio, stock e imagen.
@@ -1500,15 +1504,9 @@ async function guardarEsenciaAdmin(indice) {
 
 // Calcula el siguiente id disponible para un producto nuevo.
 function obtenerNuevoIdProducto() {
-    let idMayor = 0;
-
-    for (let i = 0; i < velas.length; i++) {
-        if (Number(velas[i].id) > idMayor) {
-            idMayor = Number(velas[i].id);
-        }
-    }
-
-    return idMayor + 1;
+    // No reutilizar los IDs de latitas ni de productos mencionados en pedidos.
+    const ids = [...velas.map(p => p.id), ...datosServidor.pedidos.flatMap(p => p.productos.map(linea => linea.id))];
+    return ids.reduce((max, id) => Number.isSafeInteger(id) ? Math.max(max, id) : max, 10) + 1;
 }
 
 // Convierte textos numéricos a número y deja textos como Consultar.
@@ -1576,11 +1574,6 @@ function obtenerEstadoStockEsencia(stock) {
     return estado;
 }
 
-// Indica si una esencia debe mostrarse como alerta del dashboard.
-function esenciaTieneStockBajo(stock) {
-    let valor = normalizarStockEsenciaParaSelector(stock);
-    return valor === "No" || valor === "Queda poco";
-}
 
 // Carga los productos en el selector de venta manual.
 function cargarSelectVentaManual() {
@@ -1817,16 +1810,19 @@ async function guardarVentaManual(evento) {
 
 // Descuenta stock de productos vendidos manualmente.
 function descontarStockVentaManual() {
-    for (let i = 0; i < productosVentaManual.length; i++) {
-        for (let j = 0; j < velas.length; j++) {
-            if (velas[j].id === productosVentaManual[i].id && typeof velas[j].stock === "number") {
-                velas[j].stock = velas[j].stock - productosVentaManual[i].cantidad;
-
-                if (velas[j].stock < 0) {
-                    velas[j].stock = 0;
-                }
-            }
-        }
+    const cantidades = new Map();
+    for (const linea of productosVentaManual) {
+        if (!Number.isInteger(linea.cantidad) || linea.cantidad < 1) throw new Error('Cantidad inválida.');
+        cantidades.set(linea.id, (cantidades.get(linea.id) || 0) + linea.cantidad);
+    }
+    for (const [id, cantidad] of cantidades) {
+        const producto = velas.find(p => p.id === id);
+        if (!producto) throw new Error('El producto ya no está en el catálogo.');
+        if (typeof producto.stock === 'number' && producto.stock < cantidad) throw new Error('No hay stock suficiente de ' + producto.nombre + '.');
+    }
+    for (const [id, cantidad] of cantidades) {
+        const producto = velas.find(p => p.id === id);
+        if (typeof producto.stock === 'number') producto.stock -= cantidad;
     }
 }
 
@@ -1888,4 +1884,22 @@ function mostrarPrecioAdmin(precio) {
     }
 
     return texto;
+}
+
+function claseEstadoPedido(estado) {
+ return ({Nuevo:'pedido-nuevo','En preparación':'pedido-preparacion','Listo para retirar/enviar':'pedido-listo',Entregado:'pedido-entregado',Cancelado:'pedido-cancelado'})[estado] || 'pedido-nuevo';
+}
+function imagenProductoAdmin(imagen) {
+ const valor=String(imagen || '');
+ if (/^data:image\/(png|jpeg|webp|gif);base64,[a-z0-9+/=]+$/i.test(valor)) return valor;
+ if (/^(?:\.\/)?img\/[a-z0-9_. /-]+$/i.test(valor)) return prepararTextoParaInput(valor);
+ return './img/producto-sin-foto.svg';
+}
+function mostrarResultadosProductosAdmin() {
+ const normalizar=valor=>String(valor).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+ const filtro=normalizar(document.querySelector('#buscarProductoAdmin').value.trim());
+ const productos=velas.filter(p=>normalizar(p.nombre).includes(filtro));
+ const contenedor=document.querySelector('#resultadosProductosAdmin');
+ contenedor.innerHTML=productos.length ? productos.map(p=>'<button type="button" class="resultado-producto" data-producto="'+p.id+'"><img loading="lazy" src="'+imagenProductoAdmin(p.imagen)+'" alt=""><span>'+prepararTextoParaTextarea(p.nombre)+'</span><small>'+prepararTextoParaTextarea(obtenerEstadoStock(p.stock).texto)+'</small></button>').join('') : '<p role="status">No encontramos productos con ese nombre.</p>';
+ contenedor.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{const selector=document.querySelector('#selectorProductoAdmin');selector.value=b.dataset.producto;selector.dispatchEvent(new Event('change'));document.querySelector('.producto-admin-edicion').open=true;document.querySelector('#productoSeleccionadoAdmin').scrollIntoView?.({block:'nearest',behavior:'smooth'});}));
 }

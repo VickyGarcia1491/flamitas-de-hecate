@@ -8,18 +8,19 @@ export function validateState(state) {
   const mapa = valor => valor && typeof valor === 'object' && !Array.isArray(valor);
   if (!mapa(state.esencias) || !(mapa(state.esencias.general) || mapa(state.esencias.mediana) && mapa(state.esencias.chica))) fail('Formato de stock de esencias inválido.');
   if (state.esenciasCatalogo !== undefined) {
+    if (!Array.isArray(state.esenciasCatalogo) && !mapa(state.esenciasCatalogo)) fail('Catálogo de esencias inválido.');
     const grupos = Array.isArray(state.esenciasCatalogo) ? [state.esenciasCatalogo] : [state.esenciasCatalogo.mediana, state.esenciasCatalogo.chica];
     for (const grupo of grupos) {
       if (!Array.isArray(grupo)) fail('Catálogo de esencias inválido.');
-      for (const item of grupo) { text(item.nombre,120); text(item.detalle || '',1000,false); }
+      for (const item of grupo) { if (!item || typeof item !== 'object') fail('Esencia inválida.'); text(item.nombre,120); text(typeof item.detalle === 'string' ? item.detalle.replace(/\r?\n/g, ' ') : item.detalle || '',1000,false); }
     }
   }
   for (const list of [state.productos, state.pedidos]) {
-    if (new Set(list.map(x => x.id)).size !== list.length) fail('Hay identificadores repetidos.');
-    for (const item of list) if (!Number.isSafeInteger(item.id) || item.id < 1) fail('Identificador inválido.');
+    if (new Set(list.map(x => x?.id)).size !== list.length) fail('Hay identificadores repetidos.');
+    for (const item of list) if (!item || !Number.isSafeInteger(item.id) || item.id < 1) fail('Identificador inválido.');
   }
   for (const product of state.productos) {
-    text(product.nombre); text(product.descripcion, 3000, false);
+    text(product.nombre); text(typeof product.descripcion === 'string' ? product.descripcion.replace(/\r?\n/g, ' ') : product.descripcion, 3000, false);
     for (const key of ['precio', 'stock']) {
       if (typeof product[key] === 'number') {
         if (!Number.isFinite(product[key]) || product[key] < 0 || (key === 'stock' && !Number.isInteger(product[key]))) fail('Precio o stock inválido.');
@@ -35,7 +36,7 @@ export function validateState(state) {
   }
   for (const order of state.pedidos) {
     if (!order.cliente || !order.entrega || !Array.isArray(order.productos) || !Number.isFinite(order.total) || order.total < 0) fail('Pedido inválido.');
-    for (const line of order.productos) if (!Number.isInteger(line.cantidad) || line.cantidad < 1) fail('Cantidad inválida.');
+    for (const line of order.productos) if (!line || !Number.isInteger(line.cantidad) || line.cantidad < 1) fail('Cantidad inválida.');
   }
 }
 export function checkout(state, body, user, id) {
@@ -45,7 +46,7 @@ export function checkout(state, body, user, id) {
   if (!delivery || !['Retiro', 'Envío', 'Retiro en local', 'Retiro en persona'].includes(delivery.metodo)) fail('Elegí una forma de entrega.');
   if (delivery.metodo === 'Envío') for (const field of ['departamento', 'direccion', 'ciudad', 'codigoPostal']) text(delivery[field]);
   const lines = body.productos.map(item => {
-    if (!Number.isInteger(item.cantidad) || item.cantidad < 1 || item.cantidad > 1000) fail('Cantidad inválida.');
+    if (!item || !Number.isInteger(item.cantidad) || item.cantidad < 1 || item.cantidad > 1000) fail('Cantidad inválida.');
     const variant = item.tipoLatita;
     const product = state.productos.find(p => p.id === (variant ? (variant === 'mediana' ? 4 : 5) : item.id));
     if (!product || typeof product.precio !== 'number') fail('Este producto necesita cotización. Contactanos antes de pedirlo.');
@@ -121,4 +122,27 @@ export function reconcileOrderStock(previous, next) {
  }
  for (const change of changes.values()) change.owner[change.field] += change.quantity;
  return changes.size > 0;
+}
+
+// Guardar únicamente campos modificados; conservar las fotos no editadas en la base.
+export function applyProductChanges(products, patch) {
+ if (!patch || !Array.isArray(patch.upsert) || !Array.isArray(patch.remove)) fail('Cambios de productos inválidos.');
+ const allowed = new Set(['id','nombre','descripcion','precio','stock','imagen']);
+ const ids = new Set();
+ for (const item of patch.upsert) {
+  if (!item || !Number.isSafeInteger(item.id) || item.id < 1 || ids.has(item.id) || Object.keys(item).some(k=>!allowed.has(k))) fail('Cambios de productos inválidos.');
+  ids.add(item.id);
+ }
+ for (const id of patch.remove) {
+  if (!Number.isSafeInteger(id) || id < 1 || ids.has(id)) fail('Cambios de productos inválidos.');
+  ids.add(id);
+ }
+ validateTree(patch);
+ const result = structuredClone(products).filter(p=>!patch.remove.includes(p.id));
+ for (const item of patch.upsert) {
+  const index=result.findIndex(p=>p.id===item.id);
+  if (index < 0) result.push(structuredClone(item));
+  else result[index]={...result[index],...structuredClone(item)};
+ }
+ return result;
 }

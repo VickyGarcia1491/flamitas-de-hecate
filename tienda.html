@@ -12,12 +12,13 @@
     <link rel="manifest" href="./manifest.webmanifest">
 
     <link rel="stylesheet" href="./css/styles.css">
+    <link rel="stylesheet" href="./css/publico.css">
     <link
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Montserrat:wght@300;400;500&display=swap"
         rel="stylesheet">
 </head>
 
-<body>
+<body class="sitio-publico">
 
     <!-- Menú superior de la tienda con carrito a la derecha. -->
     <header class="menu">
@@ -31,7 +32,7 @@
                 <li><a href="index.html">Inicio</a></li>
                 <li><a href="tienda.html">Tienda</a></li>
                 <li><a href="contacto.html" id="linkContacto">Contacto</a></li>
-                <li><a href="login.html" id="linkIngresar" hidden>Ingresar</a></li>
+                <li><a href="login.html" id="linkIngresar">Iniciar sesión</a></li>
                 <li><a href="mi-cuenta.html" id="linkMiCuenta" hidden>Mi cuenta</a></li>
                 <li><a href="admin.html" id="linkAdmin" hidden>Admin</a></li>
                 <li><button class="btn-salir" id="btnCerrarSesion" hidden>Salir</button></li>
@@ -67,11 +68,14 @@
         <p>Velas artesanales para regalarte un momento</p>
     </section>
 
+    <section id="transferenciaPedidoGuardado" class="transferencia-pedido-guardado" hidden aria-label="Pago del pedido guardado"></section>
+
     <!-- Contenedor donde JavaScript carga todos los productos de la tienda. -->
     <section class="gallery">
         <h2>Nuestros productos</h2>
 
-        <div class="gallery-grid" id="contenedorVelas">
+        <p class="catalogo-intro">Encontrá tu próxima favorita. Elegí, combiná y creá tu ritual.</p>
+        <div class="gallery-grid" id="contenedorVelas" aria-busy="true"><p class="catalogo-cargando" role="status">Preparando nuestras velas…</p>
         </div>
     </section>
 
@@ -172,6 +176,18 @@
                 <option value="Mercado Pago">Mercado Pago</option>
             </select>
 
+            <section id="datosTransferencia" class="datos-transferencia" hidden aria-labelledby="tituloTransferencia">
+                <h3 id="tituloTransferencia">Transferencia a Flamitas</h3>
+                <p id="instruccionTransferencia">Primero enviá tu pedido con el botón del formulario. Después realizá la transferencia y usá el número de pedido como referencia.</p>
+                <dl><dt>Institución de destino</dt><dd>Mercado Pago</dd><dt>Titular</dt><dd>Silvia Andrea Rosales Gatto</dd><dt>Número de cuenta</dt><dd><strong id="cuentaTransferencia">1001076725768</strong></dd><dt>Moneda</dt><dd>Pesos uruguayos (UYU)</dd></dl>
+                <div class="transferencia-acciones"><button type="button" id="copiarCuentaTransferencia">Copiar cuenta</button><button type="button" id="copiarDatosTransferencia">Copiar todos los datos</button></div>
+                <p id="estadoCopiaTransferencia" role="status" aria-live="polite"></p>
+                <label for="bancoTransferencia">Tu banco o billetera (opcional)</label>
+                <select id="bancoTransferencia"><option value="">Seleccioná tu institución</option><option value="0">BROU</option><option value="1">BHU</option><option value="2">Itaú</option><option value="3">Santander</option><option value="4">Scotiabank</option><option value="5">BBVA</option><option value="6">HSBC</option><option value="7">Bandes</option><option value="8">Banque Heritage</option><option value="9">Banco Nación Argentina — Uruguay</option><option value="10">Citi — Uruguay</option><option value="11">Prex</option><option value="12">MiDinero</option><option value="13">Mercado Pago</option><option value="otro">Otra institución</option></select>
+                <a id="abrirBancoTransferencia" target="_blank" rel="noopener noreferrer" hidden>Abrir sitio oficial</a>
+                <p id="ayudaBancoTransferencia">Podés transferir desde la web o la app de tu institución si permite enviar a Mercado Pago. Si no figura como destino, consultá con tu institución o coordiná con Flamitas.</p>
+                <p>Verificá el titular y la moneda antes de confirmar. Abrir el sitio o copiar los datos no realiza un pago. El pedido queda con pago pendiente hasta que Flamitas confirme la recepción.</p>
+            </section>
             <label for="estadoPagoEntrega">Estado del pago</label>
             <select id="estadoPagoEntrega">
                 <option value="Pendiente">Pago pendiente</option>
@@ -183,9 +199,11 @@
     </div>
 </section>
 
-    <footer class="footer">
-        <p>© Flamitas de Hécate</p>
-    </footer>
+<section class="guia-compra" id="como-comprar" aria-labelledby="tituloCompra">
+ <span class="eyebrow">De nuestra tienda a tu hogar</span><h2 id="tituloCompra">Tu momento Flamitas</h2>
+ <div class="pasos-compra"><article><span class="paso-numero">01</span><h3>Elegí tus velas</h3><p>Sumá tus favoritas al carrito. Iniciá sesión o registrate para completar el pedido.</p></article><article><span class="paso-numero">02</span><h3>Coordinamos el pago</h3><p>Podés elegir efectivo, transferencia bancaria o Mercado Pago. Confirmamos los detalles por WhatsApp.</p></article><article><span class="paso-numero">03</span><h3>Preparadas para vos</h3><p>Elegí retiro o envío. Coordinamos por WhatsApp la disponibilidad, el costo de entrega y el tiempo de preparación antes de confirmar.</p></article></div>
+ </section>
+    <footer class="footer"><div><strong>Flamitas de Hécate</strong><p>Velas artesanales hechas con intención.</p></div><div class="footer-enlaces"><a href="index.html#como-comprar">Cómo comprar</a><a href="contacto.html">Contacto</a></div><p class="footer-copy">© Flamitas de Hécate · Hecho con cariño</p></footer>
 
     <script src="./js/api.js"></script>
     <script src="./js/clases.js"></script>
@@ -193,6 +211,7 @@
     <script src="./js/sistema.js"></script>
     <script src="./js/tienda.js"></script>
 
+    <script src="./js/comprobantes.js"></script>
     <script src="./js/iniciar.js"></script>
 
     <a class="whatsapp-flotante" href="https://wa.me/59897605718" target="_blank" rel="noopener noreferrer" aria-label="Contactar a Flamitas por WhatsApp" title="Escribinos por WhatsApp">

@@ -12,12 +12,13 @@
     <link rel="manifest" href="./manifest.webmanifest">
 
     <link rel="stylesheet" href="./css/styles.css">
+    <link rel="stylesheet" href="./css/publico.css">
     <link
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Montserrat:wght@300;400;500&display=swap"
         rel="stylesheet">
 </head>
 
-<body>
+<body class="sitio-publico">
 
     <!-- Menú superior de la página de contacto. -->
     <header class="menu">
@@ -37,7 +38,7 @@
                 <li><a href="index.html">Inicio</a></li>
                 <li><a href="tienda.html">Tienda</a></li>
                 <li><a href="contacto.html">Contacto</a></li>
-                <li><a href="login.html" hidden>Ingresar</a></li>
+                <li><a href="login.html">Iniciar sesión</a></li>
             </ul>
         </nav>
     </header>
@@ -69,13 +70,11 @@
             <input type="submit" value="Enviar consulta">
         </form>
 
-        <p id="mensajeContactoEstado" class="mensaje-formulario"></p>
+        <p id="mensajeContactoEstado" class="mensaje-formulario" role="status" aria-live="polite"></p>
     </section>
 
     <!-- Pie de página de la web. -->
-    <footer class="footer">
-        <p>© Flamitas de Hécate</p>
-    </footer>
+    <footer class="footer"><div><strong>Flamitas de Hécate</strong><p>Velas artesanales hechas con intención.</p></div><div class="footer-enlaces"><a href="index.html#como-comprar">Cómo comprar</a><a href="contacto.html">Contacto</a></div><p class="footer-copy">© Flamitas de Hécate · Hecho con cariño</p></footer>
 
     <!-- Conecta el menú y el formulario de contacto con sus funciones. -->
     <script src="./js/api.js"></script>

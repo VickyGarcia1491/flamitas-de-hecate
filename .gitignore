@@ -5,3 +5,6 @@ public-static/
 !.env.example
 backups/
 *.log
+
+# Datos exclusivos de pruebas locales
+.local-dev/

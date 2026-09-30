@@ -3,6 +3,7 @@
 
 // Prepara productos, carrito, modales y formulario de entrega.
 function inicioTienda() {
+    iniciarTransferencia();
     recuperarCarritoPendiente();
     mostrarVelas();
     mostrarCarrito();
@@ -54,17 +55,18 @@ function mostrarVelas() {
 
         html += `
             <div class="producto">
-                <img src="${obtenerRutaImagenProducto(unaVela.imagen)}" alt="${unaVela.nombre}">
-                <h3>${unaVela.nombre}</h3>
-                <p>${unaVela.descripcion}</p>
-                <h4>${textoPrecio}</h4>
+                <img loading="lazy" decoding="async" src="${obtenerRutaImagenProducto(unaVela.imagen)}" alt="${escaparHTML(unaVela.nombre)}">
+                <h3>${escaparHTML(unaVela.nombre)}</h3>
+                <details class="producto-detalle"><summary>Ver detalles</summary><p>${escaparHTML(unaVela.descripcion)}</p></details>
+                <h4>${escaparHTML(textoPrecio)}</h4>
                 ${lineaStock}
                 <input type="button" value="${textoBoton}" id="btn${unaVela.id}">
             </div>
         `;
     }
 
-    document.querySelector("#contenedorVelas").innerHTML = html;
+    document.querySelector("#contenedorVelas").innerHTML = html || '<p class="catalogo-cargando">Estamos preparando el catálogo. Consultanos por WhatsApp.</p>';
+    document.querySelector("#contenedorVelas").setAttribute("aria-busy", "false");
 
     for (let i = 0; i < velas.length; i++) {
         let unaVela = velas[i];
@@ -78,7 +80,7 @@ function mostrarVelas() {
             }
         });
 
-        if (unaVela.stock === 0) {
+        if (stockDisponibleProducto(unaVela.id) === 0) {
             document.querySelector("#btn" + unaVela.id).disabled = true;
             document.querySelector("#btn" + unaVela.id).value = "Sin stock";
         }
@@ -111,22 +113,21 @@ function obtenerRutaImagenProducto(imagen) {
 }
 
 // Agrega una unidad de un producto común al carrito y baja su stock temporal.
+function stockDisponibleProducto(id) {
+ const producto = velas.find(p => p.id === id);
+ if (!producto) return 0;
+ if (typeof producto.stock !== 'number') return producto.stock;
+ const reservado = carrito.reduce((sum, p) => sum + ((p.tipoLatita ? (p.tipoLatita === 'mediana' ? 4 : 5) : p.id) === id ? p.cantidad : 0), 0);
+ return Math.max(0, producto.stock - reservado);
+}
 function agregarAlCarrito(idVela) {
-
-    for (let i = 0; i < velas.length; i++) {
-
-        if (velas[i].id === idVela) {
-
-            if (velas[i].stock > 0) {
-                agregarProductoAlCarrito(velas[i], 1);
-                velas[i].stock = velas[i].stock - 1;
-            }
-
-        }
-    }
-
-    mostrarVelas();
-    mostrarCarrito();
+ const producto = velas.find(p => p.id === idVela);
+ if (!producto) return;
+ if (typeof producto.precio !== 'number') { alert('Consultanos por WhatsApp para cotizar este producto.'); return; }
+ if (stockDisponibleProducto(idVela) === 0) return;
+ agregarProductoAlCarrito(producto, 1);
+ mostrarVelas(); mostrarCarrito();
+ mostrarConfirmacion("Producto agregado al carrito");
 }
 
 // Dibuja el panel del carrito con productos, cantidades, precios y total.
@@ -198,26 +199,8 @@ function mostrarCarrito() {
 
 // Quita una línea completa del carrito y devuelve stock si corresponde.
 function quitarDelCarrito(posicion) {
-
-    let velaQuitada = carrito[posicion];
-    let cantidad = 1;
-
-    if (velaQuitada.cantidad !== undefined) {
-        cantidad = velaQuitada.cantidad;
-    }
-
-    for (let i = 0; i < velas.length; i++) {
-        if (velas[i].id === velaQuitada.id) {
-            if (typeof velas[i].stock === "number") {
-                velas[i].stock = velas[i].stock + cantidad;
-            }
-        }
-    }
-
-    carrito.splice(posicion, 1);
-
-    mostrarVelas();
-    mostrarCarrito();
+ carrito.splice(posicion, 1);
+ mostrarVelas(); mostrarCarrito();
 }
 
 // Busca si un producto ya existe en el carrito para no duplicarlo.
@@ -258,69 +241,21 @@ function agregarProductoAlCarrito(producto, cantidad) {
 
 // Baja una unidad de un producto del carrito.
 function bajarCantidadCarrito(posicion) {
-
-    let producto = carrito[posicion];
-    let cantidad = 1;
-
-    if (producto.cantidad !== undefined) {
-        cantidad = producto.cantidad;
-    }
-
-    if (cantidad > 1) {
-        producto.cantidad = cantidad - 1;
-
-        for (let i = 0; i < velas.length; i++) {
-            if (velas[i].id === producto.id) {
-                if (typeof velas[i].stock === "number") {
-                    velas[i].stock = velas[i].stock + 1;
-                }
-            }
-        }
-
-        mostrarVelas();
-        mostrarCarrito();
-    } else {
-        quitarDelCarrito(posicion);
-    }
+ const producto = carrito[posicion];
+ if (!producto) return;
+ if (producto.cantidad <= 1) return quitarDelCarrito(posicion);
+ producto.cantidad--;
+ mostrarVelas(); mostrarCarrito();
 }
 
 // Sube una unidad de un producto del carrito si hay stock disponible.
 function subirCantidadCarrito(posicion) {
-
-    let producto = carrito[posicion];
-    let cantidad = 1;
-    let puedeSumar = true;
-
-    if (producto.cantidad !== undefined) {
-        cantidad = producto.cantidad;
-    }
-
-    if (producto.tipoLatita !== undefined) {
-        let stockEsencia = obtenerStockEsencia(producto.tipoLatita, producto.indiceEsencia);
-
-        if (typeof stockEsencia === "number" && cantidad + 1 > stockEsencia) {
-            puedeSumar = false;
-            alert("No hay stock suficiente de esa esencia.");
-        }
-    } else {
-        for (let i = 0; i < velas.length; i++) {
-            if (velas[i].id === producto.id) {
-                if (typeof velas[i].stock === "number") {
-                    if (velas[i].stock > 0) {
-                        velas[i].stock = velas[i].stock - 1;
-                    } else {
-                        puedeSumar = false;
-                    }
-                }
-            }
-        }
-    }
-
-    if (puedeSumar) {
-        producto.cantidad = cantidad + 1;
-        mostrarVelas();
-        mostrarCarrito();
-    }
+ const producto = carrito[posicion];
+ if (!producto) return;
+ if (producto.tipoLatita) {
+  if (!puedeAgregarEsencia(producto.tipoLatita, producto.indiceEsencia, 1, obtenerStockEsencia(producto.tipoLatita, producto.indiceEsencia))) return;
+ } else if (stockDisponibleProducto(producto.id) === 0) { alert('No hay stock suficiente.'); return; }
+ producto.cantidad++; mostrarVelas(); mostrarCarrito();
 }
 
 // Abre el panel lateral del carrito.
@@ -348,7 +283,7 @@ function abrirModalLatitas() {
             <div class="tarjeta-esencia">
                 <h3>${esenciasLatitaMediana[i]}</h3>
                 <p>Latita mediana de 80gr</p>
-                <p>$280</p>
+                <p>${velas.find(p => p.id === 4).precio}</p>
                 ${lineaStock}
 
                 <label for="cantidadEsencia${i}">Cantidad:</label>
@@ -408,7 +343,7 @@ function abrirModalLatitasChicas() {
             <div class="tarjeta-esencia">
                 <h3>${esenciasLatitaChica[i]}</h3>
                 <p>Latita chica de 60gr</p>
-                <p>$240</p>
+                <p>${velas.find(p => p.id === 5).precio}</p>
                 ${lineaStock}
 
                 <label for="cantidadEsenciaChica${i}">Cantidad:</label>
@@ -471,14 +406,12 @@ function obtenerTextoStockEsencia(stock) {
 
 // Controla si se puede agregar una esencia según su stock.
 function puedeAgregarEsencia(tipoLatita, indiceEsencia, cantidad, stock) {
-    let puede = true;
-
-    if (typeof stock === "number" && cantidad + obtenerCantidadEsenciaEnCarrito(tipoLatita, indiceEsencia) > stock) {
-        alert("No hay stock suficiente de esa esencia.");
-        puede = false;
-    }
-
-    return puede;
+ if (!Number.isInteger(cantidad) || cantidad < 1) { alert('Ingresá una cantidad entera.'); return false; }
+ const disponible = datosServidor.esencias.general
+  ? stockDisponibleProducto(tipoLatita === 'mediana' ? 4 : 5)
+  : typeof stock === 'number' ? stock - obtenerCantidadEsenciaEnCarrito(tipoLatita, indiceEsencia) : stock;
+ if (typeof disponible === 'number' && cantidad > disponible) { alert('No hay stock suficiente de esa esencia.'); return false; }
+ return true;
 }
 
 // Cuenta cuántas unidades de una esencia ya hay en el carrito.
@@ -495,54 +428,7 @@ function obtenerCantidadEsenciaEnCarrito(tipoLatita, indiceEsencia) {
 }
 
 // Arma el mensaje de WhatsApp con todos los datos del pedido.
-function armarMensajePedido(datosPedido) {
-    let mensaje = "Hola! Quiero hacer este pedido:\n\n";
-    let total = 0;
-    let usuario = obtenerUsuarioActivo();
 
-    if (usuario !== null) {
-        mensaje = mensaje + "Cliente: " + usuario.nombre + "\n";
-        mensaje = mensaje + "Email: " + usuario.email + "\n";
-        mensaje = mensaje + "Teléfono: " + usuario.telefono + "\n\n";
-    }
-
-    for (let i = 0; i < carrito.length; i++) {
-        let cantidad = 1;
-        let subtotal = carrito[i].precio;
-
-        if (carrito[i].cantidad !== undefined) {
-            cantidad = carrito[i].cantidad;
-        }
-
-        if (typeof carrito[i].precio === "number") {
-            subtotal = carrito[i].precio * cantidad;
-            total = total + subtotal;
-        }
-
-        mensaje = mensaje + "- " + carrito[i].nombre + " x" + cantidad + " - $" + subtotal + "\n";
-    }
-
-    mensaje = mensaje + "\nTotal: $" + total;
-    mensaje = mensaje + "\n\nEntrega: " + datosPedido.entrega.metodo;
-    mensaje = mensaje + "\nPago: " + datosPedido.pago.estado;
-
-    if (datosPedido.pago.medio !== "") {
-        mensaje = mensaje + " - " + datosPedido.pago.medio;
-    }
-
-    if (datosPedido.entrega.metodo === "Envío") {
-        mensaje = mensaje + "\nDepartamento: " + datosPedido.entrega.departamento;
-        mensaje = mensaje + "\nDirección: " + datosPedido.entrega.direccion;
-        mensaje = mensaje + "\nCiudad o barrio: " + datosPedido.entrega.ciudad;
-        mensaje = mensaje + "\nCódigo postal: " + datosPedido.entrega.codigoPostal;
-
-        if (datosPedido.entrega.referencia !== "") {
-            mensaje = mensaje + "\nReferencia: " + datosPedido.entrega.referencia;
-        }
-    }
-
-    return encodeURIComponent(mensaje);
-}
 
 // Calcula el total actual del carrito.
 function obtenerTotalCarrito() {
@@ -573,14 +459,7 @@ async function guardarPedido(datosPedido) {
 // El servidor descuenta stock dentro de la transacción del pedido.
 
 // Devuelve la fecha local en formato apto para filtros.
-function obtenerFechaLocalISO() {
-    let fecha = new Date();
-    let anio = fecha.getFullYear();
-    let mes = String(fecha.getMonth() + 1).padStart(2, "0");
-    let dia = String(fecha.getDate()).padStart(2, "0");
 
-    return anio + "-" + mes + "-" + dia;
-}
 
 // Abre el formulario de entrega si hay productos en el carrito.
 function finalizarPedidoWhatsApp() {
@@ -603,16 +482,44 @@ function guardarCarritoPendiente() {
 
 // Recupera el carrito si la persona volvió desde login o registro.
 function recuperarCarritoPendiente() {
-    let carritoGuardado = sessionStorage.getItem("carritoPendienteFlamitas");
-
-    if (carritoGuardado !== null) {
-        carrito = JSON.parse(carritoGuardado);
-        sessionStorage.removeItem("carritoPendienteFlamitas");
+ try {
+  const guardado = JSON.parse(sessionStorage.getItem('carritoPendienteFlamitas') || '[]');
+  if (!Array.isArray(guardado)) throw new Error('Carrito inválido');
+  carrito = [];
+  for (const item of guardado) {
+   if (!item || !Number.isInteger(item.cantidad) || item.cantidad < 1) continue;
+   const variante = item.tipoLatita;
+   if (variante && !['mediana', 'chica'].includes(variante)) continue;
+   const producto = velas.find(p => p.id === (variante ? (variante === 'mediana' ? 4 : 5) : item.id));
+   if (!producto || typeof producto.precio !== 'number') continue;
+   let linea = {...producto};
+   let disponible = stockDisponibleProducto(producto.id);
+   if (variante) {
+    const aromas = variante === 'mediana' ? esenciasLatitaMediana : esenciasLatitaChica;
+    if (!Number.isInteger(item.indiceEsencia) || !aromas[item.indiceEsencia]) continue;
+    linea = {...linea, id:'latita-'+variante+'-'+item.indiceEsencia, tipoLatita:variante, indiceEsencia:item.indiceEsencia, nombre:'Latita '+(variante==='mediana'?'Mediana':'Chica')+' - '+aromas[item.indiceEsencia]};
+    if (!datosServidor.esencias.general) {
+     const stock = obtenerStockEsencia(variante, item.indiceEsencia);
+     disponible = typeof stock === 'number' ? stock-obtenerCantidadEsenciaEnCarrito(variante,item.indiceEsencia) : stock;
     }
+   }
+   const cantidad = typeof disponible === 'number' ? Math.min(item.cantidad,disponible) : item.cantidad;
+   if (cantidad > 0) agregarProductoAlCarrito(linea,cantidad);
+  }
+ } catch { carrito = []; }
+ try { sessionStorage.removeItem('carritoPendienteFlamitas'); } catch {}
 }
 
 // Abre el modal para completar retiro o envío.
 function abrirModalEntrega() {
+    if (pedidoTransferenciaGuardado) {
+        const panel=document.querySelector('#datosTransferencia');
+        document.querySelector('#formEntrega').insertBefore(panel,document.querySelector('label[for="estadoPagoEntrega"]'));
+        document.querySelector('#transferenciaPedidoGuardado').hidden=true;
+        pedidoTransferenciaGuardado=null;
+        document.querySelector('#instruccionTransferencia').textContent='Primero enviá tu pedido con el botón del formulario. Después realizá la transferencia y usá el número de pedido como referencia.';
+        document.querySelector('#estadoCopiaTransferencia').textContent='';
+    }
     actualizarResumenCheckout();
     document.querySelector("#modalEntrega").classList.add("active");
 }
@@ -649,11 +556,16 @@ async function enviarPedidoWhatsApp(evento) {
  try {
   const pedido = await guardarPedido(datos);
   const mensaje = armarMensajePedidoGuardado(pedido);
+  mostrarTransferenciaPedidoGuardado(pedido);
   const enlace = document.createElement('a'); enlace.href = 'https://wa.me/59897605718?text=' + mensaje; enlace.target = '_blank'; enlace.rel = 'noopener'; enlace.textContent = 'Enviar pedido #' + pedido.id + ' al WhatsApp de Flamitas';
   document.querySelector('#formEntrega').prepend(enlace);
+  if (pedido.pago?.medio === 'Transferencia bancaria') {
+   const destino = document.querySelector('#transferenciaPedidoGuardado'); destino.append(enlace); cerrarModalEntrega(); destino.scrollIntoView?.({block:'start',behavior:'smooth'});
+  }
   carrito = []; solicitudPedido = crypto.randomUUID(); mostrarCarrito(); cerrarCarrito();
-  alert('Pedido #' + pedido.id + ' guardado. Tocá el enlace de WhatsApp para enviarlo.');
-  await cargarDatosServidor(); mostrarVelas();
+  mostrarConfirmacion('Pedido #' + pedido.id + ' recibido. Tocá el enlace de WhatsApp para coordinar.');
+  try { await cargarDatosServidor(); mostrarVelas(); if(typeof cargarComprobantes === "function") await cargarComprobantes(false); }
+  catch { alert('El pedido quedó guardado. No pudimos actualizar el catálogo; recargá la página antes de comprar nuevamente.'); }
  } catch(error) { alert(error.message); } finally { enviandoPedido = false; boton.disabled = false; }
 }
 
@@ -696,6 +608,7 @@ function datosEnvioIncompletos(datosPedido) {
 
 // Actualiza el resumen visible dentro del modal de finalizar compra.
 function actualizarResumenCheckout() {
+    actualizarTransferencia();
     if (document.querySelector("#resumenPedidoCheckout") === null) {
         return;
     }
@@ -760,5 +673,42 @@ function mostrarDatoResumen(dato) {
         return "Pendiente";
     }
 
-    return dato;
+    return escaparHTML(dato);
+}
+
+// Directorio de sitios oficiales: no envía datos ni inicia pagos automáticamente.
+const institucionesTransferencia = [["BROU","https://www.brou.com.uy/"],["BHU","https://www.bhu.com.uy/"],["Itaú","https://www.itau.com.uy/"],["Santander","https://www.santander.com.uy/"],["Scotiabank","https://www.scotiabank.com.uy/"],["BBVA","https://www.bbva.com.uy/"],["HSBC","https://www.hsbc.com.uy/"],["Bandes","https://www.bandes.com.uy/"],["Banque Heritage","https://www.heritage.com.uy/"],["Banco Nación Argentina — Uruguay","https://www.bna.com.uy/"],["Citi — Uruguay","https://www.citibank.com/icg/sa/latam/uruguay/"],["Prex","https://www.prexcard.com/"],["MiDinero","https://www.midinero.com.uy/"],["Mercado Pago","https://www.mercadopago.com.uy/"]];
+const cuentaFlamitas = '1001076725768';
+let pedidoTransferenciaGuardado = null;
+function iniciarTransferencia() {
+ document.querySelector('#bancoTransferencia').addEventListener('change',actualizarBancoTransferencia);
+ document.querySelector('#copiarCuentaTransferencia').addEventListener('click',()=>copiarTransferencia(false));
+ document.querySelector('#copiarDatosTransferencia').addEventListener('click',()=>copiarTransferencia(true));
+ actualizarTransferencia();
+}
+function actualizarTransferencia() {
+ const panel=document.querySelector('#datosTransferencia');
+ if(!panel || pedidoTransferenciaGuardado) return;
+ panel.hidden=document.querySelector('#medioPagoEntrega').value!=='Transferencia bancaria';
+}
+function actualizarBancoTransferencia() {
+ const valor=document.querySelector('#bancoTransferencia').value;
+ const institucion=/^\d+$/.test(valor) ? institucionesTransferencia[Number(valor)] : null;
+ const enlace=document.querySelector('#abrirBancoTransferencia');
+ enlace.hidden=!institucion;enlace.removeAttribute('href');
+ if(institucion){enlace.href=institucion[1];enlace.textContent='Abrir '+institucion[0]+' (nueva pestaña)';}
+ document.querySelector('#ayudaBancoTransferencia').textContent=institucion && ['Prex','MiDinero','Mercado Pago'].includes(institucion[0]) ? 'Para transferir, abrí la app de '+institucion[0]+'. Este enlace abre su sitio oficial, sin completar ni confirmar el pago.' : 'Desde tu banca web o app, elegí Mercado Pago como destino si está disponible para tu cuenta. Si no aparece, consultá con tu institución o coordiná con Flamitas.';
+}
+async function copiarTransferencia(completo) {
+ const texto=completo ? 'Institución: Mercado Pago\nTitular: Silvia Andrea Rosales Gatto\nCuenta: '+cuentaFlamitas+'\nMoneda: UYU'+(pedidoTransferenciaGuardado ? '\nReferencia: Pedido #'+pedidoTransferenciaGuardado.id : '') : cuentaFlamitas;
+ const estado=document.querySelector('#estadoCopiaTransferencia');
+ try { if(!navigator.clipboard?.writeText)throw new Error('No disponible');await navigator.clipboard.writeText(texto);estado.textContent=completo?'Datos copiados.':'Número de cuenta copiado.'; }
+ catch { estado.textContent='No pudimos copiar automáticamente. Seleccioná y copiá los datos que aparecen arriba.'; }
+}
+function mostrarTransferenciaPedidoGuardado(pedido) {
+ if(pedido.pago?.medio!=='Transferencia bancaria')return;
+ pedidoTransferenciaGuardado=pedido;
+ const panel=document.querySelector('#datosTransferencia');const destino=document.querySelector('#transferenciaPedidoGuardado');
+ destino.append(panel);destino.hidden=false;panel.hidden=false;
+ document.querySelector('#instruccionTransferencia').textContent='Pedido #'+pedido.id+' guardado. Total del pedido: $'+pedido.total+' UYU. Usá Pedido #'+pedido.id+' como referencia y coordiná cualquier costo de envío pendiente antes de transferir.';
 }

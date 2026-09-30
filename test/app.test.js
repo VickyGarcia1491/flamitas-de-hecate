@@ -37,10 +37,11 @@ test('PostgreSQL: sesiones, permisos, pedidos, concurrencia y persistencia', asy
  });
  await t.test('Importación inicial protegida y sin sobrescrituras repetidas', async () => {
   const state = (await request('/api/bootstrap','GET',null,adminCookie)).data;
-  const body = {productos:state.productos,esencias:state.esencias,pedidos:[],vistos:[],consultas:[]};
+  const body = {productos:state.productos,esencias:state.esencias,pedidos:[],vistos:[],consultas:[],esenciasCatalogo:[{nombre:'Esencia de respaldo',detalle:'Conservar'}]};
   assert.equal((await request('/api/admin/import','POST',body,clientCookie)).status,403);
   assert.equal((await request('/api/admin/import','POST',{...body,productos:[...body.productos,body.productos[0]]},adminCookie)).status,400);
   assert.equal((await request('/api/admin/import','POST',body,adminCookie)).status,200);
+  assert.deepEqual((await request('/api/bootstrap','GET',null,adminCookie)).data.esenciasCatalogo,body.esenciasCatalogo);
   assert.equal((await request('/api/admin/import','POST',body,adminCookie)).status,409);
  });
  await t.test('El servidor calcula precios y no acepta pagos autoconfirmados', async () => {
@@ -113,6 +114,21 @@ test('PostgreSQL: sesiones, permisos, pedidos, concurrencia y persistencia', asy
   const restored=structuredClone(state.pedidos);restored.find(p=>p.id===order.id).estado='Nuevo';
   assert.equal((await request('/api/admin/state','PUT',{version:state.version,data:{pedidos:restored}},adminCookie)).status,200);
   assert.equal((await request('/api/bootstrap','GET',null,adminCookie)).data.productos[0].stock,original);
+ });
+
+ await t.test('Edición parcial de producto: permisos, persistencia y conflicto',async()=>{
+  const state=(await request('/api/bootstrap','GET',null,adminCookie)).data;
+  const first=state.productos[0];
+  const body={version:state.version,data:{},productChanges:{upsert:[{id:first.id,stock:4}],remove:[]}};
+  assert.equal((await request('/api/admin/state/changes','PUT',body)).status,403);
+  assert.equal((await request('/api/admin/state/changes','PUT',body,adminCookie)).status,200);
+  const updated=(await request('/api/bootstrap','GET',null,adminCookie)).data;
+  assert.equal(updated.productos[0].stock,4);assert.equal(updated.productos[0].imagen,first.imagen);
+  assert.deepEqual(updated.pedidos,state.pedidos);
+  assert.equal((await request('/api/admin/state/changes','PUT',body,adminCookie)).status,409);
+  const invalid={...body,version:updated.version,productChanges:{upsert:[{id:first.id,stock:-1}],remove:[]}};
+  assert.equal((await request('/api/admin/state/changes','PUT',invalid,adminCookie)).status,400);
+  assert.equal((await request('/api/bootstrap','GET',null,adminCookie)).data.productos[0].stock,4);
  });
 
 });

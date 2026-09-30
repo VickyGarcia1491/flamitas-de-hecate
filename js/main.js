@@ -7,12 +7,10 @@ function inicio() {
     // BOTON MENU HAMBURGUESA
     document.querySelector("#menuToggle")?.addEventListener("click", toggleMenu);
 
+    document.querySelector('#menuLinks')?.addEventListener('click', event => {
+        if (event.target.closest('a')) cerrarMenu();
+    });
     // LINKS DEL MENU
-    let links = document.querySelectorAll("#menuLinks a");
-
-    for (let i = 0; i < links.length; i++) {
-        links[i].addEventListener("click", cerrarMenu);
-    }
     document.addEventListener('keydown', event => {
         if (event.key === 'Escape') cerrarMenu();
     });
@@ -25,9 +23,10 @@ function inicio() {
 function toggleMenu() {
     let menu = document.querySelector("#menuLinks");
 
+    if (!menu) return;
     // Si tiene la clase active → la saco
     if (menu.classList.contains("active")) {
-        menu.classList.remove("active");
+        menu?.classList.remove("active");
     } else {
         menu.classList.add("active");
     }
@@ -38,6 +37,6 @@ function toggleMenu() {
 // Cierra el menú hamburguesa después de tocar un enlace.
 function cerrarMenu() {
     let menu = document.querySelector("#menuLinks");
-    menu.classList.remove("active");
+    menu?.classList.remove("active");
     document.querySelector('#menuToggle')?.setAttribute('aria-expanded', 'false');
 }

@@ -1,3 +1,7 @@
+// Escapar texto antes de insertarlo en HTML o atributos.
+function escaparHTML(value) {
+ return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 let datosServidor = {usuario: null, productos: [], esencias: {mediana: {}, chica: {}}, pedidos: [], vistos: [], version: 0};
 async function api(url, method = 'GET', body, timeoutMs = 75000) {
  const controller = new AbortController();
@@ -5,7 +9,7 @@ async function api(url, method = 'GET', body, timeoutMs = 75000) {
  try {
  const response = await fetch(url, {method, signal: controller.signal, credentials: 'same-origin', headers: {'Content-Type': 'application/json', 'X-Flamitas': '1'}, ...(body === undefined ? {} : {body: JSON.stringify(body)})});
  const data = await response.json().catch(() => {
-  const mensajes = {401: 'La sesión venció o el sitio requiere acceso. Volvé a ingresar.', 403: 'El servidor no autorizó este cambio.', 413: 'El cambio supera el tamaño que admite el servidor.', 429: 'Hay demasiadas solicitudes. Esperá un momento antes de intentar otra vez.'};
+  const mensajes = {400: 'El servicio rechazó la solicitud (HTTP 400). No se pudo confirmar el guardado. Si persiste, compartí este código con soporte.', 404: 'La versión del servidor todavía no admite este cambio (HTTP 404). Falta actualizar el servidor.', 401: 'La sesión venció o el sitio requiere acceso. Volvé a ingresar.', 403: 'El servidor no autorizó este cambio.', 413: 'El cambio supera el tamaño que admite el servidor.', 429: 'Hay demasiadas solicitudes. Esperá un momento antes de intentar otra vez.'};
   throw Object.assign(new Error(mensajes[response.status] || 'La tienda todavía no está disponible. Intentá nuevamente en un momento.'), {status: response.status});
  });
  if (!response.ok) throw Object.assign(new Error(data.error || 'No se pudo completar la operación.'), {status: response.status});
@@ -24,6 +28,26 @@ async function cargarDatosServidor(timeoutMs) {
 let colaGuardados = Promise.resolve();
 let estadoNecesitaRevision = false;
 let ultimoErrorGuardado = '';
+function enviarCambiosEstado(data) {
+ const body = {version: datosServidor.version, data: {...data}};
+ let url = '/api/admin/state';
+ if (Array.isArray(data.productos)) {
+  const previous = new Map(datosServidor.productos.map(p=>[p.id,p]));
+  const ids = new Set(data.productos.map(p=>p.id));
+  const upsert = [];
+  for (const product of data.productos) {
+   const old = previous.get(product.id);
+   const change = {id: product.id};
+   for (const key of Object.keys(product)) if (!old || JSON.stringify(product[key]) !== JSON.stringify(old[key])) change[key]=product[key];
+   if (!old || Object.keys(change).length>1) upsert.push(change);
+  }
+  body.productChanges = {upsert, remove: [...previous.keys()].filter(id=>!ids.has(id))};
+  delete body.data.productos;
+  // Un servidor viejo responde 404: nunca aparentar que guardó cambios que ignoró.
+  url += '/changes';
+ }
+ return api(url, 'PUT', body);
+}
 function guardarEstadoServidor(cambios) {
  // Capturar la intención antes de esperar, sin compartir objetos mutables con el formulario.
  const calcular = typeof cambios === 'function' ? cambios : null;
@@ -41,14 +65,14 @@ function guardarEstadoServidor(cambios) {
   // El servidor combina estos campos con el estado actual dentro de la transacción.
   // Marcar leído o cambiar un pedido no debe volver a subir las fotos del catálogo.
   let result;
-  try { result = await api('/api/admin/state', 'PUT', {version: datosServidor.version, data}); }
+  try { result = await enviarCambiosEstado(data); }
   catch (error) {
    // Un 409 confirma que no se guardó. Solo las operaciones por intención pueden
    // recalcularse sobre la versión nueva, y deben detectar cambios en el mismo dato.
    if (error.status !== 409 || !calcular) throw error;
    await cargarDatosServidor();
    data = structuredClone(calcular(datosServidor));
-   result = await api('/api/admin/state', 'PUT', {version: datosServidor.version, data});
+   result = await enviarCambiosEstado(data);
   }
   datosServidor = {...datosServidor, ...data, version: result.version};
   if (result.productos) {
@@ -83,3 +107,12 @@ function mostrarAvisoGuardado(mensaje) {
  aviso.append(texto,boton);
 }
 window.addEventListener('unhandledrejection', event => { event.preventDefault(); alert(event.reason?.message || 'No se pudo guardar. Intentá nuevamente.'); });
+
+// Confirmaciones breves sin interrumpir la compra. Los errores conservan sus avisos persistentes.
+let temporizadorConfirmacion;
+function mostrarConfirmacion(texto) {
+ let aviso = document.querySelector('#confirmacionCompra');
+ if (!aviso) { aviso = document.createElement('div'); aviso.id='confirmacionCompra'; aviso.setAttribute('role','status'); aviso.setAttribute('aria-live','polite'); document.body.append(aviso); }
+ aviso.textContent=texto; aviso.hidden=false; clearTimeout(temporizadorConfirmacion);
+ temporizadorConfirmacion=setTimeout(()=>{aviso.hidden=true;},5000);
+}

@@ -11,6 +11,7 @@
     <link rel="apple-touch-icon" href="./img/app-icon-192.png">
     <link rel="manifest" href="./manifest.webmanifest">
     <link rel="stylesheet" href="./css/styles.css">
+    <link rel="stylesheet" href="./css/publico.css">
     <link
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Montserrat:wght@300;400;500&display=swap"
         rel="stylesheet">
@@ -18,7 +19,7 @@
 </head>
 
 
-<body>
+<body class="sitio-publico">
 
     <!-- Menú superior de la página de inicio. -->
     <header class="menu">
@@ -38,33 +39,25 @@
                 <li><a href="#inicio">Inicio</a></li>
                 <li><a href="tienda.html">Tienda</a></li>
                 <li><a href="contacto.html">Contacto</a></li>
-                <li><a href="login.html" hidden>Ingresar</a></li>
+                <li><a href="login.html">Iniciar sesión</a></li>
             </ul>
 
         </nav>
     </header>
 
     <!-- Encabezado principal con el nombre del emprendimiento. -->
-    <section id="inicio" class="header">
+    <section id="inicio" class="header portada">
+        <span class="eyebrow">Un aroma, una pausa, un momento para vos.</span>
         <h1>Flamitas de Hécate</h1>
-        <p>Velas artesanales hechas con intención</p>
+        <p>Velas artesanales hechas con intención.</p>
+        <div class="portada-acciones"><a class="boton-principal" href="tienda.html">Ver la tienda <span aria-hidden="true">↗</span></a><a class="enlace-suave" href="#nosotras">Conocé nuestra historia</a></div>
     </section>
 
-    <!-- TIENDA 
-    <section id="tienda" class="gallery">
-        <h2>Nuestras velas</h2>
-        <div class="gallery-grid">
-            <img src="./img/vela1.jpeg" alt="Bamboo Sunflower">
-            <img src="./img/vela2.jpeg" alt="Osito grande">
-            <img src="./img/vela3.jpeg" alt="Cocos">
-        </div>
-    </section> -->
+<!-- Sección para contar la historia de Flamitas. -->
 
-    <!-- Sección para contar la historia de Flamitas. -->
-
-    <section class="about">
+    <section class="about" id="nosotras">
     <div class="about-texto">
-        <h2>Quiénes somos</h2>
+        <span class="eyebrow">Detrás de cada Flamita</span><h2>Quiénes somos</h2>
 
         <p>
             ¡Hola! Somos Victoria y Silvia, dos amigas con ganas de salir de la rutina y crear algo propio.
@@ -90,14 +83,16 @@
 
     <!-- Imagen lateral que acompaña el texto de quiénes somos. -->
     <div class="about-imagen">
-        <img src="./img/Nosotras.jpeg" alt="Sil y Vicky">
+        <img src="./img/Nosotras.jpeg" alt="Ilustración de dos artesanas rodeadas de velas" loading="lazy">
     </div>
 </section>
 
+<section class="guia-compra" id="como-comprar" aria-labelledby="tituloCompra">
+ <span class="eyebrow">De nuestra tienda a tu hogar</span><h2 id="tituloCompra">Tu momento Flamitas</h2>
+ <div class="pasos-compra"><article><span class="paso-numero">01</span><h3>Elegí tus velas</h3><p>Sumá tus favoritas al carrito. Iniciá sesión o registrate para completar el pedido.</p></article><article><span class="paso-numero">02</span><h3>Coordinamos el pago</h3><p>Podés elegir efectivo, transferencia bancaria o Mercado Pago. Confirmamos los detalles por WhatsApp.</p></article><article><span class="paso-numero">03</span><h3>Preparadas para vos</h3><p>Elegí retiro o envío. Coordinamos por WhatsApp la disponibilidad, el costo de entrega y el tiempo de preparación antes de confirmar.</p></article></div>
+ </section>
     <!-- Pie de página de la web. -->
-    <footer class="footer">
-        <p>© Flamitas de Hécate</p>
-    </footer>
+    <footer class="footer"><div><strong>Flamitas de Hécate</strong><p>Velas artesanales hechas con intención.</p></div><div class="footer-enlaces"><a href="index.html#como-comprar">Cómo comprar</a><a href="contacto.html">Contacto</a></div><p class="footer-copy">© Flamitas de Hécate · Hecho con cariño</p></footer>
 
     <!-- Conecta la página de inicio con las funciones del menú. -->
     <script src="./js/api.js"></script>

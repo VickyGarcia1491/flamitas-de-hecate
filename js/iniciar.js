@@ -10,6 +10,7 @@ document.addEventListener('submit', evento => {
 }, true);
 const avisoConexion = document.createElement('aside');
 avisoConexion.id = 'avisoConexion';
+avisoConexion.hidden = true;
 avisoConexion.setAttribute('role', 'status');
 avisoConexion.setAttribute('aria-live', 'polite');
 const textoConexion = document.createElement('p');
@@ -19,6 +20,7 @@ reintentarConexion.textContent = 'Volver a conectar';
 reintentarConexion.hidden = true;
 avisoConexion.append(textoConexion, reintentarConexion);
 document.body.prepend(avisoConexion);
+const demoraConexion = setTimeout(() => { if (!tiendaLista) avisoConexion.hidden = false; }, 1800);
 
 async function conectarTienda() {
  if (conexionEnCurso || tiendaLista) return;
@@ -37,6 +39,8 @@ async function conectarTienda() {
    }
   }
  } catch (error) {
+  clearTimeout(demoraConexion);
+  avisoConexion.hidden = false;
   avisoConexion.dataset.estado = 'error';
   textoConexion.textContent = 'No pudimos conectar con la tienda. Revisá tu conexión y volvé a intentar.';
   reintentarConexion.hidden = false;
@@ -51,8 +55,11 @@ async function conectarTienda() {
   if (typeof iniciarMiCuenta === 'function') iniciarMiCuenta();
   if (typeof iniciarContacto === 'function') iniciarContacto();
   tiendaLista = true;
+  if (typeof iniciarComprobantes === "function") iniciarComprobantes();
+  clearTimeout(demoraConexion);
   avisoConexion.remove();
  } catch(error) {
+  clearTimeout(demoraConexion); avisoConexion.hidden = false;
   controlesPendientes.forEach(control => { control.disabled = true; });
   textoConexion.textContent = 'No pudimos preparar esta página. Recargala para volver a intentar.';
  } finally { conexionEnCurso = false; }

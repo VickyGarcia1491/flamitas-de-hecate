@@ -22,14 +22,9 @@ esenciasLatitaChica.push("Lavanda");
 
 
 function obtenerStockEsenciasGuardado() { return structuredClone(datosServidor.esencias); }
-function indiceEsenciaGeneral(tipo, indice) {
- const nombre = (tipo === 'mediana' ? esenciasLatitaMediana : esenciasLatitaChica)[indice];
- const catalogo = datosServidor.esenciasCatalogo;
- return Array.isArray(catalogo) ? catalogo.findIndex(esencia => esencia.nombre === nombre) : -1;
-}
 function obtenerStockEsencia(tipo, indice) {
  if (tipo === 'general') return obtenerStockInternoEsenciasGuardado().general[indice] ?? 'Consultar';
- if (datosServidor.esencias.general) return datosServidor.esencias.general[indiceEsenciaGeneral(tipo,indice)] ?? 'Consultar';
+ if (datosServidor.esencias.general) return velas.find(p => p.id === (tipo === 'mediana' ? 4 : 5))?.stock ?? 0;
  return datosServidor.esencias[tipo]?.[indice] ?? 'Consultar';
 }
 
@@ -57,15 +52,7 @@ function obtenerStockInternoEsenciasGuardado() {
  }
  return stock;
 }
-async function guardarProductosVelas() { await guardarEstadoServidor({productos: velas}); }
-async function guardarStockVelas() { await guardarProductosVelas(); }
-async function guardarStockEsencias(stock) { await guardarEstadoServidor({esencias: stock}); }
-async function actualizarStockEsencia(tipo, indice, cantidad) {
- const stock = obtenerStockEsenciasGuardado();
- if (stock.general) {
-  const general = indiceEsenciaGeneral(tipo,indice);
-  if (general < 0) throw new Error('Esta esencia no existe en el catálogo general. No se modificó el stock.');
-  stock.general[general] = cantidad;
- } else { stock[tipo][indice] = cantidad; }
- await guardarStockEsencias(stock);
+async function guardarProductosVelas() {
+ try { await guardarEstadoServidor({productos: velas}); }
+ catch (error) { velas = structuredClone(datosServidor.productos); throw error; }
 }

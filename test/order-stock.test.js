@@ -40,3 +40,18 @@ test('Editar cancelado, borrar historial y venta nueva no duplican movimientos',
  next.pedidos=[];assert.equal(reconcileOrderStock(old,next),false);
  next.pedidos=[{...old.pedidos[0],id:22,estado:'Nuevo'}];assert.equal(reconcileOrderStock(old,next),false);
 });
+
+test('Datos malformados se rechazan con un error de validación', async()=>{
+ const {validateState,checkout}=await import('../server/business.js');
+ for(const field of ['productos','pedidos']){
+  const state={productos:[],pedidos:[],vistos:[],esencias:{mediana:{},chica:{}}};state[field]=[null];
+  assert.throws(()=>validateState(state),e=>e.status===400);
+ }
+ assert.throws(()=>checkout({productos:[]},{productos:[null],entrega:{metodo:'Retiro'}},{},1),e=>e.status===400);
+});
+
+test('Descripciones multilínea válidas no impiden guardar productos',async()=>{
+ const {validateState}=await import('../server/business.js');
+ const state={productos:[{id:1,nombre:'Vela',descripcion:'Primera línea\nSegunda línea',precio:200,stock:2}],pedidos:[],vistos:[],esencias:{general:{0:'Sí'}},esenciasCatalogo:[{nombre:'Bamboo',detalle:'Una línea\nOtra línea'}]};
+ assert.doesNotThrow(()=>validateState(state));state.esenciasCatalogo=null;assert.throws(()=>validateState(state),e=>e.status===400);
+});

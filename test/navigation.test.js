@@ -9,12 +9,22 @@ test('Menús: carga oculta, sesión cliente, administrador e invitado',async()=>
    const dom=new JSDOM(await readFile(page+'.html','utf8'),{runScripts:'outside-only',url:'https://flamitas.example'});
    try{
     const w=dom.window;w.datosServidor={usuario:user};
-    for(const a of w.document.querySelectorAll('a[href="admin.html"], a[href="login.html"]'))assert.equal(a.hidden,true);
+    for(const a of w.document.querySelectorAll('a[href="admin.html"]'))assert.equal(a.hidden,true);
     vm.runInContext(await readFile('js/usuarios.js','utf8'),dom.getInternalVMContext());w.mostrarUsuarioEnMenu();
     for(const a of w.document.querySelectorAll('a[href="admin.html"]'))assert.equal(a.hidden,user?.rol!=='admin');
     for(const a of w.document.querySelectorAll('a[href="login.html"]'))assert.equal(a.hidden,!!user);
     if(user && w.document.querySelector('.menu-links'))assert.ok(w.document.querySelector('.menu-links a[href="'+(user.rol==='admin'?'admin.html':'mi-cuenta.html')+'"]'));
    }finally{dom.window.close();}
   }
+ }
+});
+
+test('Escape no falla sin menú desplegable y los enlaces dinámicos lo cierran',async()=>{
+ for(const markup of ['<body></body>','<body><button id="menuToggle"></button><ul id="menuLinks" class="active"></ul></body>']){
+  const dom=new JSDOM(markup,{runScripts:'outside-only'});try{
+   const win=dom.window;vm.runInContext(await readFile('js/main.js','utf8'),dom.getInternalVMContext());win.inicio();
+   assert.doesNotThrow(()=>win.cerrarMenu());assert.doesNotThrow(()=>win.toggleMenu());
+   const menu=win.document.querySelector('#menuLinks');if(menu){menu.classList.add('active');const a=win.document.createElement('a');a.href='#cuenta';menu.append(a);a.click();assert.equal(menu.classList.contains('active'),false)}
+  }finally{dom.window.close()}
  }
 });

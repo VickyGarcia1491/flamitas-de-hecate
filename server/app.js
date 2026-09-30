@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { hashPassword, verifyPassword, tokenHash, newToken, fail, text, email, password, validateTree } from './security.js';
-import { emptyState, validateState, checkout, reconcileOrderStock } from './business.js';
+import { emptyState, validateState, checkout, reconcileOrderStock, applyProductChanges } from './business.js';
 import {initializePush, createPushService, validateSubscription} from './push.js';
 const root = fileURLToPath(new URL('../', import.meta.url));
 export async function initialize(db, config) {
@@ -25,7 +25,7 @@ export function createApp(db, config = {}, dependencies = {}) {
   app.locals.deliverPush = () => push.deliver().catch(() => console.error('No se pudo procesar la cola de notificaciones.'));
   app.set('trust proxy', 1);
   app.use(helmet({contentSecurityPolicy: {directives: {"script-src": ["'self'"], "img-src": ["'self'", 'data:'], "style-src": ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'], "font-src": ["'self'", 'https://fonts.gstatic.com'], "upgrade-insecure-requests": config.NODE_ENV === 'production' ? [] : null}}}));
-  app.use('/api', rateLimit({windowMs: 60000, limit: 180}));
+  app.use('/api', rateLimit({windowMs: 60000, limit: 180, message: {error: 'Demasiadas solicitudes. Esperá un momento.'}}));
   app.use(express.json({limit: '25mb'}));
   app.use('/api', (req, res, next) => {
     res.set('Cache-Control', 'no-store');
@@ -92,13 +92,17 @@ export function createApp(db, config = {}, dependencies = {}) {
     const {data, version} = (await db.query('SELECT * FROM business_state WHERE id=1')).rows[0];
     res.json({usuario: req.user || null, version, productos: data.productos, esencias: data.esencias, esenciasCatalogo: data.esenciasCatalogo, pedidos: req.user?.rol === 'admin' ? data.pedidos : data.pedidos.filter(p => req.user && p.cliente.email === req.user.email), vistos: req.user?.rol === 'admin' ? data.vistos : []});
   });
-  app.put('/api/admin/state', admin, async (req, res) => {
+  app.put(['/api/admin/state', '/api/admin/state/changes'], admin, async (req, res) => {
     res.json(await transact(async client => {
       const current = (await client.query('SELECT data,version FROM business_state WHERE id=1 FOR UPDATE')).rows[0];
       if (current.version !== req.body.version) fail('Los datos cambiaron en otra sesión. Recargá la página y repetí el cambio.', 409);
       // Conservar campos introducidos por otras versiones que un cliente antiguo no envía.
       if (!req.body.data || typeof req.body.data !== 'object' || Array.isArray(req.body.data)) fail('Formato de datos inválido.');
       const data = structuredClone({...current.data, ...req.body.data});
+      if (req.body.productChanges !== undefined) {
+        if (Object.hasOwn(req.body.data, 'productos')) fail('No mezcles catálogo completo y cambios parciales.');
+        data.productos = applyProductChanges(current.data.productos, req.body.productChanges);
+      }
       validateState(data);
       const stockChanged = reconcileOrderStock(current.data, data);
       validateState(data);
@@ -121,7 +125,51 @@ export function createApp(db, config = {}, dependencies = {}) {
     await app.locals.deliverPush();
     res.status(201).json(order);
   });
-  app.post('/api/contact', rateLimit({windowMs: 3600000, limit: 15}), async (req, res) => {
+  // Los comprobantes nunca forman parte del catálogo público ni del documento de stock.
+  app.get('/api/receipts', auth, async(req,res)=>{
+    const rows=(await db.query('SELECT order_id,name,uploaded_at,reviewed_at FROM payment_receipts'+(req.user.rol==='admin'?'':' WHERE user_id=$1'),req.user.rol==='admin'?[]:[req.user.id])).rows;
+    const state=(await db.query('SELECT data FROM business_state WHERE id=1')).rows[0].data;
+    res.json(rows.filter(r=>state.pedidos.some(p=>String(p.id)===String(r.order_id) && (req.user.rol==='admin'||p.cliente.email===req.user.email))));
+  });
+  app.post('/api/orders/:id/receipt',auth,async(req,res)=>{
+    const {name,mime,content}=req.body;
+    if(typeof content!=='string'||content.length>6990508||/[^A-Za-z0-9+/=]/.test(content))fail('Archivo inválido o mayor a 5 MB.');
+    const bytes=Buffer.from(content,'base64');
+    if(bytes.toString('base64')!==content)fail('Archivo inválido.');
+    const detected=bytes.subarray(0,5).toString()==='%PDF-'?'application/pdf':bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]))?'image/png':bytes[0]===255&&bytes[1]===216&&bytes[2]===255?'image/jpeg':null;
+    if(!detected||detected!==mime||bytes.length>5*1024*1024)fail('Usá un comprobante PDF, JPG o PNG de hasta 5 MB.');
+    const filename=text(name,180);
+    await transact(async client=>{
+      const state=(await client.query('SELECT data FROM business_state WHERE id=1 FOR UPDATE')).rows[0].data;
+      const order=state.pedidos.find(p=>String(p.id)===req.params.id&&p.cliente.email===req.user.email);
+      if(!order)fail('Pedido no disponible.',404);
+      if(order.pago?.medio!=='Transferencia bancaria'||order.pago?.estado==='Pagado'||order.estado==='Cancelado')fail('Este pedido no admite comprobantes.',409);
+      await client.query('INSERT INTO payment_receipts(order_id,user_id,name,mime,content) VALUES($1,$2,$3,$4,$5) ON CONFLICT(order_id) DO UPDATE SET name=EXCLUDED.name,mime=EXCLUDED.mime,content=EXCLUDED.content,uploaded_at=now(),reviewed_at=NULL,reviewed_by=NULL',[order.id,req.user.id,filename,detected,content]);
+    });res.status(201).json({ok:true});
+  });
+  app.get('/api/orders/:id/receipt',auth,async(req,res)=>{
+    if(!/^\d+$/.test(req.params.id))fail('Comprobante no disponible.',404);
+    const receipt=(await db.query('SELECT * FROM payment_receipts WHERE order_id=$1',[req.params.id])).rows[0];
+    const state=(await db.query('SELECT data FROM business_state WHERE id=1')).rows[0].data;
+    const order=state.pedidos.find(p=>String(p.id)===req.params.id);
+    if(!receipt||!order||(req.user.rol!=='admin'&&(String(receipt.user_id)!==String(req.user.id)||order.cliente.email!==req.user.email)))fail('Comprobante no disponible.',404);
+    const ext=receipt.mime==='application/pdf'?'pdf':receipt.mime==='image/png'?'png':'jpg';
+    res.set('Content-Disposition','attachment; filename="comprobante-'+order.id+'.'+ext+'"');res.type(receipt.mime).send(Buffer.from(receipt.content,'base64'));
+  });
+  app.post('/api/orders/:id/receipt/confirm',admin,async(req,res)=>{
+    await transact(async client=>{
+      const current=(await client.query('SELECT data FROM business_state WHERE id=1 FOR UPDATE')).rows[0];
+      const receipt=(await client.query('SELECT uploaded_at FROM payment_receipts WHERE order_id=$1',[req.params.id])).rows[0];
+      if(!receipt)fail('Comprobante no disponible.',404);
+      if(new Date(receipt.uploaded_at).toISOString()!==req.body.uploadedAt)fail('El comprobante cambió. Actualizá la lista y revisalo nuevamente.',409);
+      const order=current.data.pedidos.find(p=>String(p.id)===req.params.id);
+      if(!order||order.estado==='Cancelado'||order.pago?.medio!=='Transferencia bancaria')fail('El pedido no puede confirmarse.',409);
+      order.pago.estado='Pagado';
+      await client.query('UPDATE business_state SET data=$1,version=version+1 WHERE id=1',[JSON.stringify(current.data)]);
+      await client.query('UPDATE payment_receipts SET reviewed_at=now(),reviewed_by=$1 WHERE order_id=$2',[req.user.id,req.params.id]);
+    });res.json({ok:true});
+  });
+  app.post('/api/contact', rateLimit({windowMs: 3600000, limit: 15, message: {error: 'Demasiadas consultas. Intentá más tarde.'}}), async (req, res) => {
     const data = {nombre: text(req.body.nombre), email: email(req.body.email), telefono: text(req.body.telefono || '', 100, false), mensaje: text(req.body.mensaje?.replace(/\r?\n/g, ' '), 5000), fecha: new Date().toISOString()};
     await db.query('INSERT INTO inquiries(data) VALUES($1)', [JSON.stringify(data)]); res.status(201).json({ok: true});
   });
@@ -132,7 +180,7 @@ export function createApp(db, config = {}, dependencies = {}) {
   });
   app.post('/api/admin/import', admin, async (req, res) => {
     const input = req.body;
-    const state = {productos: input.productos, esencias: input.esencias || {mediana: {}, chica: {}}, pedidos: input.pedidos || [], vistos: input.vistos || []};
+    const state = {productos: input.productos, esencias: input.esencias || {mediana: {}, chica: {}}, pedidos: input.pedidos || [], vistos: input.vistos || [], ...(input.esenciasCatalogo !== undefined ? {esenciasCatalogo: input.esenciasCatalogo} : {})};
     validateState(state); validateTree(input.consultas || []);
     res.json(await transact(async client => {
       const current = (await client.query('SELECT data FROM business_state WHERE id=1 FOR UPDATE')).rows[0].data;

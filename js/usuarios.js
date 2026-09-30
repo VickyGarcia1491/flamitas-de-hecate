@@ -11,7 +11,9 @@ async function enviarAcceso(evento, registro) {
   const datos = {email: document.querySelector('#email'+suffix).value, password: document.querySelector('#password'+suffix).value};
   if (registro) { datos.nombre = document.querySelector('#nombreRegistro').value; datos.telefono = document.querySelector('#telefonoRegistro').value; }
   const usuario = await api(registro ? '/api/register' : '/api/login', 'POST', datos);
-  window.location = usuario.rol === 'admin' ? 'admin.html' : 'tienda.html';
+  let continuarCompra = false;
+  try { continuarCompra = !!sessionStorage.getItem('carritoPendienteFlamitas'); } catch {}
+  window.location = usuario.rol === 'admin' ? 'admin.html' : continuarCompra ? 'tienda.html' : 'index.html';
  } catch(error) { mensaje.textContent = error.message; } finally { boton.disabled = false; }
 }
 function iniciarUsuarios() {
