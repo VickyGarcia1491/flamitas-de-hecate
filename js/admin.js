@@ -1172,7 +1172,19 @@ function armarProductoSeleccionadoAdmin(idProducto) {
 
 // Conecta los botones de guardar y eliminar del producto elegido.
 function conectarEventosProductoSeleccionadoAdmin(idProducto) {
-    document.querySelector("#productoSeleccionadoAdmin").oninput = () => { productoAdminSucio = true; const aviso=document.querySelector("#estadoEdicionProducto"); aviso.textContent="Cambios sin guardar"; aviso.dataset.estado="pendiente"; };
+    // Cada formulario nuevo corresponde a los datos guardados del producto actual.
+    productoAdminSucio = false;
+    const editor = document.querySelector('#productoSeleccionadoAdmin');
+    const campos = [...editor.querySelectorAll('input:not([type=button]):not([type=file]), textarea')];
+    const iniciales = campos.map(c => c.value);
+    const actualizarPendientes = () => {
+        productoAdminSucio = campos.some((c,i) => c.value !== iniciales[i]) || [...editor.querySelectorAll('input[type=file]')].some(c => c.files?.length > 0);
+        const aviso = editor.querySelector('#estadoEdicionProducto');
+        aviso.textContent = productoAdminSucio ? 'Cambios sin guardar' : 'Sin cambios pendientes.';
+        aviso.dataset.estado = productoAdminSucio ? 'pendiente' : 'ok';
+    };
+    editor.oninput = actualizarPendientes;
+    editor.onchange = actualizarPendientes;
     const campoStock = document.querySelector('#stockEditar' + idProducto);
     campoStock?.addEventListener('input', () => {
         const estado = obtenerEstadoStock(convertirNumeroSiCorresponde(campoStock.value));
