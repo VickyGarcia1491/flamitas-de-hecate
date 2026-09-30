@@ -940,6 +940,10 @@ function convertirNombreSeccion(seccion) {
         nombre = "Pedidos";
     } else if (seccion === "productos") {
         nombre = "Productos";
+    } else if (seccion === "cobros") {
+        nombre = "Cobros";
+    } else if (seccion === "gastos") {
+        nombre = "Gastos";
     } else if (seccion === "ventaManual") {
         nombre = "VentaManual";
     }

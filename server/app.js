@@ -1,3 +1,4 @@
+import {validateFinance, financeSummary, validDate, syncOrderPayments} from './finance.js';
 import express from 'express';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
@@ -105,6 +106,7 @@ export function createApp(db, config = {}, dependencies = {}) {
       }
       validateState(data);
       const stockChanged = reconcileOrderStock(current.data, data);
+      await syncOrderPayments(client,current.data.pedidos,data.pedidos);
       validateState(data);
       const saved = (await client.query('UPDATE business_state SET data=$1,version=version+1 WHERE id=1 RETURNING version', [JSON.stringify(data)])).rows[0];
       return {...saved, ...(stockChanged ? {productos: data.productos, esencias: data.esencias} : {})};
@@ -164,7 +166,9 @@ export function createApp(db, config = {}, dependencies = {}) {
       if(new Date(receipt.uploaded_at).toISOString()!==req.body.uploadedAt)fail('El comprobante cambió. Actualizá la lista y revisalo nuevamente.',409);
       const order=current.data.pedidos.find(p=>String(p.id)===req.params.id);
       if(!order||order.estado==='Cancelado'||order.pago?.medio!=='Transferencia bancaria')fail('El pedido no puede confirmarse.',409);
+      const previous=structuredClone(current.data.pedidos);
       order.pago.estado='Pagado';
+      await syncOrderPayments(client,previous,current.data.pedidos);
       await client.query('UPDATE business_state SET data=$1,version=version+1 WHERE id=1',[JSON.stringify(current.data)]);
       await client.query('UPDATE payment_receipts SET reviewed_at=now(),reviewed_by=$1 WHERE order_id=$2',[req.user.id,req.params.id]);
     });res.json({ok:true});
@@ -192,6 +196,49 @@ export function createApp(db, config = {}, dependencies = {}) {
       await client.query("SELECT setval('order_ids',$1,true)", [largest]);
       return {ok: true};
     }));
+  });
+  app.get('/api/admin/receivables',admin,async(req,res)=>{
+   const state=(await db.query('SELECT data FROM business_state WHERE id=1')).rows[0].data;
+   const pending=state.pedidos.filter(p=>p.estado!=='Cancelado'&&p.pago?.estado!=='Pagado');
+   const paid=state.pedidos.filter(p=>p.estado!=='Cancelado'&&p.pago?.estado==='Pagado');
+   const finance=(await db.query('SELECT data FROM finance_state WHERE id=1')).rows[0].data;
+   const today=new Date().toLocaleDateString('en-CA',{timeZone:'America/Montevideo'});
+   res.json({pending:pending.map(p=>({id:p.id,cliente:p.cliente.nombre,date:p.fechaISO||'',total:p.total,medio:p.pago?.medio||'Sin definir'})),toCollect:Math.round(pending.reduce((s,p)=>s+p.total,0)*100)/100,cash:financeSummary(finance,today).balance,unregisteredPaid:paid.filter(p=>!finance.movements.some(m=>m.orderId===p.id)).length});
+  });
+  app.post('/api/admin/orders/:id/payment',admin,async(req,res)=>{
+   await transact(async client=>{
+    const current=(await client.query('SELECT data FROM business_state WHERE id=1 FOR UPDATE')).rows[0];
+    const order=current.data.pedidos.find(p=>String(p.id)===req.params.id);
+    if(!order||order.estado==='Cancelado')fail('Pedido no disponible para cobrar.',409);
+    if(req.body.total!==order.total)fail('El importe cambió. Actualizá y revisá el pedido.',409);
+    const previous=structuredClone(current.data.pedidos);order.pago={...order.pago,estado:'Pagado'};
+    await syncOrderPayments(client,previous,current.data.pedidos);
+    await client.query('UPDATE business_state SET data=$1,version=version+1 WHERE id=1',[JSON.stringify(current.data)]);
+    await client.query('UPDATE payment_receipts SET reviewed_at=now(),reviewed_by=$1 WHERE order_id=$2',[req.user.id,order.id]);
+   });res.json({ok:true});
+  });
+  app.get('/api/admin/finance',admin,async(req,res)=>{
+   const current=(await db.query('SELECT data,version FROM finance_state WHERE id=1')).rows[0];
+   const asOf=req.query.date||new Date().toLocaleDateString('en-CA',{timeZone:'America/Montevideo'});
+   if(!validDate(asOf))fail('Fecha inválida.');
+   res.json({...current,summary:financeSummary(current.data,asOf)});
+  });
+  app.put('/api/admin/finance',admin,async(req,res)=>{
+   validateFinance(req.body.data);
+   res.json(await transact(async client=>{
+    const current=(await client.query('SELECT data,version FROM finance_state WHERE id=1 FOR UPDATE')).rows[0];
+    if(current.version!==req.body.version)fail('Los gastos cambiaron en otra sesión. Actualizá antes de volver a guardar.',409);
+    const business=(await client.query('SELECT data FROM business_state WHERE id=1')).rows[0].data;
+    for(const movement of req.body.data.movements){
+     if(movement.orderId==null)continue;
+     const old=current.data.movements.find(m=>m.id===movement.id);
+     if(old&&old.orderId===movement.orderId&&old.amount===movement.amount)continue;
+     const order=business.pedidos.find(p=>p.id===movement.orderId);
+     if(!order||order.estado==='Cancelado'||order.pago?.estado!=='Pagado'||Math.round(order.total*100)!==Math.round(movement.amount*100))fail('Vinculá únicamente un pedido pagado, por su importe total. Para ajustes usá un movimiento separado.');
+    }
+    const result=(await client.query('UPDATE finance_state SET data=$1,version=version+1 WHERE id=1 RETURNING version',[JSON.stringify(req.body.data)])).rows[0];
+    return result;
+   }));
   });
   app.get('/health', async (req, res) => { await db.query('SELECT 1'); res.json({ok: true}); });
   // Servir únicamente recursos públicos; nunca .env, SQL, código del servidor ni backups.

@@ -59,6 +59,8 @@
             <input type="button" value="Pedidos" class="admin-menu-boton" data-seccion="pedidos">
             <input type="button" value="Productos y stock" class="admin-menu-boton" data-seccion="productos">
             <input type="button" value="Venta manual" class="admin-menu-boton" data-seccion="ventaManual">
+            <input type="button" value="Por cobrar" class="admin-menu-boton" data-seccion="cobros">
+            <input type="button" value="Gastos y saldo" class="admin-menu-boton" data-seccion="gastos">
         </aside>
 
         <!-- Sección inicial con resumen rápido del negocio. -->
@@ -232,6 +234,21 @@
             </div>
         </section>
 
+        <section class="admin-bloque admin-seccion" id="seccionCobros"><h2>Por cobrar</h2><p>Ventas activas cuyo pago todavía no confirmamos. Los pedidos cancelados no se incluyen.</p><div id="resumenCobros" class="dashboard-resumen-admin"></div><p id="mensajeCobros" role="status" aria-live="polite"></p><button id="actualizarCobros" type="button">Actualizar pendientes</button><label for="frecuenciaCobros">Recordarme hacer seguimiento</label><select id="frecuenciaCobros"><option value="12">Cada 12 horas</option><option value="24" selected>Cada 24 horas</option><option value="48">Cada 48 horas</option><option value="0">Sin recordatorio</option></select><p class="admin-ayuda">Aviso dentro de la web o app mientras el panel está abierto, o al volver a entrar. Preferencia por dispositivo. No envía mensajes a los clientes ni notificaciones con la app cerrada.</p><div id="listaCobros"></div></section>
+        <section class="admin-bloque admin-seccion" id="seccionGastos">
+         <h2>Gastos y saldo</h2>
+         <p class="admin-ayuda">Control de caja en pesos uruguayos. El resultado de caja compara cobros y gastos pagados; no representa la ganancia contable ni el valor del stock. Registrá también comisiones, devoluciones y otros movimientos para que el saldo esté completo.</p>
+         <button type="button" id="actualizarFinanzas">Actualizar datos</button><label for="fechaResumenFinanzas">Ver situación al día</label><input type="date" id="fechaResumenFinanzas">
+         <p id="mensajeFinanzas" role="status" aria-live="polite"></p><div id="resumenFinanzas" class="dashboard-resumen-admin"></div>
+         <details class="finanzas-bloque"><summary>Fecha de inicio y saldo inicial</summary><p>Saldo disponible al comienzo del día indicado, antes de sus movimientos. No vuelvas a registrar cobros ya incluidos en ese saldo. Cambiarlo recalcula el resumen, sin borrar registros.</p><form id="formSaldoInicial"><label>Fecha de inicio<input type="date" name="start" required></label><label>Saldo inicial UYU<input type="number" name="opening" min="0" step="0.01" required></label><button type="submit">Guardar saldo inicial</button></form></details>
+         <details class="finanzas-bloque" open><summary>Registrar o editar gasto</summary>
+          <form id="formGasto"><input type="hidden" name="id"><label>Concepto<input name="description" required maxlength="200" placeholder="Ej.: compra de cera"></label><label>Categoría<select name="category"><option>Insumos</option><option>Envases</option><option>Envíos</option><option>Publicidad</option><option>Comisiones</option><option>Servicios</option><option>Otros</option></select></label><label>Proveedor (opcional)<input name="supplier" maxlength="150"></label><label>Fecha de compra<input type="date" name="date" required></label><label>Total final UYU (incluí intereses si los hay)<input name="total" type="number" min="0.01" step="0.01" required></label><label>Modalidad<select name="mode"><option value="1">Contado</option><option value="cuotas">Cuotas</option></select></label><label>Cantidad de cuotas<input name="count" type="number" min="1" max="60" value="1" required></label><label>Primer vencimiento<input name="firstDue" type="date" required></label><button type="button" id="generarCuotas">Preparar cuotas</button>
+          <p>Las cuotas se generan mensualmente. Podés ajustar fechas e importes. Completá la fecha de pago únicamente cuando hayas abonado.</p><div id="cuotasGasto"></div><button type="submit">Guardar gasto</button><button type="button" id="limpiarGasto">Nuevo / cancelar edición</button></form>
+         </details>
+         <h3>Gastos registrados y vencimientos</h3><div id="listaGastos"></div>
+         <details class="finanzas-bloque"><summary>Registrar cobro, aporte, retiro o devolución</summary><p>Desde esta actualización, confirmar un pago registra el cobro automáticamente. Los pagos anteriores pueden registrarse aquí con su fecha real si no estaban incluidos en el saldo inicial.</p><form id="formMovimiento"><input type="hidden" name="id"><label>Tipo<select name="type"><option value="cobro">Cobro de venta</option><option value="aporte">Aporte al negocio</option><option value="retiro">Retiro de dinero</option><option value="devolucion">Devolución a cliente</option><option value="reintegro">Reintegro de proveedor</option></select></label><label>Pedido pagado (opcional)<select name="orderId" id="pedidoCobro"></select></label><label>Detalle<input name="description" maxlength="200" required></label><label>Fecha real del movimiento<input name="date" type="date" required></label><label>Importe UYU<input name="amount" type="number" min="0.01" step="0.01" required></label><button type="submit">Guardar movimiento</button><button type="button" id="limpiarMovimiento">Nuevo / cancelar edición</button></form></details>
+         <h3>Movimientos registrados</h3><div id="listaMovimientos"></div>
+        </section>
         <!-- Sección para cargar ventas tomadas fuera de la tienda web. -->
         <section class="admin-bloque admin-seccion" id="seccionVentaManual">
             <h2>Venta manual</h2>
@@ -441,6 +458,8 @@
     <script src="./js/admin.js"></script>
     <script src="./js/notificaciones.js"></script>
     <script src="./js/comprobantes.js"></script>
+    <script src="./js/finanzas.js"></script>
+    <script src="./js/cobros.js"></script>
     <script src="./js/iniciar.js"></script>
 </body>
 

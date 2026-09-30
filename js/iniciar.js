@@ -55,6 +55,8 @@ async function conectarTienda() {
   if (typeof iniciarMiCuenta === 'function') iniciarMiCuenta();
   if (typeof iniciarContacto === 'function') iniciarContacto();
   tiendaLista = true;
+  if (typeof iniciarCobros === "function") iniciarCobros();
+  if (typeof iniciarFinanzas === "function") iniciarFinanzas();
   if (typeof iniciarComprobantes === "function") iniciarComprobantes();
   clearTimeout(demoraConexion);
   avisoConexion.remove();
