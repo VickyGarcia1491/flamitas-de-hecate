@@ -1,4 +1,4 @@
-import {imageHash,publicProducts,preserveProductImages,lightStateSql} from './product-images.js';
+import {imageHash,publicProducts,preserveProductImages,lightStateSql,createImageReader} from './product-images.js';
 import {validateFinance, financeSummary, validDate, syncOrderPayments, auditFinance} from './finance.js';
 import express from 'express';
 import helmet from 'helmet';
@@ -23,6 +23,7 @@ export async function initialize(db, config) {
 }
 export function createApp(db, config = {}, dependencies = {}) {
   const app = express();
+  const readProductImage = createImageReader(db);
   const push = createPushService(db, dependencies.sendPush);
   app.locals.deliverPush = () => push.deliver().catch(() => console.error('No se pudo procesar la cola de notificaciones.'));
   app.set('trust proxy', 1);
@@ -36,8 +37,7 @@ export function createApp(db, config = {}, dependencies = {}) {
   });
   app.get('/api/product-images/:id', async(req,res)=>{
     if(!/^\d+$/.test(req.params.id))return res.sendStatus(404);
-    const result=await db.query("SELECT p->>'imagen' AS image FROM business_state,jsonb_array_elements(data->'productos') p WHERE business_state.id=1 AND p->>'id'=$1",[req.params.id]);
-    const image=result.rows[0]?.image;
+    const image=await readProductImage(req.params.id);
     const match=/^data:(image\/(?:jpeg|png|webp|gif));base64,([A-Za-z0-9+/=\r\n]+)$/.exec(image||'');
     if(!match)return res.sendStatus(404);
     const hash=imageHash(image);
