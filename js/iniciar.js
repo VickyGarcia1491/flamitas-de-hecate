@@ -50,7 +50,7 @@ async function conectarTienda() {
   clearTimeout(demoraConexion);
   avisoConexion.hidden = false;
   avisoConexion.dataset.estado = 'error';
-  textoConexion.textContent = 'No pudimos conectar con la tienda. Revisá tu conexión y volvé a intentar.';
+  textoConexion.textContent = 'No pudimos conectar con el servidor de la tienda. '+error.message;
   reintentarConexion.hidden = false;
   conexionEnCurso = false;
   return;

@@ -102,6 +102,7 @@ function obtenerTextoStockProducto(producto, usuario) {
 
 // Decide si una imagen viene de la carpeta img o fue cargada desde el admin.
 function obtenerRutaImagenProducto(imagen) {
+    if (/^\/api\/product-images\/\d+\?v=[a-f0-9]{32}$/.test(imagen)) return imagen;
     if (!imagen) return './img/producto-sin-foto.svg';
     let ruta = "./img/" + imagen;
 

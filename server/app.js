@@ -1,3 +1,4 @@
+import {imageHash,publicProducts,preserveProductImages,lightStateSql} from './product-images.js';
 import {validateFinance, financeSummary, validDate, syncOrderPayments, auditFinance} from './finance.js';
 import express from 'express';
 import helmet from 'helmet';
@@ -32,6 +33,17 @@ export function createApp(db, config = {}, dependencies = {}) {
     res.set('Cache-Control', 'no-store');
     if (!['GET', 'HEAD'].includes(req.method) && req.get('X-Flamitas') !== '1') return res.status(403).json({error: 'Solicitud no permitida.'});
     next();
+  });
+  app.get('/api/product-images/:id', async(req,res)=>{
+    if(!/^\d+$/.test(req.params.id))return res.sendStatus(404);
+    const result=await db.query("SELECT p->>'imagen' AS image FROM business_state,jsonb_array_elements(data->'productos') p WHERE business_state.id=1 AND p->>'id'=$1",[req.params.id]);
+    const image=result.rows[0]?.image;
+    const match=/^data:(image\/(?:jpeg|png|webp|gif));base64,([A-Za-z0-9+/=\r\n]+)$/.exec(image||'');
+    if(!match)return res.sendStatus(404);
+    const hash=imageHash(image);
+    if(req.query.v!==hash)return res.sendStatus(404);
+    res.set('Cache-Control','public, max-age=31536000, immutable');
+    res.type(match[1]).send(Buffer.from(match[2],'base64'));
   });
   app.use('/api', async (req, res, next) => {
     const token = /(?:^|;\s*)flamitas_session=([a-f0-9]{64})(?:;|$)/.exec(req.headers.cookie || '')?.[1];
@@ -90,7 +102,7 @@ export function createApp(db, config = {}, dependencies = {}) {
     res.clearCookie('flamitas_session', {path: '/'}).json({ok: true});
   });
   app.get('/api/bootstrap', async (req, res) => {
-    const {data, version} = (await db.query('SELECT * FROM business_state WHERE id=1')).rows[0];
+    const {data, version} = (await db.query(lightStateSql)).rows[0];
     res.json({usuario: req.user || null, version, productos: data.productos, esencias: data.esencias, esenciasCatalogo: data.esenciasCatalogo, pedidos: req.user?.rol === 'admin' ? data.pedidos : data.pedidos.filter(p => req.user && p.cliente.email === req.user.email), vistos: req.user?.rol === 'admin' ? data.vistos : []});
   });
   app.put(['/api/admin/state', '/api/admin/state/changes'], admin, async (req, res) => {
@@ -104,12 +116,13 @@ export function createApp(db, config = {}, dependencies = {}) {
         if (Object.hasOwn(req.body.data, 'productos')) fail('No mezcles catálogo completo y cambios parciales.');
         data.productos = applyProductChanges(current.data.productos, req.body.productChanges);
       }
+      preserveProductImages(data.productos,current.data.productos);
       validateState(data);
       const stockChanged = reconcileOrderStock(current.data, data);
       await syncOrderPayments(client,current.data.pedidos,data.pedidos,req.user);
       validateState(data);
       const saved = (await client.query('UPDATE business_state SET data=$1,version=version+1 WHERE id=1 RETURNING version', [JSON.stringify(data)])).rows[0];
-      return {...saved, ...(stockChanged ? {productos: data.productos, esencias: data.esencias} : {})};
+      return {...saved, ...(stockChanged ? {productos: publicProducts(data.productos), esencias: data.esencias} : {})};
     }));
   });
   app.post('/api/orders', auth, async (req, res) => {

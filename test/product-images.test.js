@@ -1,0 +1,26 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {PGlite} from '@electric-sql/pglite';
+import {createApp,initialize} from '../server/app.js';
+import {publicProducts,preserveProductImages} from '../server/product-images.js';
+test('Catálogo liviano: fotos separadas, privadas fuera del catálogo, edición sin perder foto',async t=>{
+ const pg=new PGlite();const query=(s,a)=>!a&&s.includes('CREATE TABLE')?pg.exec(s):pg.query(s,a);const db={query,connect:async()=>({query,release(){}})};
+ await initialize(db,{ADMIN_EMAIL:'admin@example.com',ADMIN_PASSWORD:'test-admin-password-123'});
+ const data=(await query('SELECT data FROM business_state WHERE id=1')).rows[0].data;
+ const image='data:image/jpeg;base64,'+Buffer.alloc(1024*1024,1).toString('base64');data.productos[0].imagen=image;
+ await query('UPDATE business_state SET data=$1 WHERE id=1',[JSON.stringify(data)]);
+ const server=createApp(db).listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));t.after(async()=>{await new Promise(r=>server.close(r));await pg.close()});const base='http://127.0.0.1:'+server.address().port;
+ const response=await fetch(base+'/api/bootstrap');const raw=await response.text();assert.ok(raw.length<20000);assert.ok(!raw.includes('data:image/jpeg'));const catalog=JSON.parse(raw);assert.equal(catalog.usuario,null);
+ const url=catalog.productos[0].imagen;assert.equal(url,publicProducts(data.productos)[0].imagen);
+ const photo=await fetch(base+url);assert.equal(photo.status,200);assert.match(photo.headers.get('content-type'),/image\/jpeg/);assert.match(photo.headers.get('cache-control'),/immutable/);assert.equal((await photo.arrayBuffer()).byteLength,1024*1024);
+ assert.equal((await fetch(base+'/api/product-images/999?v=bad')).status,404);
+ const login=await fetch(base+'/api/login',{method:'POST',headers:{'Content-Type':'application/json','X-Flamitas':'1'},body:JSON.stringify({email:'admin@example.com',password:'test-admin-password-123'})});const cookie=login.headers.get('set-cookie').split(';')[0];
+ catalog.productos[0].stock=5;
+ const saved=await fetch(base+'/api/admin/state',{method:'PUT',headers:{Cookie:cookie,'Content-Type':'application/json','X-Flamitas':'1'},body:JSON.stringify({version:catalog.version,data:{productos:catalog.productos}})});assert.equal(saved.status,200);
+ const stored=(await query('SELECT data FROM business_state WHERE id=1')).rows[0].data;assert.equal(stored.productos[0].imagen,image);assert.equal(stored.productos[0].stock,5);
+ const savedVersion=(await saved.json()).version;
+ const changedImage='data:image/png;base64,AQID';
+ const changed=await fetch(base+'/api/admin/state/changes',{method:'PUT',headers:{Cookie:cookie,'Content-Type':'application/json','X-Flamitas':'1'},body:JSON.stringify({version:savedVersion,data:{},productChanges:{upsert:[{id:stored.productos[0].id,imagen:changedImage}],remove:[]}})});assert.equal(changed.status,200);
+ const fresh=await (await fetch(base+'/api/bootstrap')).json();assert.notEqual(fresh.productos[0].imagen,url);assert.equal((await fetch(base+fresh.productos[0].imagen)).status,200);assert.equal((await fetch(base+url)).status,404);
+ const invalid=publicProducts(stored.productos);invalid[0].imagen=invalid[0].imagen.replace(/v=.*/,'v=wrong');assert.throws(()=>preserveProductImages(invalid,stored.productos));
+});

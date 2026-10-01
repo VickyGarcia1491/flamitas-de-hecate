@@ -1907,6 +1907,7 @@ function claseEstadoPedido(estado) {
 }
 function imagenProductoAdmin(imagen) {
  const valor=String(imagen || '');
+ if (/^\/api\/product-images\/\d+\?v=[a-f0-9]{32}$/.test(valor)) return valor;
  if (/^data:image\/(png|jpeg|webp|gif);base64,[a-z0-9+/=]+$/i.test(valor)) return valor;
  if (/^(?:\.\/)?img\/[a-z0-9_. /-]+$/i.test(valor)) return prepararTextoParaInput(valor);
  return './img/producto-sin-foto.svg';
