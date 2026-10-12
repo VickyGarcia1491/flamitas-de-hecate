@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {JSDOM} from 'jsdom';
+import {JSDOM, VirtualConsole} from 'jsdom';
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
 test('Menús: carga oculta, sesión cliente, administrador e invitado',async()=>{
@@ -31,12 +31,26 @@ test('Escape no falla sin menú desplegable y los enlaces dinámicos lo cierran'
 
 test('Menú admite enlaces sin extensión generados por Netlify',async()=>{for(const user of [null,{rol:'cliente',nombre:'Ana'},{rol:'admin',nombre:'Admin'}]){const dom=new JSDOM('<ul class="menu-links"><li><a href="/login">Ingresar</a></li><li><a href="/mi-cuenta" hidden>Cuenta</a></li><li><a href="/admin" hidden>Admin</a></li></ul>',{runScripts:'outside-only'});try{dom.window.datosServidor={usuario:user};vm.runInContext(await readFile('js/usuarios.js','utf8'),dom.getInternalVMContext());dom.window.mostrarUsuarioEnMenu();const d=dom.window.document;assert.equal(d.querySelector('a[href="login.html"]').hidden,!!user);assert.equal(d.querySelector('a[href="admin.html"]').hidden,user?.rol!=='admin');assert.equal(d.querySelectorAll('a[href="'+(user?.rol==='admin'?'admin.html':'mi-cuenta.html')+'"]').length,1);}finally{dom.window.close()}}});
 
-test('Entrada instalada antigua abre Inicio sin impedir navegación a tienda ni notificaciones',async()=>{
- const source=(await readFile('js/iniciar.js','utf8')).split('})();')[0]+'})();';
- for(const [installed,path,started,referrer,expected] of [[true,'/tienda.html',false,'','/index.html'],[true,'/tienda',false,'','/index.html'],[true,'/tienda.html',true,'','/index.html'],[false,'/tienda.html',false,'','/index.html'],[true,'/admin.html',false,'',null],[true,'/tienda.html',false,'https://flamitas.example/index.html',null]]){
-  let redirected=null;const context={URL,window:{matchMedia:()=>({matches:installed})},navigator:{},document:{referrer},location:{origin:'https://flamitas.example',pathname:path,replace:v=>redirected=v},sessionStorage:{getItem:()=>started?'1':null,setItem(){}}};vm.runInNewContext(source,context);assert.equal(redirected,expected);
+test('Tienda no rebota al inicio sin referrer y la app inicia en Inicio',async()=>{
+ const source=await readFile('js/iniciar.js','utf8');
+ for(const referrer of ['', 'https://flamitas.example/index.html', 'https://example.org/']){
+  const errors=[];const virtualConsole=new VirtualConsole();virtualConsole.on('jsdomError',e=>errors.push(e.message));
+  const dom=new JSDOM('<body><button>Comprar</button></body>',{runScripts:'outside-only',virtualConsole,url:'https://flamitas.example/tienda.html',...(referrer?{referrer}:{})});
+  try{
+   const w=dom.window;let initialized=false;
+   w.cargarDatosServidor=async()=>{};w.inicioTienda=()=>{initialized=true};
+   vm.runInContext(source,dom.getInternalVMContext());
+   await new Promise(resolve=>setTimeout(resolve,0));
+   assert.deepEqual(errors,[]);
+   assert.equal(w.location.pathname,'/tienda.html');
+   assert.equal(initialized,true);
+   assert.equal(w.document.querySelector('button').disabled,false);
+  }finally{dom.window.close()}
  }
+ const manifest=JSON.parse(await readFile('manifest.webmanifest','utf8'));
+ assert.equal(manifest.start_url,'/index.html');
 });
+
 test('Login de cliente, administrador y registro abren Inicio conservando carrito',async()=>{
  const source=await readFile('js/usuarios.js','utf8');
  for(const rol of ['admin','cliente'])for(const registro of [false,true]){

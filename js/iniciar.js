@@ -1,11 +1,5 @@
-// Las instalaciones antiguas y accesos directos pueden conservar Tienda como entrada.
-// Solo redirigir la entrada externa: los enlaces internos a Tienda siguen funcionando.
-(function abrirInicioApp(){
- if(!/^\/tienda(?:\.html)?\/?$/.test(location.pathname))return;
- let navegacionInterna=false;
- try{navegacionInterna=!!document.referrer&&new URL(document.referrer).origin===location.origin;}catch{}
- if(!navegacionInterna)location.replace('/index.html');
-})();
+// La entrada de la app se define en manifest.webmanifest.
+// No redirigir Tienda: Referrer-Policy puede ocultar incluso enlaces internos.
 // La página pública ya es visible mientras el servidor se conecta.
 let tiendaLista = false;
 let conexionEnCurso = false;
