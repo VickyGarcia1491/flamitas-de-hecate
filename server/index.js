@@ -1,8 +1,12 @@
+import {migrateProductImagesTransaction} from './product-images.js';
 import pg from 'pg';
 import { createApp, initialize } from './app.js';
 if (!process.env.DATABASE_URL) throw new Error('Falta DATABASE_URL. Seguí la guía DEPLOY_RENDER.md.');
-const pool = new pg.Pool({connectionString: process.env.DATABASE_URL, max: 10});
+const pool = new pg.Pool({connectionString: process.env.DATABASE_URL, max: 5, connectionTimeoutMillis: 10000, idleTimeoutMillis: 30000, statement_timeout: 20000, idle_in_transaction_session_timeout: 30000});
+pool.on('error', error => console.error('Conexión inactiva interrumpida:', error.code || error.name));
 await initialize(pool, process.env);
+const migratedImages = await migrateProductImagesTransaction(pool);
+if (migratedImages) console.log('Fotos separadas del estado del negocio:', migratedImages);
 const app = createApp(pool, process.env);
 const server = app.listen(process.env.PORT || 3000, '0.0.0.0', () => console.log('Flamitas está lista.'));
 app.locals.deliverPush();

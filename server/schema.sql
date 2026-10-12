@@ -57,3 +57,6 @@ CREATE TABLE IF NOT EXISTS finance_state (id INTEGER PRIMARY KEY CHECK(id=1),ver
 INSERT INTO finance_state(id,data) VALUES(1,'{"start":null,"opening":null,"expenses":[],"movements":[]}') ON CONFLICT DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS finance_audit(id BIGSERIAL PRIMARY KEY, at TIMESTAMPTZ NOT NULL DEFAULT now(),actor TEXT NOT NULL,change JSONB NOT NULL);
+
+-- Fotos fuera del documento que se bloquea y guarda con stock y pedidos.
+CREATE TABLE IF NOT EXISTS product_images (product_id BIGINT PRIMARY KEY, image TEXT NOT NULL, hash TEXT NOT NULL);

@@ -1,10 +1,10 @@
-# Prueba gratuita. Antes de operar permanentemente, cambiar el plan de PostgreSQL.
+# Planes contratados el 12 de octubre de 2026.
 services:
   - type: web
     name: flamitas-web
     runtime: node
     region: virginia
-    plan: free
+    plan: 0.5c-512mb
     buildCommand: npm ci --omit=dev
     startCommand: npm start
     healthCheckPath: /health
@@ -26,7 +26,9 @@ services:
 databases:
   - name: flamitas-db
     region: virginia
-    plan: free
+    plan: 0.5c-1g
     databaseName: flamitas
     user: flamitas
-    ipAllowList: []
+    ipAllowList:
+      - source: 200.40.88.18/32
+        description: Respaldo computadora

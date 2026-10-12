@@ -1,4 +1,4 @@
-import {imageHash,publicProducts,preserveProductImages,lightStateSql,createImageReader} from './product-images.js';
+import {imageHash,publicProducts,preserveProductImages,lightStateSql,createImageReader,storeProductImages,hydrateProductImages} from './product-images.js';
 import {validateFinance, financeSummary, validDate, syncOrderPayments, auditFinance} from './finance.js';
 import express from 'express';
 import helmet from 'helmet';
@@ -36,7 +36,7 @@ export function createApp(db, config = {}, dependencies = {}) {
     next();
   });
   app.get('/api/product-images/:id', async(req,res)=>{
-    if(!/^\d+$/.test(req.params.id))return res.sendStatus(404);
+    if(!/^\d+$/.test(req.params.id)||!Number.isSafeInteger(Number(req.params.id)))return res.sendStatus(404);
     const image=await readProductImage(req.params.id);
     const match=/^data:(image\/(?:jpeg|png|webp|gif));base64,([A-Za-z0-9+/=\r\n]+)$/.exec(image||'');
     if(!match)return res.sendStatus(404);
@@ -70,9 +70,14 @@ export function createApp(db, config = {}, dependencies = {}) {
   });
   async function transact(work) {
     const client = await db.connect();
+    let released = false;
     try { await client.query('BEGIN'); const result = await work(client); await client.query('COMMIT'); return result; }
-    catch (err) { await client.query('ROLLBACK'); throw err; }
-    finally { client.release(); }
+    catch (err) {
+      try { await client.query('ROLLBACK'); }
+      catch (rollbackError) { client.release(rollbackError); released = true; }
+      throw err;
+    }
+    finally { if (!released) client.release(); }
   }
   async function session(req, res, user) {
     const token = newToken();
@@ -121,8 +126,9 @@ export function createApp(db, config = {}, dependencies = {}) {
       const stockChanged = reconcileOrderStock(current.data, data);
       await syncOrderPayments(client,current.data.pedidos,data.pedidos,req.user);
       validateState(data);
+      const photosChanged=await storeProductImages(client,data.productos);
       const saved = (await client.query('UPDATE business_state SET data=$1,version=version+1 WHERE id=1 RETURNING version', [JSON.stringify(data)])).rows[0];
-      return {...saved, ...(stockChanged ? {productos: publicProducts(data.productos), esencias: data.esencias} : {})};
+      return {...saved, ...(stockChanged || photosChanged ? {productos: publicProducts(data.productos), esencias: data.esencias} : {})};
     }));
   });
   app.post('/api/orders', auth, async (req, res) => {
@@ -137,8 +143,8 @@ export function createApp(db, config = {}, dependencies = {}) {
       await client.query("INSERT INTO push_jobs(order_id,endpoint) SELECT $1,s.endpoint FROM push_subscriptions s JOIN users u ON u.id=s.user_id WHERE u.rol='admin' ON CONFLICT DO NOTHING",[id]);
       return order;
     });
-    await app.locals.deliverPush();
     res.status(201).json(order);
+    void app.locals.deliverPush();
   });
   // Los comprobantes nunca forman parte del catálogo público ni del documento de stock.
   app.get('/api/receipts', auth, async(req,res)=>{
@@ -192,6 +198,7 @@ export function createApp(db, config = {}, dependencies = {}) {
   });
   app.get('/api/admin/backup', admin, async (req, res) => {
     const state = (await db.query('SELECT data FROM business_state WHERE id=1')).rows[0].data;
+    await hydrateProductImages(db,state.productos);
     const consultas = (await db.query('SELECT data FROM inquiries ORDER BY id')).rows.map(r => r.data);
     res.json({format: 'flamitas-business-v1', ...state, consultas});
   });
@@ -202,6 +209,7 @@ export function createApp(db, config = {}, dependencies = {}) {
     res.json(await transact(async client => {
       const current = (await client.query('SELECT data FROM business_state WHERE id=1 FOR UPDATE')).rows[0].data;
       if (current.pedidos.length || (await client.query('SELECT id FROM imports')).rows.length) fail('La importación inicial ya se hizo o hay pedidos nuevos. No se sobrescribieron datos.', 409);
+      await storeProductImages(client,state.productos);
       await client.query('INSERT INTO imports(id) VALUES(1)');
       await client.query('UPDATE business_state SET data=$1,version=version+1 WHERE id=1', [JSON.stringify(state)]);
       for (const inquiry of input.consultas || []) await client.query('INSERT INTO inquiries(data) VALUES($1)', [JSON.stringify(inquiry)]);
@@ -267,7 +275,8 @@ export function createApp(db, config = {}, dependencies = {}) {
   app.get('/', (req, res) => res.sendFile(path.join(root, 'index.html')));
   for (const page of pages) app.get('/' + page + '.html', (req, res) => res.sendFile(path.join(root, page + '.html')));
   app.use((err, req, res, next) => {
-    if (!err.status && err.code !== '23505') console.error('Request failed:', err.message);
+    if (!err.status && err.code !== '23505') console.error('Request failed:', err.code || err.name);
+    if(['57P01','57P02','57P03','08006','08001','ECONNRESET','ECONNREFUSED','ETIMEDOUT','53300','53400'].includes(err.code))return res.status(503).json({error:'La base de datos está temporalmente fuera de servicio. Revisá el resultado antes de repetir un cambio.'});
     res.status(err.code === '23505' ? 409 : err.status || 500).json({error: err.code === '23505' ? 'Ya existe una cuenta con ese email.' : err.status ? err.message : 'No se pudo guardar. Intentá nuevamente.'});
   });
   return app;

@@ -17,7 +17,7 @@ test('Catálogo liviano: fotos separadas, privadas fuera del catálogo, edición
  const login=await fetch(base+'/api/login',{method:'POST',headers:{'Content-Type':'application/json','X-Flamitas':'1'},body:JSON.stringify({email:'admin@example.com',password:'test-admin-password-123'})});const cookie=login.headers.get('set-cookie').split(';')[0];
  catalog.productos[0].stock=5;
  const saved=await fetch(base+'/api/admin/state',{method:'PUT',headers:{Cookie:cookie,'Content-Type':'application/json','X-Flamitas':'1'},body:JSON.stringify({version:catalog.version,data:{productos:catalog.productos}})});assert.equal(saved.status,200);
- const stored=(await query('SELECT data FROM business_state WHERE id=1')).rows[0].data;assert.equal(stored.productos[0].imagen,image);assert.equal(stored.productos[0].stock,5);
+ const stored=(await query('SELECT data FROM business_state WHERE id=1')).rows[0].data;assert.equal(stored.productos[0].imagen,url);assert.equal((await query('SELECT image FROM product_images WHERE product_id=$1',[stored.productos[0].id])).rows[0].image,image);assert.equal(stored.productos[0].stock,5);
  const savedVersion=(await saved.json()).version;
  const changedImage='data:image/png;base64,AQID';
  const changed=await fetch(base+'/api/admin/state/changes',{method:'PUT',headers:{Cookie:cookie,'Content-Type':'application/json','X-Flamitas':'1'},body:JSON.stringify({version:savedVersion,data:{},productChanges:{upsert:[{id:stored.productos[0].id,imagen:changedImage}],remove:[]}})});assert.equal(changed.status,200);

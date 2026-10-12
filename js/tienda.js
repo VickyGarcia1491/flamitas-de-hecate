@@ -452,8 +452,26 @@ function obtenerTotalCarrito() {
 
 // El servidor calcula precios y guarda el pedido junto con el descuento de stock.
 async function guardarPedido(datosPedido) {
- const pedido = await api('/api/orders', 'POST', {...datosPedido, requestId: solicitudPedido, productos: carrito.map(p => ({id:p.id, cantidad:p.cantidad ?? 1, tipoLatita:p.tipoLatita, indiceEsencia:p.indiceEsencia}))});
- return pedido;
+ const email=obtenerUsuarioActivo()?.email || 'sesion';
+ const storageKey='flamitasCompraEnCurso:'+email;
+ const payload={...datosPedido,productos:carrito.map(p=>({id:p.id,cantidad:p.cantidad??1,tipoLatita:p.tipoLatita,indiceEsencia:p.indiceEsencia}))};
+ const signature=JSON.stringify(payload);
+ const pending=JSON.parse(sessionStorage.getItem(storageKey)||'null');
+ if(pending && pending.signature!==signature)throw new Error('Hay una compra sin confirmar. Revisá Mis pedidos antes de cambiar el carrito; para reintentar conservá los mismos datos.');
+ const requestId=pending?.requestId || solicitudPedido;
+ // Persistir antes de enviar: una recarga no debe generar otra compra.
+ sessionStorage.setItem(storageKey,JSON.stringify({requestId,signature}));
+ guardarCarritoPendiente();
+ try {
+  const pedido=await api('/api/orders','POST',{...payload,requestId});
+  sessionStorage.removeItem(storageKey);
+  sessionStorage.removeItem('carritoPendienteFlamitas');
+  solicitudPedido=crypto.randomUUID();
+  return pedido;
+ } catch(error) {
+  if([400,401,403,404,409,413,422].includes(error.status))sessionStorage.removeItem(storageKey);
+  throw error;
+ }
 }
 
 // Descuenta el stock de esencias cuando se confirma un pedido con latitas.

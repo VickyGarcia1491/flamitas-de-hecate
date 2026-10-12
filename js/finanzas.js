@@ -59,7 +59,7 @@ function iniciarVistaFinanzas(){
  document.getElementById('exportarFinanzas').onclick=exportarResumenFinanzas;
 }
 function tablaFinanzas(target,headers){const container=document.getElementById(target);container.classList.add('finanzas-tabla');container.innerHTML='<table><thead><tr>'+headers.map(h=>'<th scope="col">'+h+'</th>').join('')+'</tr></thead><tbody></tbody></table>';return container.querySelector('tbody');}
-function filaFinanzas(table,values){const tr=document.createElement('tr');for(const value of values){const td=document.createElement('td');td.textContent=value;tr.append(td);}table.append(tr);return tr;}
+function filaFinanzas(table,values){const tr=document.createElement('tr');const headers=table.closest('table').querySelectorAll('thead th');for(const [index,value] of values.entries()){const td=document.createElement('td');td.dataset.label=headers[index]?.textContent||'';td.textContent=value;tr.append(td);}table.append(tr);return tr;}
 function estadoCuota(q){return q.paidAt?'Pagada':q.due<hoyFinanzas()?'Vencida':'Próxima';}
 function movimientosFinanzas(){
  const rows=finanzas.data.movements.map(m=>({...m,status:m.cancelled?'Anulado':'Registrado'}));

@@ -1266,13 +1266,8 @@ async function agregarProductoAdmin(evento) {
     if (foto === undefined) {
         await guardarNuevoProductoAdmin('');
     } else {
-        let lector = new FileReader();
-
-        lector.addEventListener("load", async function () {
-            await guardarNuevoProductoAdmin(lector.result);
-        });
-
-        lector.readAsDataURL(foto);
+        try { await guardarNuevoProductoAdmin(await optimizarFotoProducto(foto)); }
+        catch(error) { mensaje.textContent=error.message; }
     }
 }
 
@@ -1329,7 +1324,7 @@ async function guardarNuevoProductoAdmin(imagenProducto) {
 async function editarProductoAdmin(idProducto) {
  const foto=document.querySelector('#fotoEditar'+idProducto).files[0];
  let imagen=null;
- if(foto) imagen=await new Promise((resolve,reject)=>{const lector=new FileReader();lector.onload=()=>resolve(lector.result);lector.onerror=()=>reject(new Error('No pudimos leer la foto. Elegila de nuevo.'));lector.onabort=()=>reject(new Error('Se canceló la lectura de la foto.'));lector.readAsDataURL(foto)});
+ if(foto) imagen=await optimizarFotoProducto(foto);
  await guardarEdicionProductoAdmin(idProducto,imagen);
 }
 
