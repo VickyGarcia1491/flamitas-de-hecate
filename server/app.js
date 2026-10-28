@@ -29,7 +29,6 @@ export function createApp(db, config = {}, dependencies = {}) {
   app.set('trust proxy', 1);
   app.use(helmet({contentSecurityPolicy: {directives: {"script-src": ["'self'"], "img-src": ["'self'", 'data:'], "style-src": ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'], "font-src": ["'self'", 'https://fonts.gstatic.com'], "upgrade-insecure-requests": config.NODE_ENV === 'production' ? [] : null}}}));
   app.use('/api', rateLimit({windowMs: 60000, limit: 180, message: {error: 'Demasiadas solicitudes. Esperá un momento.'}}));
-  app.use(express.json({limit: '25mb'}));
   app.use('/api', (req, res, next) => {
     res.set('Cache-Control', 'no-store');
     if (!['GET', 'HEAD'].includes(req.method) && req.get('X-Flamitas') !== '1') return res.status(403).json({error: 'Solicitud no permitida.'});
@@ -52,6 +51,12 @@ export function createApp(db, config = {}, dependencies = {}) {
       req.user = result.rows[0]; req.sessionHash = tokenHash(token);
     }
     next();
+  });
+  const bodyLimits = {small: express.json({limit: '100kb'}), receipt: express.json({limit: '8mb'}), admin: express.json({limit: '25mb'})};
+  app.use('/api', (req, res, next) => {
+    const isAdmin = req.user?.rol === 'admin';
+    const isReceipt = !isAdmin && req.user && req.method === 'POST' && /^\/api\/orders\/[^/]+\/receipt$/.test(req.originalUrl.split('?')[0]);
+    (isAdmin ? bodyLimits.admin : isReceipt ? bodyLimits.receipt : bodyLimits.small)(req, res, next);
   });
   const auth = (req, res, next) => req.user ? next() : res.status(401).json({error: 'Iniciá sesión para continuar.'});
   const admin = (req, res, next) => req.user?.rol === 'admin' ? next() : res.status(403).json({error: 'Acceso exclusivo de administración.'});
@@ -275,6 +280,8 @@ export function createApp(db, config = {}, dependencies = {}) {
   app.get('/', (req, res) => res.sendFile(path.join(root, 'index.html')));
   for (const page of pages) app.get('/' + page + '.html', (req, res) => res.sendFile(path.join(root, page + '.html')));
   app.use((err, req, res, next) => {
+    if (err.type === 'entity.too.large') return res.status(413).json({error: 'El envío es demasiado grande. Reducí el tamaño de los datos o del archivo adjunto e intentá de nuevo.'});
+    if (err.type === 'entity.parse.failed') return res.status(400).json({error: 'No se pudieron leer los datos enviados: el formato no es válido.'});
     if (!err.status && err.code !== '23505') console.error('Request failed:', err.code || err.name);
     if(['57P01','57P02','57P03','08006','08001','ECONNRESET','ECONNREFUSED','ETIMEDOUT','53300','53400'].includes(err.code))return res.status(503).json({error:'La base de datos está temporalmente fuera de servicio. Revisá el resultado antes de repetir un cambio.'});
     res.status(err.code === '23505' ? 409 : err.status || 500).json({error: err.code === '23505' ? 'Ya existe una cuenta con ese email.' : err.status ? err.message : 'No se pudo guardar. Intentá nuevamente.'});
