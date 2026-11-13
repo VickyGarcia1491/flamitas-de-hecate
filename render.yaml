@@ -8,6 +8,9 @@ services:
     buildCommand: npm ci --omit=dev
     startCommand: npm start
     healthCheckPath: /health
+    domains:
+      - flamitasdehecate.com
+      - www.flamitasdehecate.com
     envVars:
       - key: NODE_ENV
         value: production
