@@ -71,6 +71,21 @@ Si el archivo tiene identificadores repetidos o datos incompatibles, el servidor
 
 WhatsApp sigue funcionando mediante un enlace: el pedido se guarda primero, y luego el cliente toca el enlace para enviar el mensaje. Como el código original no tiene un número de negocio, WhatsApp permite elegir el destinatario. No hay cobro automático ni verificación de pagos de Mercado Pago; el administrador confirma el pago después de comprobarlo.
 
+## 6. Recuperación de contraseña por email (Resend)
+
+La página **¿Olvidaste tu contraseña?** envía un enlace que vence en 1 hora y sirve una sola vez. Pedir el enlace no cambia la contraseña ni cierra sesiones. Al elegir la contraseña nueva se cierran todas las sesiones y los avisos del celular de esa cuenta.
+
+1. En [Resend](https://resend.com), verificá el dominio `flamitasdehecate.com` agregando en tu DNS los registros que Resend indica.
+2. En **Domains → flamitasdehecate.com**, confirmá que **Click tracking** y **Open tracking** estén **desactivados**. Si el seguimiento de clics estuviera activo, Resend reescribiría el enlace del correo y el enlace de recuperación pasaría por sus servidores.
+3. Creá una API key con permiso **Sending access** limitado a ese dominio. No la pegues en el código, en archivos ni en el chat.
+4. En Render, **flamitas-web → Environment**, cargá:
+   - `RESEND_API_KEY`: la clave de Resend (secreta).
+   - `MAIL_FROM`: el remitente, por ejemplo `Flamitas de Hécate <no-responder@flamitasdehecate.com>`. Debe pertenecer al dominio verificado. El correo indica que, para pedir ayuda, se escriba desde la página de contacto, porque esa casilla no recibe respuestas.
+   - `PUBLIC_URL`: `https://flamitasdehecate.com` (ya figura en `render.yaml`). El enlace del correo se arma siempre con esta dirección.
+5. Probalo con una cuenta de cliente: pedí el enlace, abrilo desde el correo y elegí una contraseña nueva.
+
+Si falta `RESEND_API_KEY` o `MAIL_FROM`, la web funciona igual pero no envía correos, y los **Logs** muestran "Correo desactivado: falta configurar …". Los registros nunca incluyen el enlace, el token, la clave ni el email de la persona. Los límites de intentos (5 pedidos por IP cada 15 minutos, 3 correos por email por hora y 10 intentos de cambio por IP cada 15 minutos) se reinician con cada despliegue.
+
 ## Actualizaciones, respaldos y problemas
 
 - Para actualizar la web, subí los archivos modificados a la misma rama de GitHub. Render despliega esa versión. No reemplaza el catálogo existente por el catálogo inicial.

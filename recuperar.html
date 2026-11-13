@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light only">
+    <meta name="theme-color" content="#6d4a88">
+    <title>Recuperar contraseña | Flamitas de Hécate</title>
+    <meta name="robots" content="noindex">
+    <link rel="icon" type="image/png" href="./img/app-icon-192.png">
+    <link rel="apple-touch-icon" href="./img/app-icon-192.png">
+    <link rel="manifest" href="./manifest.webmanifest">
+
+    <link rel="stylesheet" href="./css/styles.css">
+    <link rel="stylesheet" href="./css/publico.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Montserrat:wght@300;400;500&display=swap"
+        rel="stylesheet">
+</head>
+
+<body class="sitio-publico">
+
+    <!-- Menú superior de las páginas de recuperación. -->
+    <header class="menu">
+        <nav>
+            <!-- Logo de Flamitas en el menú; al tocarlo vuelve al inicio. -->
+            <a href="index.html" class="logo-menu" aria-label="Ir al inicio">
+                <img src="./img/logo-flamitas-manos.png" alt="Logo Flamitas de Hécate">
+            </a>
+
+            <ul class="menu-links">
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="tienda.html">Tienda</a></li>
+                <li><a href="contacto.html">Contacto</a></li>
+                <li><a href="login.html">Iniciar sesión</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Pide el enlace de recuperación; la respuesta es la misma exista o no la cuenta. -->
+    <section class="formulario-acceso">
+        <h1>Recuperar contraseña</h1>
+        <p>Escribí el email de tu cuenta y te enviamos un enlace para elegir una contraseña nueva. El enlace vence en 1 hora.</p>
+
+        <form id="formRecuperar">
+            <label for="emailRecuperar">Email</label>
+            <input type="email" id="emailRecuperar" maxlength="254" autocomplete="email" required>
+
+            <input type="submit" value="Enviar enlace">
+        </form>
+
+        <p id="mensajeRecuperar" class="mensaje-formulario" role="status" aria-live="polite"></p>
+        <p class="texto-formulario"><a href="login.html">Volver a iniciar sesión</a></p>
+    </section>
+
+    <!-- Conecta el formulario con el servidor. -->
+    <script src="./js/api.js"></script>
+    <script src="./js/usuarios.js"></script>
+    <script src="./js/recuperacion.js"></script>
+    <script src="./js/iniciar.js"></script>
+
+    <a class="whatsapp-flotante" href="https://wa.me/59897605718" target="_blank" rel="noopener noreferrer" aria-label="Contactar a Flamitas por WhatsApp" title="Escribinos por WhatsApp">
+        <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+            <path fill="currentColor" d="M16 .8A15.1 15.1 0 0 0 3 23.5L.8 31.2l7.9-2.1A15.2 15.2 0 1 0 16 .8Zm0 27.6a12.5 12.5 0 0 1-6.4-1.8l-.5-.3-4.7 1.2 1.3-4.6-.3-.5A12.5 12.5 0 1 1 16 28.4Z"/>
+            <path fill="currentColor" d="M12 8.5c-.3-.7-.6-.7-1-.7h-.8c-.4 0-.8.2-1.1.5-.4.5-1.5 1.5-1.5 3.6s1.5 4.1 1.7 4.4c.2.3 3 4.7 7.4 6.4 3.7 1.4 4.4 1.1 5.2 1 .8-.1 2.6-1.1 3-2.1.4-1 .4-1.9.3-2.1-.1-.2-.4-.3-.9-.6l-3-1.4c-.4-.2-.7-.3-1 .2l-1.4 1.7c-.2.3-.5.3-.9.1-1.3-.5-2.5-1.3-3.5-2.2-.9-.9-1.6-1.9-2.2-3-.2-.4 0-.6.2-.8l.7-.8.4-.7c.1-.3.1-.5 0-.8L12 8.5Z"/>
+        </svg>
+    </a>
+</body>
+
+</html>

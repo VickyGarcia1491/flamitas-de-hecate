@@ -9,6 +9,7 @@ import { readFile } from 'node:fs/promises';
 import { hashPassword, verifyPassword, tokenHash, newToken, fail, text, email, password, newPassword, validateTree } from './security.js';
 import { emptyState, validateState, checkout, reconcileOrderStock, applyProductChanges } from './business.js';
 import {initializePush, createPushService, validateSubscription} from './push.js';
+import {createMailer, publicUrl, passwordResetEmail} from './mail.js';
 const root = fileURLToPath(new URL('../', import.meta.url));
 export async function initialize(db, config) {
   await db.query(await readFile(new URL('schema.sql', import.meta.url), 'utf8'));
@@ -26,6 +27,9 @@ export function createApp(db, config = {}, dependencies = {}) {
   const readProductImage = createImageReader(db);
   const push = createPushService(db, dependencies.sendPush);
   app.locals.deliverPush = () => push.deliver().catch(() => console.error('No se pudo procesar la cola de notificaciones.'));
+  const sendMail = dependencies.sendMail || createMailer(config);
+  const siteUrl = publicUrl(config.PUBLIC_URL, config.NODE_ENV === 'production');
+  const resetDelayMs = dependencies.resetDelayMs ?? 400;
   app.set('trust proxy', 1);
   app.use(helmet({contentSecurityPolicy: {directives: {"script-src": ["'self'"], "img-src": ["'self'", 'data:'], "style-src": ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'], "font-src": ["'self'", 'https://fonts.gstatic.com'], "upgrade-insecure-requests": config.NODE_ENV === 'production' ? [] : null}}}));
   app.use('/api', rateLimit({windowMs: 60000, limit: 180, message: {error: 'Demasiadas solicitudes. Esperá un momento.'}}));
@@ -129,6 +133,52 @@ export function createApp(db, config = {}, dependencies = {}) {
   app.get('/api/admin/users', admin, async (req, res) => {
     const result = await db.query('SELECT id,nombre,email,telefono,rol,created_at FROM users ORDER BY created_at DESC NULLS LAST, id DESC');
     res.json(result.rows);
+  });
+  // Recuperación de contraseña. Pedir el enlace no cambia la contraseña ni cierra sesiones.
+  const resetRequestMessage = 'Si el email corresponde a una cuenta, te enviamos un enlace para restablecer la contraseña. Revisá tu correo, también la carpeta de spam.';
+  const invalidResetLink = 'El enlace no es válido o venció. Pedí uno nuevo.';
+  const resetRequestLimit = rateLimit({windowMs: 900000, limit: 5, message: {error: 'Demasiados intentos. Probá en 15 minutos.'}});
+  // Por email: al pasarse responde lo mismo de siempre, pero no envía otro correo.
+  const resetEmailLimit = rateLimit({windowMs: 3600000, limit: 3, standardHeaders: false, legacyHeaders: false, keyGenerator: req => 'email:' + tokenHash(String(req.body?.email ?? '').trim().toLowerCase()), handler: (req, res, next) => { req.resetEmailLimited = true; next(); }});
+  const resetCompleteLimit = rateLimit({windowMs: 900000, limit: 10, message: {error: 'Demasiados intentos. Probá en 15 minutos.'}});
+  app.post('/api/password-reset/request', resetRequestLimit, resetEmailLimit, async (req, res) => {
+    const started = Date.now();
+    const address = email(req.body.email);
+    let mail = null;
+    if (!req.resetEmailLimited) {
+      const user = (await db.query('SELECT id,email FROM users WHERE email=$1', [address])).rows[0];
+      if (user && !siteUrl) console.warn('Recuperación desactivada: falta configurar PUBLIC_URL con una dirección https válida.');
+      else if (user) {
+        const token = newToken();
+        // Un pedido nuevo invalida los anteriores de esa cuenta.
+        await transact(async client => {
+          await client.query("DELETE FROM password_resets WHERE user_id=$1 OR expires_at<now()-interval '1 day'", [user.id]);
+          await client.query("INSERT INTO password_resets(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '1 hour')", [tokenHash(token), user.id]);
+        });
+        mail = {to: user.email, ...passwordResetEmail(siteUrl + '/restablecer.html#token=' + token, siteUrl)};
+      }
+    }
+    // Misma respuesta y demora mínima, exista o no la cuenta; el correo sale después de responder.
+    await new Promise(resolve => setTimeout(resolve, Math.max(0, resetDelayMs - (Date.now() - started))));
+    res.json({ok: true, mensaje: resetRequestMessage});
+    if (mail) Promise.resolve().then(() => sendMail(mail)).catch(error => console.error('No se pudo enviar el correo de recuperación:', error.status || error.name));
+  });
+  app.post('/api/password-reset/complete', resetCompleteLimit, async (req, res) => {
+    if (typeof req.body.token !== 'string' || !/^[a-f0-9]{64}$/.test(req.body.token)) fail(invalidResetLink);
+    const hashed = tokenHash(req.body.token);
+    const userId = await transact(async client => {
+      const reset = (await client.query('SELECT r.user_id,u.email,u.rol FROM password_resets r JOIN users u ON u.id=r.user_id WHERE r.token_hash=$1 AND r.used_at IS NULL AND r.expires_at>now() FOR UPDATE OF r', [hashed])).rows[0];
+      if (!reset) fail(invalidResetLink);
+      // Si la contraseña no cumple la política, se revierte todo y el enlace sigue sirviendo.
+      const hash = await hashPassword(newPassword(req.body.nueva, {email: reset.email, admin: reset.rol === 'admin'}));
+      await client.query('UPDATE users SET password_hash=$1 WHERE id=$2', [hash, reset.user_id]);
+      await client.query('UPDATE password_resets SET used_at=now() WHERE token_hash=$1', [hashed]);
+      await client.query('DELETE FROM push_subscriptions WHERE user_id=$1', [reset.user_id]);
+      await client.query('DELETE FROM sessions WHERE user_id=$1', [reset.user_id]);
+      return reset.user_id;
+    });
+    if (req.user && String(req.user.id) === String(userId)) res.clearCookie('flamitas_session', {path: '/'});
+    res.json({ok: true});
   });
   app.post('/api/logout', async (req, res) => {
     if (req.sessionHash) await db.query('DELETE FROM push_subscriptions WHERE session_hash=$1',[req.sessionHash]);
@@ -300,7 +350,7 @@ export function createApp(db, config = {}, dependencies = {}) {
   app.get('/manifest.webmanifest', (req, res) => res.type('application/manifest+json').sendFile(path.join(root, 'manifest.webmanifest')));
   app.get('/sw.js', (req, res) => res.type('application/javascript').sendFile(path.join(root, 'sw.js')));
   app.get('/icon.svg', (req, res) => res.type('image/svg+xml').sendFile(path.join(root, 'icon.svg')));
-  const pages = ['index', 'tienda', 'login', 'registro', 'mi-cuenta', 'admin', 'contacto', 'migracion'];
+  const pages = ['index', 'tienda', 'login', 'registro', 'mi-cuenta', 'admin', 'contacto', 'migracion', 'recuperar', 'restablecer'];
   app.get('/', (req, res) => res.sendFile(path.join(root, 'index.html')));
   for (const page of pages) app.get('/' + page + '.html', (req, res) => res.sendFile(path.join(root, page + '.html')));
   app.use((err, req, res, next) => {

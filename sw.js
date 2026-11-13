@@ -1,4 +1,6 @@
-const CACHE_NAME = "flamitas-app-v34";
+const CACHE_NAME = "flamitas-app-v35";
+// Páginas de recuperación de contraseña: siempre desde la red, nunca en caché.
+const SIN_CACHE = /^\/(recuperar|restablecer)(\.html)?\/?$/;
 
 const APP_SHELL = [
   "/",
@@ -22,6 +24,7 @@ const APP_SHELL = [
   "/js/usuarios.js",
   "/js/mi-cuenta.js",
   "/js/mostrar-password.js",
+  "/js/recuperacion.js",
   "/js/sistema.js",
   "/js/tienda.js",
   "/js/admin.js",
@@ -53,7 +56,7 @@ self.addEventListener("activate", event => {
 self.addEventListener("fetch", event => {
   const url = new URL(event.request.url);
 
-  if (event.request.method !== "GET" || url.origin !== self.location.origin || url.pathname.startsWith("/api/")) {
+  if (event.request.method !== "GET" || url.origin !== self.location.origin || url.pathname.startsWith("/api/") || SIN_CACHE.test(url.pathname)) {
     return;
   }
 

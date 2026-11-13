@@ -26,6 +26,13 @@ services:
         sync: false
       - key: ADMIN_USERS_JSON
         sync: false
+      # Recuperación de contraseña por email (Resend). La clave se carga solo en el panel de Render.
+      - key: RESEND_API_KEY
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: PUBLIC_URL
+        value: https://flamitasdehecate.com
 databases:
   - name: flamitas-db
     region: virginia

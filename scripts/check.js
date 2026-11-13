@@ -28,5 +28,23 @@ for (const page of readdirSync('.').filter(f=>f.endsWith('.html'))) {
   }
  }
 }
+// Las listas de páginas del servidor y del sitio estático coinciden con los .html existentes.
+const htmlPages = readdirSync('.').filter(f=>f.endsWith('.html')).map(f=>f.slice(0,-5)).sort();
+for (const file of ['server/app.js','scripts/build-static.js']) {
+ const list = /const pages = \[([^\]]+)\]/.exec(readFileSync(file,'utf8'))?.[1].match(/'([^']+)'/g)?.map(p=>p.slice(1,-1)).sort() || [];
+ if (JSON.stringify(list) !== JSON.stringify(htmlPages)) { console.error(`${file}: la lista de páginas no coincide con los .html (${htmlPages.join(', ')})`); failed = true; }
+}
+// Recuperación de contraseña: sin indexar y nunca guardada por el service worker.
+const sw = readFileSync('sw.js','utf8');
+const swSinCache = /const SIN_CACHE = \/(.+)\/;/.exec(sw);
+for (const page of ['recuperar','restablecer']) {
+ if (!existsSync(page+'.html')) { console.error(`falta ${page}.html`); failed = true; continue; }
+ const html = readFileSync(page+'.html','utf8');
+ if (!/<meta name="robots" content="noindex">/.test(html)) { console.error(`${page}.html: falta <meta name="robots" content="noindex">`); failed = true; }
+ if (!/<script src="(?:\.\/)?js\/recuperacion\.js"/.test(html)) { console.error(`${page}.html: falta js/recuperacion.js`); failed = true; }
+ if (sw.includes(`"/${page}.html"`)) { console.error(`sw.js: ${page}.html no debe guardarse en caché`); failed = true; }
+ if (!swSinCache || !sw.includes('SIN_CACHE.test(url.pathname)') || !['/'+page+'.html','/'+page].every(p=>new RegExp(swSinCache[1]).test(p))) { console.error(`sw.js: ${page} debe quedar fuera del service worker`); failed = true; }
+}
+if (!sw.includes('"/js/recuperacion.js"')) { console.error('sw.js: falta /js/recuperacion.js'); failed = true; }
 process.exitCode = failed ? 1 : 0;
 if (!failed) console.log('Sintaxis y recursos locales correctos.');

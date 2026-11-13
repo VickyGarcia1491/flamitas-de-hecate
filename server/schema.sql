@@ -61,5 +61,15 @@ INSERT INTO finance_state(id,data) VALUES(1,'{"start":null,"opening":null,"expen
 
 CREATE TABLE IF NOT EXISTS finance_audit(id BIGSERIAL PRIMARY KEY, at TIMESTAMPTZ NOT NULL DEFAULT now(),actor TEXT NOT NULL,change JSONB NOT NULL);
 
+-- Enlaces de recuperación de contraseña: solo el hash del token, de un uso y con vencimiento.
+CREATE TABLE IF NOT EXISTS password_resets (
+ token_hash TEXT PRIMARY KEY,
+ user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ expires_at TIMESTAMPTZ NOT NULL,
+ used_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS password_resets_user ON password_resets(user_id);
+
 -- Fotos fuera del documento que se bloquea y guarda con stock y pedidos.
 CREATE TABLE IF NOT EXISTS product_images (product_id BIGINT PRIMARY KEY, image TEXT NOT NULL, hash TEXT NOT NULL);

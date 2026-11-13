@@ -18,6 +18,7 @@ function iniciarUsuarios() {
  document.querySelector('#formRegistro')?.addEventListener('submit', e => enviarAcceso(e,true));
  document.querySelector('#formLogin')?.addEventListener('submit', e => enviarAcceso(e,false));
  document.querySelector('#btnCerrarSesion')?.addEventListener('click', cerrarSesion);
+ if (new URLSearchParams(window.location.search).get('restablecida') === '1' && document.querySelector('#mensajeLogin')) document.querySelector('#mensajeLogin').textContent = 'Tu contraseña se cambió. Ingresá con la nueva.';
  mostrarUsuarioEnMenu();
 }
 // Muestra datos del usuario en el menú y ajusta links según el rol.
