@@ -2,6 +2,7 @@ import {imageHash,publicProducts,preserveProductImages,lightStateSql,createImage
 import {validateFinance, financeSummary, validDate, syncOrderPayments, auditFinance} from './finance.js';
 import express from 'express';
 import helmet from 'helmet';
+import compression from 'compression';
 import { rateLimit } from 'express-rate-limit';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -31,6 +32,8 @@ export function createApp(db, config = {}, dependencies = {}) {
   const siteUrl = publicUrl(config.PUBLIC_URL, config.NODE_ENV === 'production');
   const resetDelayMs = dependencies.resetDelayMs ?? 400;
   app.set('trust proxy', 1);
+  // Comprime solo tipos de texto (HTML, CSS, JS, JSON, SVG); las imágenes ya vienen comprimidas.
+  app.use(compression());
   app.use(helmet({contentSecurityPolicy: {directives: {"script-src": ["'self'"], "img-src": ["'self'", 'data:'], "style-src": ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'], "font-src": ["'self'", 'https://fonts.gstatic.com'], "upgrade-insecure-requests": config.NODE_ENV === 'production' ? [] : null}}}));
   app.use('/api', rateLimit({windowMs: 60000, limit: 180, message: {error: 'Demasiadas solicitudes. Esperá un momento.'}}));
   app.use('/api', (req, res, next) => {
@@ -346,13 +349,18 @@ export function createApp(db, config = {}, dependencies = {}) {
   });
   app.get('/health', async (req, res) => { await db.query('SELECT 1'); res.json({ok: true}); });
   // Servir únicamente recursos públicos; nunca .env, SQL, código del servidor ni backups.
-  for (const folder of ['css', 'js', 'img', 'fonts']) app.use('/' + folder, express.static(path.join(root, folder)));
-  app.get('/manifest.webmanifest', (req, res) => res.type('application/manifest+json').sendFile(path.join(root, 'manifest.webmanifest')));
-  app.get('/sw.js', (req, res) => res.type('application/javascript').sendFile(path.join(root, 'sw.js')));
-  app.get('/icon.svg', (req, res) => res.type('image/svg+xml').sendFile(path.join(root, 'icon.svg')));
+  // Imágenes y fuentes: caché de 30 días. CSS, JS, HTML, sw.js y manifest: el navegador
+  // revalida con ETag en cada carga, así un despliegue nuevo nunca deja versiones viejas.
+  const revalidate = {cacheControl: false, headers: {'Cache-Control': 'no-cache'}};
+  const longCache = {cacheControl: false, headers: {'Cache-Control': 'public, max-age=2592000'}};
+  for (const folder of ['css', 'js']) app.use('/' + folder, express.static(path.join(root, folder), {cacheControl: false, setHeaders: res => res.set(revalidate.headers)}));
+  for (const folder of ['img', 'fonts']) app.use('/' + folder, express.static(path.join(root, folder), {cacheControl: false, setHeaders: res => res.set(longCache.headers)}));
+  app.get('/manifest.webmanifest', (req, res) => res.type('application/manifest+json').sendFile(path.join(root, 'manifest.webmanifest'), revalidate));
+  app.get('/sw.js', (req, res) => res.type('application/javascript').sendFile(path.join(root, 'sw.js'), revalidate));
+  app.get('/icon.svg', (req, res) => res.type('image/svg+xml').sendFile(path.join(root, 'icon.svg'), longCache));
   const pages = ['index', 'tienda', 'login', 'registro', 'mi-cuenta', 'admin', 'contacto', 'migracion', 'recuperar', 'restablecer'];
-  app.get('/', (req, res) => res.sendFile(path.join(root, 'index.html')));
-  for (const page of pages) app.get('/' + page + '.html', (req, res) => res.sendFile(path.join(root, page + '.html')));
+  app.get('/', (req, res) => res.sendFile(path.join(root, 'index.html'), revalidate));
+  for (const page of pages) app.get('/' + page + '.html', (req, res) => res.sendFile(path.join(root, page + '.html'), revalidate));
   app.use((err, req, res, next) => {
     if (err.type === 'entity.too.large') return res.status(413).json({error: 'El envío es demasiado grande. Reducí el tamaño de los datos o del archivo adjunto e intentá de nuevo.'});
     if (err.type === 'entity.parse.failed') return res.status(400).json({error: 'No se pudieron leer los datos enviados: el formato no es válido.'});

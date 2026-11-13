@@ -16,6 +16,16 @@ for (const page of readdirSync('.').filter(f=>f.endsWith('.html'))) {
  if (/type="password"/.test(html) && !/<script src="(?:\.\/)?js\/mostrar-password\.js"/.test(html)) { console.error(`${page}: falta js/mostrar-password.js`); failed = true; }
  if (/<script src="(?:\.\/)?js\/mostrar-password\.js"/.test(html) && html.indexOf('js/mostrar-password.js') < html.indexOf('js/iniciar.js')) { console.error(`${page}: js/mostrar-password.js debe cargarse después de js/iniciar.js`); failed = true; }
  if (/<script src="(?:\.\/)?js\/mostrar-password\.js"/.test(html) && !readFileSync('sw.js','utf8').includes('"/js/mostrar-password.js"')) { console.error('sw.js: falta /js/mostrar-password.js'); failed = true; }
+ // Google Fonts: conexión anticipada y texto visible mientras carga la fuente.
+ if (html.includes('fonts.googleapis.com/css')) {
+  if (!html.includes('<link rel="preconnect" href="https://fonts.googleapis.com">') || !html.includes('<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>')) { console.error(`${page}: falta preconnect a Google Fonts`); failed = true; }
+  if (!/fonts\.googleapis\.com\/css2\?[^"]*display=swap/.test(html)) { console.error(`${page}: Google Fonts sin display=swap`); failed = true; }
+ }
+ // Imágenes fuera de la primera pantalla (todas salvo logo y carrito): carga diferida y dimensiones.
+ for (const img of html.matchAll(/<img\b[^>]*>/g)) {
+  if (/logo-flamitas-manos|carrito-vela/.test(img[0])) continue;
+  if (!/\sloading="lazy"/.test(img[0]) || !/\swidth="\d+"/.test(img[0]) || !/\sheight="\d+"/.test(img[0])) { console.error(`${page}: imagen sin loading="lazy" o sin width/height: ${img[0].slice(0,80)}`); failed = true; }
+ }
  for (const match of html.matchAll(/\bid="([^"]+)"/g)) {
   if (ids.has(match[1])) { console.error(`${page}: id duplicado ${match[1]}`); failed = true; }
   ids.add(match[1]);

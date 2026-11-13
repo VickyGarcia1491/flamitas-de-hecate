@@ -1,4 +1,4 @@
-const CACHE_NAME = "flamitas-app-v35";
+const CACHE_NAME = "flamitas-app-v36";
 // Páginas de recuperación de contraseña: siempre desde la red, nunca en caché.
 const SIN_CACHE = /^\/(recuperar|restablecer)(\.html)?\/?$/;
 
