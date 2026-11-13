@@ -31,6 +31,7 @@
                 <li><a href="index.html">Inicio</a></li>
                 <li><a href="tienda.html">Tienda</a></li>
                 <li><a href="admin.html" hidden>Admin</a></li>
+                <li><a href="mi-cuenta.html" hidden>Mi cuenta</a></li>
             </ul>
 
             <!-- Acciones rápidas del administrador ubicadas a la derecha. -->
@@ -61,6 +62,7 @@
             <input type="button" value="Venta manual" class="admin-menu-boton" data-seccion="ventaManual">
             <input type="button" value="Por cobrar" class="admin-menu-boton" data-seccion="cobros">
             <input type="button" value="Finanzas" class="admin-menu-boton" data-seccion="gastos">
+            <input type="button" value="Usuarios" class="admin-menu-boton" data-seccion="usuarios">
         </aside>
 
         <!-- Sección inicial con resumen rápido del negocio. -->
@@ -253,6 +255,15 @@
          <details class="finanzas-bloque"><summary>Configuración · Saldo inicial</summary><p>Saldo disponible al comienzo del día indicado, antes de sus movimientos. No vuelvas a registrar cobros ya incluidos en ese saldo. Cambiarlo recalcula el resumen, sin borrar registros.</p><form id="formSaldoInicial"><label>Fecha de inicio<input type="date" name="start" required></label><label>Saldo inicial UYU<input type="number" name="opening" min="0" step="0.01" required></label><button type="submit">Guardar saldo inicial</button></form></details>
 <details class="finanzas-bloque"><summary>Historial de modificaciones</summary><div id="historialFinanzas"></div></details>
         </section>
+        <!-- Lista de cuentas registradas, solo lectura. -->
+        <section class="admin-bloque admin-seccion" id="seccionUsuarios">
+            <h2>Usuarios registrados</h2>
+            <p class="admin-ayuda">Solo lectura. Las cuentas creadas antes de esta actualización no tienen fecha de registro y se muestran con "—".</p>
+            <button type="button" id="actualizarUsuarios" class="btn-form-admin">Actualizar lista</button>
+            <p id="mensajeUsuarios" role="status" aria-live="polite"></p>
+            <div id="listaUsuarios"></div>
+        </section>
+
         <!-- Sección para cargar ventas tomadas fuera de la tienda web. -->
         <section class="admin-bloque admin-seccion" id="seccionVentaManual">
             <h2>Venta manual</h2>

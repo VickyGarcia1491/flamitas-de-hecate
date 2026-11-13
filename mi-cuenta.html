@@ -50,9 +50,38 @@
         <section class="cuenta-bloque">
             <h2>Mis datos</h2>
             <div id="datosCuentaCliente"></div>
+
+            <!-- Edición de nombre y teléfono; el email identifica la cuenta y no se cambia. -->
+            <form id="formDatosCuenta" class="form-cuenta">
+                <label for="nombreCuenta">Nombre completo</label>
+                <input type="text" id="nombreCuenta" maxlength="300" autocomplete="name" required>
+
+                <label for="telefonoCuenta">Teléfono</label>
+                <input type="tel" id="telefonoCuenta" maxlength="100" autocomplete="tel" required>
+
+                <input type="submit" value="Guardar datos">
+                <p id="mensajeDatosCuenta" class="mensaje-formulario" role="status" aria-live="polite"></p>
+            </form>
+
+            <!-- Cambio de contraseña: cierra las otras sesiones y mantiene esta. -->
+            <form id="formPasswordCuenta" class="form-cuenta">
+                <h3>Cambiar contraseña</h3>
+                <label for="passwordActualCuenta">Contraseña actual</label>
+                <input type="password" id="passwordActualCuenta" maxlength="128" autocomplete="current-password" required>
+
+                <label for="passwordNuevaCuenta">Contraseña nueva</label>
+                <input type="password" id="passwordNuevaCuenta" minlength="8" maxlength="128" autocomplete="new-password" aria-describedby="ayudaPasswordCuenta" required>
+
+                <label for="passwordConfirmarCuenta">Repetí la contraseña nueva</label>
+                <input type="password" id="passwordConfirmarCuenta" minlength="8" maxlength="128" autocomplete="new-password" required>
+                <p id="ayudaPasswordCuenta" class="ayuda-formulario">Entre 8 y 128 caracteres. Evitá contraseñas comunes o tu email. Al cambiarla se cierran tus otras sesiones abiertas.</p>
+
+                <input type="submit" value="Cambiar contraseña">
+                <p id="mensajePasswordCuenta" class="mensaje-formulario" role="status" aria-live="polite"></p>
+            </form>
         </section>
 
-        <section class="cuenta-bloque">
+        <section class="cuenta-bloque" id="bloquePedidosCuenta">
             <h2>Mis pedidos</h2>
             <div id="historialCuentaCliente"></div>
         </section>
@@ -67,6 +96,7 @@
     <script src="./js/mi-cuenta.js"></script>
     <script src="./js/comprobantes.js"></script>
     <script src="./js/iniciar.js"></script>
+    <script src="./js/mostrar-password.js"></script>
 
     <a class="whatsapp-flotante" href="https://wa.me/59897605718" target="_blank" rel="noopener noreferrer" aria-label="Contactar a Flamitas por WhatsApp" title="Escribinos por WhatsApp">
         <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">

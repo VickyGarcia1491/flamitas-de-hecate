@@ -60,3 +60,20 @@
 .datos-transferencia h3 { font:500 1rem/1.5 'Montserrat',sans-serif; }.datos-transferencia p { font-size:.85rem; line-height:1.6; }.datos-transferencia dl { margin:16px 0; }.datos-transferencia dt { font-size:.8rem; color:#725a7f; margin-top:10px; }.datos-transferencia dd { margin:0; overflow-wrap:anywhere; user-select:text; }
 .transferencia-acciones { display:flex; flex-wrap:wrap; gap:10px; }.datos-transferencia button,.datos-transferencia a { padding:10px 14px; min-height:44px; border:1px solid #72518a; border-radius:8px; background:white; color:#604176; font:inherit; font-size:.85rem; cursor:pointer; }.datos-transferencia a { display:inline-block; margin-top:12px; }.datos-transferencia label { display:block; margin-bottom:8px; }.datos-transferencia select { width:100%; min-height:44px; font:inherit; font-size:16px; padding:10px; border-radius:8px; }
 .transferencia-pedido-guardado { max-width:720px; margin:24px auto; padding:0 16px; }
+
+/* Mi cuenta: formularios de datos y contraseña con el mismo estilo que acceso. */
+.form-cuenta { display:flex; flex-direction:column; gap:10px; margin-top:24px; padding-top:20px; border-top:1px solid var(--borde); }
+.form-cuenta h3 { font:500 1.05rem/1.5 'Montserrat',sans-serif; margin:0 0 4px; }
+.form-cuenta label { font-size:.9rem; font-weight:500; }
+.form-cuenta input:not([type=submit]) { box-sizing:border-box; width:100%; min-height:44px; border:1px solid rgba(74,59,53,.18); border-radius:14px; padding:12px 14px; font-family:'Montserrat',sans-serif; font-size:16px; }
+.form-cuenta input[type=submit] { border:none; margin-top:8px; cursor:pointer; }
+.ayuda-formulario { font-size:.8rem; line-height:1.5; color:#6b5a70; margin:0; text-align:left!important; }
+.cuenta-solo-datos { grid-template-columns:minmax(0,560px); justify-content:center; }
+
+/* Campo de contraseña con botón de ojo: el botón queda dentro del campo y no lo ensancha. */
+.campo-password { position:relative; display:block; width:100%; }
+.campo-password > input[type] { padding-right:52px; }
+.btn-mostrar-password { position:absolute; top:50%; right:2px; transform:translateY(-50%); width:44px; height:44px; padding:0; margin:0; display:grid; place-items:center; border:0; border-radius:12px; background:transparent; color:var(--acento,#72518a); cursor:pointer; }
+.btn-mostrar-password:hover { background:#f3edf7; }
+.sitio-publico .btn-mostrar-password:focus-visible { outline:2px solid var(--acento); outline-offset:-2px; }
+.btn-mostrar-password svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }

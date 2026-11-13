@@ -53,7 +53,8 @@
             <input type="tel" id="telefonoRegistro" required>
 
             <label for="passwordRegistro">Contraseña</label>
-            <input type="password" id="passwordRegistro" minlength="12" maxlength="128" placeholder="Mínimo 12 caracteres" required>
+            <input type="password" id="passwordRegistro" minlength="8" maxlength="128" placeholder="Mínimo 8 caracteres" autocomplete="new-password" aria-describedby="ayudaPasswordRegistro" required>
+            <p id="ayudaPasswordRegistro" class="ayuda-formulario">Entre 8 y 128 caracteres. No hace falta usar mayúsculas, números ni símbolos, pero evitá contraseñas muy comunes o tu email.</p>
 
             <input type="submit" value="Registrarme">
         </form>
@@ -66,6 +67,7 @@
     <script src="./js/api.js"></script>
     <script src="./js/usuarios.js"></script>
     <script src="./js/iniciar.js"></script>
+    <script src="./js/mostrar-password.js"></script>
 
     <a class="whatsapp-flotante" href="https://wa.me/59897605718" target="_blank" rel="noopener noreferrer" aria-label="Contactar a Flamitas por WhatsApp" title="Escribinos por WhatsApp">
         <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">

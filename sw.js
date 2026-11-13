@@ -1,4 +1,4 @@
-const CACHE_NAME = "flamitas-app-v33";
+const CACHE_NAME = "flamitas-app-v34";
 
 const APP_SHELL = [
   "/",
@@ -20,6 +20,8 @@ const APP_SHELL = [
   "/js/cobros.js",
   "/js/clases.js",
   "/js/usuarios.js",
+  "/js/mi-cuenta.js",
+  "/js/mostrar-password.js",
   "/js/sistema.js",
   "/js/tienda.js",
   "/js/admin.js",

@@ -62,7 +62,7 @@ Si el archivo tiene identificadores repetidos o datos incompatibles, el servidor
 
 ## 5. Comprobar antes de abrir al público
 
-1. Registrá una cuenta de cliente en una ventana privada; la contraseña debe tener al menos 12 caracteres.
+1. Registrá una cuenta de cliente en una ventana privada; la contraseña debe tener entre 8 y 128 caracteres y no puede ser muy común ni igual al email (las administradoras necesitan al menos 12 al cambiarla).
 2. Agregá un producto y realizá un pedido de prueba.
 3. Confirmá que aparece en el panel administrador y que se descontó el stock.
 4. Ingresá con ese cliente desde otro dispositivo: su pedido debe aparecer en **Mi cuenta**.

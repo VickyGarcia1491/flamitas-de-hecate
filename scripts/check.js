@@ -10,6 +10,12 @@ for (const file of readdirSync('.').filter(f=>f.endsWith('.html'))) for (const m
 }
 for (const page of readdirSync('.').filter(f=>f.endsWith('.html'))) {
  const html = readFileSync(page,'utf8'), functions = new Map(), ids = new Set();
+ // El CSP solo permite scripts propios: nada de <script> en línea ni manejadores on*=.
+ for (const match of html.matchAll(/<script\b(?![^>]*\bsrc=)[^>]*>|<[a-z][^>]*\son[a-z]+\s*=/gi)) { console.error(`${page}: código en línea bloqueado por el CSP: ${match[0].slice(0,80)}`); failed = true; }
+ // Los campos de contraseña necesitan el botón para mostrarla.
+ if (/type="password"/.test(html) && !/<script src="(?:\.\/)?js\/mostrar-password\.js"/.test(html)) { console.error(`${page}: falta js/mostrar-password.js`); failed = true; }
+ if (/<script src="(?:\.\/)?js\/mostrar-password\.js"/.test(html) && html.indexOf('js/mostrar-password.js') < html.indexOf('js/iniciar.js')) { console.error(`${page}: js/mostrar-password.js debe cargarse después de js/iniciar.js`); failed = true; }
+ if (/<script src="(?:\.\/)?js\/mostrar-password\.js"/.test(html) && !readFileSync('sw.js','utf8').includes('"/js/mostrar-password.js"')) { console.error('sw.js: falta /js/mostrar-password.js'); failed = true; }
  for (const match of html.matchAll(/\bid="([^"]+)"/g)) {
   if (ids.has(match[1])) { console.error(`${page}: id duplicado ${match[1]}`); failed = true; }
   ids.add(match[1]);

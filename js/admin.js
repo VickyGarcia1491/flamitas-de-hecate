@@ -55,6 +55,7 @@ function iniciarAdmin() {
     document.querySelector("#btnAgregarProductoEditarPedido").addEventListener("click", agregarProductoAlPedidoEditando);
     document.querySelector("#productoNuevoEditarPedido").addEventListener("change", actualizarPrecioNuevoPedidoEditando);
     document.querySelector("#editarMedioPagoPedido").addEventListener("change", mostrarProductosPedidoEditando);
+    document.querySelector("#actualizarUsuarios").addEventListener("click", cargarUsuariosAdmin);
     const pedidoAvisado = Number(new URLSearchParams(window.location.search).get('pedido'));
     if (pedidoAvisado) {
         document.querySelector('#filtroEstadoPedidos').value='todos';
@@ -131,9 +132,9 @@ function mostrarPedidosAdmin() {
                         </select>
                     </div>
 
-                    <p><strong>Cliente:</strong> ${pedido.cliente.nombre}</p>
-                    <p><strong>Email:</strong> ${pedido.cliente.email}</p>
-                    <p><strong>Teléfono:</strong> ${mostrarDatoOpcional(pedido.cliente.telefono, "Sin teléfono")}</p>
+                    <p><strong>Cliente:</strong> ${escaparHTML(pedido.cliente.nombre)}</p>
+                    <p><strong>Email:</strong> ${escaparHTML(pedido.cliente.email)}</p>
+                    <p><strong>Teléfono:</strong> ${escaparHTML(mostrarDatoOpcional(pedido.cliente.telefono, "Sin teléfono"))}</p>
 
                     <ul>${productosHtml}</ul>
 
@@ -928,6 +929,54 @@ function mostrarSeccionAdmin(seccion) {
 
     document.querySelector("[data-seccion='" + seccion + "']").classList.add("active");
     document.querySelector("#seccion" + convertirNombreSeccion(seccion)).classList.add("active");
+
+    if (seccion === "usuarios") {
+        cargarUsuariosAdmin();
+    }
+}
+
+// Trae las cuentas registradas desde el servidor; la lista es solo de lectura.
+async function cargarUsuariosAdmin() {
+    let mensaje = document.querySelector("#mensajeUsuarios");
+    mensaje.textContent = "Cargando usuarios…";
+
+    try {
+        let usuarios = await api("/api/admin/users");
+        mostrarUsuariosAdmin(usuarios);
+        mensaje.textContent = usuarios.length + (usuarios.length === 1 ? " cuenta registrada." : " cuentas registradas.");
+    } catch (error) {
+        mensaje.textContent = "No se pudo cargar la lista de usuarios. " + error.message;
+    }
+}
+
+// Arma la tabla de usuarios escapando todos los datos ingresados por las personas.
+function mostrarUsuariosAdmin(usuarios) {
+    let filas = "";
+
+    for (let i = 0; i < usuarios.length; i++) {
+        let usuario = usuarios[i];
+        filas += `
+            <tr>
+                <td data-label="Nombre">${escaparHTML(usuario.nombre)}</td>
+                <td data-label="Email">${escaparHTML(usuario.email)}</td>
+                <td data-label="Teléfono">${escaparHTML(mostrarDatoOpcional(usuario.telefono, "—"))}</td>
+                <td data-label="Rol">${usuario.rol === "admin" ? "Administradora" : "Cliente"}</td>
+                <td data-label="Registro">${escaparHTML(formatearFechaRegistro(usuario.created_at))}</td>
+            </tr>
+        `;
+    }
+
+    document.querySelector("#listaUsuarios").innerHTML = usuarios.length === 0
+        ? "<p class='admin-vacio'>Todavía no hay usuarios registrados.</p>"
+        : `<div class="finanzas-tabla tabla-usuarios"><table><thead><tr><th scope="col">Nombre</th><th scope="col">Email</th><th scope="col">Teléfono</th><th scope="col">Rol</th><th scope="col">Registro</th></tr></thead><tbody>${filas}</tbody></table></div>`;
+}
+
+// Las cuentas anteriores a la columna de registro no tienen fecha.
+function formatearFechaRegistro(valor) {
+    if (valor === null || valor === undefined || valor === "") return "—";
+    let fecha = new Date(valor);
+    if (Number.isNaN(fecha.getTime())) return "—";
+    return fecha.toLocaleDateString("es-UY", {timeZone: "America/Montevideo", day: "2-digit", month: "2-digit", year: "numeric"});
 }
 
 // Convierte el nombre del botón en el id de su sección.
@@ -946,6 +995,8 @@ function convertirNombreSeccion(seccion) {
         nombre = "Gastos";
     } else if (seccion === "ventaManual") {
         nombre = "VentaManual";
+    } else if (seccion === "usuarios") {
+        nombre = "Usuarios";
     }
 
     return nombre;
@@ -1027,7 +1078,7 @@ function armarPedidosPendientesDashboard(pedidos) {
                 <article class="dashboard-item">
                     <div>
                         <strong>Pedido #${pedidos[i].id}</strong>
-                        <span>${pedidos[i].cliente.nombre} · ${origen}</span>
+                        <span>${escaparHTML(pedidos[i].cliente.nombre)} · ${origen}</span>
                     </div>
                     <div>
                         <strong>$${pedidos[i].total}</strong>

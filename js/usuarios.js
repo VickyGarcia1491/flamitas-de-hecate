@@ -34,7 +34,7 @@ function mostrarUsuarioEnMenu() {
  });
  visible('a[href="login.html"]', !usuario);
  visible('a[href="admin.html"]', usuario?.rol === 'admin');
- visible('a[href="mi-cuenta.html"]', !!usuario && usuario.rol !== 'admin');
+ visible('a[href="mi-cuenta.html"]', !!usuario);
  visible('#btnCerrarSesion', !!usuario);
  visible('#linkContacto', usuario?.rol !== 'admin');
  const nombre = document.querySelector('#nombreUsuario');

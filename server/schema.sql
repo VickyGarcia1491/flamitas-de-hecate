@@ -6,6 +6,9 @@ CREATE TABLE IF NOT EXISTS users (
  password_hash TEXT NOT NULL,
  rol TEXT NOT NULL CHECK (rol IN ('admin', 'cliente'))
 );
+-- Fecha de registro: las cuentas anteriores quedan en NULL; solo las nuevas reciben la fecha.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ;
+ALTER TABLE users ALTER COLUMN created_at SET DEFAULT now();
 CREATE TABLE IF NOT EXISTS sessions (
  token_hash TEXT PRIMARY KEY,
  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,

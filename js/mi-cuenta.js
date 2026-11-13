@@ -1,29 +1,89 @@
 // Inicia la página de cuenta cuando termina de cargar.
 
 
-// Protege la cuenta y muestra datos del cliente activo.
+// Protege la cuenta y muestra datos del usuario activo.
 function iniciarMiCuenta() {
     if (!protegerPagina()) return;
 
+    document.querySelector("#formDatosCuenta").addEventListener("submit", guardarDatosCuenta);
+    document.querySelector("#formPasswordCuenta").addEventListener("submit", cambiarPasswordCuenta);
+    mostrarDatosCuenta();
+
+    // Las administradoras solo editan sus datos acá; pedidos y comprobantes están en el panel.
     if (obtenerUsuarioActivo().rol === "admin") {
-        window.location = "admin.html";
+        document.querySelector("#bloquePedidosCuenta").remove();
+        document.querySelector(".cuenta-cliente").classList.add("cuenta-solo-datos");
+        document.querySelector("#passwordNuevaCuenta").minLength = 12;
+        document.querySelector("#passwordConfirmarCuenta").minLength = 12;
+        document.querySelector("#ayudaPasswordCuenta").textContent = "Entre 12 y 128 caracteres para cuentas de administración. Evitá contraseñas comunes o tu email. Al cambiarla se cierran tus otras sesiones abiertas.";
         return;
     }
 
-    mostrarDatosCuenta();
     mostrarHistorialCuenta();
 }
 
-// Muestra nombre, email y teléfono del usuario cliente.
+// Muestra nombre, email y teléfono del usuario activo y completa el formulario.
 function mostrarDatosCuenta() {
     let usuario = obtenerUsuarioActivo();
     let contenedor = document.querySelector("#datosCuentaCliente");
 
     contenedor.innerHTML = `
-        <p><strong>Nombre:</strong> ${usuario.nombre}</p>
-        <p><strong>Mail:</strong> ${usuario.email}</p>
-        <p><strong>Teléfono:</strong> ${usuario.telefono}</p>
+        <p><strong>Nombre:</strong> ${escaparHTML(usuario.nombre)}</p>
+        <p><strong>Mail:</strong> ${escaparHTML(usuario.email)}</p>
+        <p><strong>Teléfono:</strong> ${escaparHTML(usuario.telefono)}</p>
     `;
+    document.querySelector("#nombreCuenta").value = usuario.nombre || "";
+    document.querySelector("#telefonoCuenta").value = usuario.telefono || "";
+}
+
+// Guarda nombre y teléfono; el email no se envía porque no es editable.
+async function guardarDatosCuenta(evento) {
+    evento.preventDefault();
+    let mensaje = document.querySelector("#mensajeDatosCuenta");
+    let boton = evento.target.querySelector("[type=submit]");
+    boton.disabled = true;
+    mensaje.textContent = "";
+
+    try {
+        let usuario = await api("/api/account", "PUT", {
+            nombre: document.querySelector("#nombreCuenta").value,
+            telefono: document.querySelector("#telefonoCuenta").value
+        });
+        datosServidor.usuario = {...datosServidor.usuario, ...usuario};
+        mostrarDatosCuenta();
+        mostrarUsuarioEnMenu();
+        mensaje.textContent = "Tus datos quedaron guardados.";
+    } catch (error) {
+        mensaje.textContent = error.message;
+    } finally {
+        boton.disabled = false;
+    }
+}
+
+// Cambia la contraseña pidiendo la actual; el servidor cierra las otras sesiones.
+async function cambiarPasswordCuenta(evento) {
+    evento.preventDefault();
+    let formulario = evento.target;
+    let mensaje = document.querySelector("#mensajePasswordCuenta");
+    let nueva = document.querySelector("#passwordNuevaCuenta").value;
+    let boton = formulario.querySelector("[type=submit]");
+    mensaje.textContent = "";
+
+    if (nueva !== document.querySelector("#passwordConfirmarCuenta").value) {
+        mensaje.textContent = "Las contraseñas nuevas no coinciden.";
+        return;
+    }
+
+    boton.disabled = true;
+    try {
+        await api("/api/account/password", "POST", {actual: document.querySelector("#passwordActualCuenta").value, nueva});
+        formulario.reset();
+        mensaje.textContent = "Contraseña cambiada. Cerramos tus otras sesiones; esta sigue abierta.";
+    } catch (error) {
+        mensaje.textContent = error.message;
+    } finally {
+        boton.disabled = false;
+    }
 }
 
 // Muestra solo los pedidos realizados por el cliente activo.

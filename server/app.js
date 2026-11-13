@@ -6,7 +6,7 @@ import { rateLimit } from 'express-rate-limit';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
-import { hashPassword, verifyPassword, tokenHash, newToken, fail, text, email, password, validateTree } from './security.js';
+import { hashPassword, verifyPassword, tokenHash, newToken, fail, text, email, password, newPassword, validateTree } from './security.js';
 import { emptyState, validateState, checkout, reconcileOrderStock, applyProductChanges } from './business.js';
 import {initializePush, createPushService, validateSubscription} from './push.js';
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -95,8 +95,8 @@ export function createApp(db, config = {}, dependencies = {}) {
   const loginLimit = rateLimit({windowMs: 900000, limit: 30, message: {error: 'Demasiados intentos. Probá en 15 minutos.'}});
   app.post('/api/register', loginLimit, async (req, res) => {
     const address = email(req.body.email), nombre = text(req.body.nombre), telefono = text(req.body.telefono || '', 100, false);
-    const hash = await hashPassword(password(req.body.password));
-    const result = await db.query("INSERT INTO users(email,nombre,telefono,password_hash,rol) VALUES($1,$2,$3,$4,'cliente') RETURNING *", [address, nombre, telefono, hash]);
+    const hash = await hashPassword(newPassword(req.body.password, {email: address}));
+    const result = await db.query("INSERT INTO users(email,nombre,telefono,password_hash,rol) VALUES($1,$2,$3,$4,'cliente') RETURNING id,email,nombre,telefono,rol", [address, nombre, telefono, hash]);
     res.status(201).json(await session(req, res, result.rows[0]));
   });
   app.post('/api/login', loginLimit, async (req, res) => {
@@ -105,6 +105,30 @@ export function createApp(db, config = {}, dependencies = {}) {
     const result = await db.query('SELECT * FROM users WHERE email=$1', [address]);
     if (!result.rows[0] || !await verifyPassword(req.body.password, result.rows[0].password_hash)) fail('Email o contraseña incorrectos.', 401);
     res.json(await session(req, res, result.rows[0]));
+  });
+  // Cuenta propia: el email identifica pedidos y comprobantes, por eso no se edita.
+  app.put('/api/account', auth, async (req, res) => {
+    const nombre = text(req.body.nombre), telefono = text(req.body.telefono || '', 100, false);
+    const result = await db.query('UPDATE users SET nombre=$1,telefono=$2 WHERE id=$3 RETURNING id,email,nombre,telefono,rol', [nombre, telefono, req.user.id]);
+    res.json(result.rows[0]);
+  });
+  app.post('/api/account/password', loginLimit, auth, async (req, res) => {
+    if (typeof req.body.actual !== 'string' || req.body.actual.length > 128) fail('La contraseña actual no es correcta.', 401);
+    const secret = newPassword(req.body.nueva, {email: req.user.email, admin: req.user.rol === 'admin'});
+    const stored = (await db.query('SELECT password_hash FROM users WHERE id=$1', [req.user.id])).rows[0];
+    if (!stored || !await verifyPassword(req.body.actual, stored.password_hash)) fail('La contraseña actual no es correcta.', 401);
+    const hash = await hashPassword(secret);
+    // Solo se cierran las otras sesiones de esta cuenta; la actual y las de otras personas siguen abiertas.
+    await transact(async client => {
+      await client.query('UPDATE users SET password_hash=$1 WHERE id=$2', [hash, req.user.id]);
+      await client.query('DELETE FROM push_subscriptions WHERE user_id=$1 AND session_hash<>$2', [req.user.id, req.sessionHash]);
+      await client.query('DELETE FROM sessions WHERE user_id=$1 AND token_hash<>$2', [req.user.id, req.sessionHash]);
+    });
+    res.json({ok: true});
+  });
+  app.get('/api/admin/users', admin, async (req, res) => {
+    const result = await db.query('SELECT id,nombre,email,telefono,rol,created_at FROM users ORDER BY created_at DESC NULLS LAST, id DESC');
+    res.json(result.rows);
   });
   app.post('/api/logout', async (req, res) => {
     if (req.sessionHash) await db.query('DELETE FROM push_subscriptions WHERE session_hash=$1',[req.sessionHash]);

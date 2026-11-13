@@ -1,6 +1,8 @@
 // Comprobantes privados, disponibles solo para el dueño del pedido y administración.
 async function iniciarComprobantes() {
  if(!obtenerUsuarioActivo())return;
+ // En Mi cuenta, las administradoras no ven comprobantes: se revisan desde el panel.
+ if(obtenerUsuarioActivo().rol==='admin'&&!document.querySelector('#seccionDashboard'))return;
  let panel=document.querySelector('#panelComprobantes');
  if(!panel){panel=document.createElement('section');panel.id='panelComprobantes';panel.className='panel-comprobantes';(document.querySelector('#seccionDashboard')||document.querySelector('#historialCuentaCliente')?.parentElement||document.querySelector('.gallery')).append(panel);}
  panel.innerHTML='<h3>'+ (obtenerUsuarioActivo().rol==='admin'?'Comprobantes por revisar':'Ya hice la transferencia')+'</h3><p>El pago se confirma cuando Flamitas verifica la recepción del dinero.</p><button type="button" id="actualizarComprobantes">Actualizar comprobantes</button><p id="mensajeComprobantes" role="status" aria-live="polite"></p><div id="listaComprobantes"></div>';

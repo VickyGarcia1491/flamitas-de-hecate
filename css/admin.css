@@ -57,3 +57,4 @@
  .finanzas-tabla td:empty{display:none}
  .finanzas-tabla button{max-width:100%;white-space:normal}
 }
+.tabla-usuarios td{overflow-wrap:anywhere}

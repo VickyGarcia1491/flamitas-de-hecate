@@ -27,6 +27,16 @@ export function password(value) {
   if (typeof value !== 'string' || value.length < 12 || value.length > 128) fail('La contraseña debe tener entre 12 y 128 caracteres.');
   return value;
 }
+// Política para contraseñas nuevas. El login no la aplica: las contraseñas guardadas siguen sirviendo.
+const commonPasswords = new Set(['12345678','123456789','1234567890','123123123','12341234','11111111','00000000','87654321','password','password1','password123','passw0rd','contraseña','contrasena','qwerty123','qwertyui','asdfghjk','iloveyou','teamo123','abc12345','abcd1234','admin123','administrador','bienvenido','flamitas','flamitas123','velas123','hecate123','111111111111','123456789012','qwertyuiop12','password1234','contraseña123']);
+export function newPassword(value, {email: address = '', admin = false} = {}) {
+  const min = admin ? 12 : 8;
+  if (typeof value !== 'string' || value.length < min || value.length > 128) fail(`La contraseña debe tener entre ${min} y 128 caracteres.`);
+  const normalized = value.trim().toLowerCase();
+  if (commonPasswords.has(normalized)) fail('Esa contraseña es muy común. Elegí otra.');
+  if (address && normalized === address.trim().toLowerCase()) fail('La contraseña no puede ser igual a tu email.');
+  return value;
+}
 export function validateTree(value, key = '') {
   if (typeof value === 'string') {
     if (key === 'imagen') {
